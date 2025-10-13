@@ -627,10 +627,27 @@
         
         const saveProfile = async (e) => {
             e.preventDefault();
-            profileData.name = document.getElementById('trainee-name').value;
-            profileData.rbtNumber = document.getElementById('rbt-number').value;
+            const saveBtn = profileForm.querySelector('button[type="submit"]');
+            const originalText = saveBtn.textContent;
+            saveBtn.textContent = 'Saving...';
+            saveBtn.disabled = true;
+
+            const name = document.getElementById('trainee-name').value;
+            const rbtNumber = document.getElementById('rbt-number').value;
+            
             const profileRef = doc(db, `artifacts/${appId}/users/${userId}/profile/data`);
-            await setDoc(profileRef, { name: profileData.name, rbtNumber: profileData.rbtNumber }, { merge: true });
+            try {
+                await setDoc(profileRef, { name, rbtNumber }, { merge: true });
+                saveBtn.textContent = 'Saved!';
+            } catch (error) {
+                console.error("Error saving profile:", error);
+                saveBtn.textContent = 'Error!';
+            } finally {
+                setTimeout(() => {
+                    saveBtn.textContent = originalText;
+                    saveBtn.disabled = false;
+                }, 2000);
+            }
         };
 
         const renderSupervisors = () => {
@@ -652,21 +669,44 @@
 
         const addSupervisor = async (e) => {
             e.preventDefault();
+            const addBtn = supervisorForm.querySelector('button[type="submit"]');
+            const originalText = addBtn.textContent;
+            addBtn.textContent = 'Adding...';
+            addBtn.disabled = true;
+
             const name = document.getElementById('supervisor-name-input').value;
             const cert = document.getElementById('supervisor-cert-input').value;
-            if (name && cert && !(profileData.supervisors || []).find(s => s.name === name)) {
-                if (!profileData.supervisors) profileData.supervisors = [];
-                profileData.supervisors.push({ name, cert });
+
+            const updatedSupervisors = [...(profileData.supervisors || [])];
+            if (name && cert && !updatedSupervisors.find(s => s.name === name)) {
+                updatedSupervisors.push({ name, cert });
                 const profileRef = doc(db, `artifacts/${appId}/users/${userId}/profile/data`);
-                await setDoc(profileRef, { supervisors: profileData.supervisors }, { merge: true });
-                supervisorForm.reset();
+                try {
+                    await setDoc(profileRef, { supervisors: updatedSupervisors }, { merge: true });
+                    supervisorForm.reset();
+                    addBtn.textContent = 'Added!';
+                } catch (error) {
+                     console.error("Error adding supervisor:", error);
+                     addBtn.textContent = 'Error!';
+                } finally {
+                     setTimeout(() => {
+                        addBtn.textContent = originalText;
+                        addBtn.disabled = false;
+                    }, 2000);
+                }
+            } else {
+                addBtn.textContent = 'Invalid or Exists';
+                 setTimeout(() => {
+                    addBtn.textContent = originalText;
+                    addBtn.disabled = false;
+                }, 2000);
             }
         };
         
         const removeSupervisor = async (name) => {
-            profileData.supervisors = profileData.supervisors.filter(s => s.name !== name);
+            const updatedSupervisors = profileData.supervisors.filter(s => s.name !== name);
             const profileRef = doc(db, `artifacts/${appId}/users/${userId}/profile/data`);
-            await setDoc(profileRef, { supervisors: profileData.supervisors }, { merge: true });
+            await setDoc(profileRef, { supervisors: updatedSupervisors }, { merge: true });
         };
         
         // --- PDF Generation ---
@@ -813,14 +853,24 @@
 
                     const profileRef = doc(db, `artifacts/${appId}/users/${userId}/profile/data`);
                     onSnapshot(profileRef, (doc) => {
+                        const currentUser = auth.currentUser;
                         if (doc.exists()) {
-                            profileData = { supervisors: [], ...doc.data() };
-                            document.getElementById('trainee-name').value = profileData.name || user.displayName || '';
-                            document.getElementById('rbt-number').value = profileData.rbtNumber || '';
+                            const data = doc.data();
+                            profileData = {
+                                name: data.name || (currentUser ? currentUser.displayName : ''),
+                                rbtNumber: data.rbtNumber || '',
+                                supervisors: data.supervisors || []
+                            };
                         } else {
-                            document.getElementById('trainee-name').value = user.displayName || '';
+                            profileData = {
+                                name: currentUser ? currentUser.displayName : '',
+                                rbtNumber: '',
+                                supervisors: []
+                            };
                         }
-                         renderSupervisors();
+                        document.getElementById('trainee-name').value = profileData.name;
+                        document.getElementById('rbt-number').value = profileData.rbtNumber;
+                        renderSupervisors();
                     });
 
                     const entriesRef = collection(db, `artifacts/${appId}/users/${userId}/fieldwork_entries`);
@@ -829,13 +879,13 @@
                         const activeViewBtn = document.querySelector('.view-btn-active');
                         const activeViewId = activeViewBtn ? activeViewBtn.dataset.view : 'monthly';
                         switchView(activeViewId);
-                    });
-                     switchView('monthly');
+});
                 } else {
                     userId = null;
                     appContainer.classList.add('hidden');
                     loginView.classList.remove('hidden');
                     allEntries = [];
+                    profileData = { name: '', rbtNumber: '', supervisors: [] };
                     updateMonthlyView();
                     updateYearlyView();
                     updateAllTimeView();
