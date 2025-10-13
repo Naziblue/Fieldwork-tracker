@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fieldwork Tracking</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.10/dayjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.10/plugin/customParseFormat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .percentage-red { background-color: #ef4444 !important; }
+        .percentage-yellow { background-color: #f59e0b !important; }
+        .percentage-green { background-color: #22c55e !important; }
+        .modal, .settings-panel { transition: opacity 0.3s ease, transform 0.3s ease-in-out; }
+        .view-btn-active { background-color: #0891b2; color: white; }
+        .view-btn { background-color: #4b5563; color: #d1d5db; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white antialiased">
+    
+    <!-- Login View -->
+    <div id="login-view" class="flex flex-col items-center justify-center min-h-screen p-4">
+        <div class="text-center">
+            <h1 class="text-4xl font-bold text-cyan-400 mb-2">Fieldwork Tracking</h1>
+            <p class="text-gray-400 mb-8">Please sign in to access your fieldwork log.</p>
+            <button id="login-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center mx-auto">
+                <svg class="w-5 h-5 mr-2" viewBox="0 0 48 48" width="48px" height="48px"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"></path><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C42.021,35.596,44,30.138,44,24C44,22.659,43.862,21.35,43.611,20.083z"></path></svg>
+                Sign in with Google
+            </button>
+        </div>
+    </div>
+
+    <!-- Main App Container (hidden by default) -->
+    <div id="app-container" class="container mx-auto p-4 md:p-8 hidden">
+        <header class="text-center mb-6 relative">
+            <h1 class="text-3xl md:text-4xl font-bold text-cyan-400">Fieldwork Tracking</h1>
+            <div class="absolute top-0 right-0 flex items-center gap-4">
+                <div id="user-display" class="text-sm text-gray-300"></div>
+                <button id="logout-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 rounded-lg" title="Logout">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                </button>
+                 <button id="settings-btn" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-2 rounded-lg" title="Settings">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2l-.15.08a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l-.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1 0-2l.15-.08a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+            </div>
+        </header>
+        
+        <!-- View Navigation -->
+        <nav class="flex justify-center gap-2 mb-8">
+            <button class="view-btn px-4 py-2 rounded-lg font-medium" data-view="monthly">Monthly View</button>
+            <button class="view-btn px-4 py-2 rounded-lg font-medium" data-view="yearly">Yearly View</button>
+            <button class="view-btn px-4 py-2 rounded-lg font-medium" data-view="all-time">All Time View</button>
+        </nav>
+
+        <!-- VIEWS CONTAINER -->
+        <main>
+            <!-- MONTHLY VIEW -->
+            <div id="monthly-view" class="view-container hidden">
+                <section class="mb-8 p-6 bg-gray-800 rounded-2xl shadow-lg">
+                    <div class="flex flex-wrap justify-between items-center mb-4">
+                        <h2 class="text-2xl font-semibold text-white">Monthly Summary</h2>
+                        <div class="flex items-center gap-2 mt-4 sm:mt-0">
+                            <label for="month-selector" class="text-sm font-medium text-gray-300">Select Month:</label>
+                            <input type="month" id="month-selector" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg p-2">
+                        </div>
+                    </div>
+                    <div id="monthly-summary-grid" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 text-center"></div>
+                </section>
+                <section class="mb-8 p-6 bg-gray-800 rounded-2xl shadow-lg">
+                    <h2 class="text-2xl font-semibold text-white mb-4">Log New Activity</h2>
+                    <form id="tracker-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
+                        <div>
+                            <label for="date" class="block mb-2 text-sm font-medium text-gray-300">Date</label>
+                            <input type="date" id="date" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg w-full p-2.5" required>
+                        </div>
+                        <div>
+                            <label for="start-time" class="block mb-2 text-sm font-medium text-gray-300">Start Time</label>
+                            <input type="time" id="start-time" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg w-full p-2.5" required>
+                        </div>
+                        <div>
+                            <label for="end-time" class="block mb-2 text-sm font-medium text-gray-300">End Time</label>
+                            <input type="time" id="end-time" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg w-full p-2.5" required>
+                        </div>
+                        <div>
+                            <label for="activity-type" class="block mb-2 text-sm font-medium text-gray-300">Activity Type</label>
+                            <select id="activity-type" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg w-full p-2.5">
+                                <option>Restricted</option>
+                                <option>Unrestricted</option>
+                            </select>
+                        </div>
+                         <div id="unrestricted-wrapper" class="hidden md:col-span-2 lg:col-span-4">
+                            <label for="unrestricted-explanation" class="block mb-2 text-sm font-medium text-gray-300">Unrestricted Activity Explanation</label>
+                            <textarea id="unrestricted-explanation" rows="2" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg w-full p-2.5" placeholder="e.g., Parent training, data analysis..."></textarea>
+                        </div>
+                         <div>
+                            <label for="supervision-type" class="block mb-2 text-sm font-medium text-gray-300">Supervision Type</label>
+                            <select id="supervision-type" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg w-full p-2.5">
+                                <option>No Supervision</option>
+                                <option>1:1 Meeting (with Supervisor)</option>
+                                <option>Group Supervision</option>
+                                <option>Observation with Client (by Supervisor)</option>
+                            </select>
+                        </div>
+                        <div id="supervisor-name-wrapper" class="hidden">
+                            <label for="supervisor-select" class="block mb-2 text-sm font-medium text-gray-300">Supervisor</label>
+                            <select id="supervisor-select" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg w-full p-2.5">
+                                <option value="">Select a supervisor...</option>
+                            </select>
+                        </div>
+                         <div>
+                            <label for="client-present" class="block mb-2 text-sm font-medium text-gray-300">Client Present?</label>
+                            <select id="client-present" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg w-full p-2.5">
+                                <option>No</option>
+                                <option>Yes</option>
+                            </select>
+                        </div>
+                        <div id="client-name-wrapper" class="hidden">
+                            <label for="client-name" class="block mb-2 text-sm font-medium text-gray-300">Client Name/ID</label>
+                            <input type="text" id="client-name" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg w-full p-2.5" placeholder="e.g., Client A">
+                        </div>
+                         <div class="md:col-span-2 lg:col-span-4">
+                            <label for="notes" class="block mb-2 text-sm font-medium text-gray-300">Additional Notes</label>
+                            <textarea id="notes" rows="2" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg w-full p-2.5" placeholder="Any other relevant details..."></textarea>
+                        </div>
+                        <div class="md:col-span-2 lg:col-span-4">
+                             <button type="submit" class="w-full text-white bg-cyan-600 hover:bg-cyan-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center">Add Entry</button>
+                        </div>
+                    </form>
+                </section>
+                <section class="mb-8 p-6 bg-gray-800 rounded-2xl shadow-lg">
+                     <h2 class="text-2xl font-semibold text-white mb-4">Monthly Exports</h2>
+                     <div>
+                         <button id="generate-mfvf-btn" class="w-full text-white bg-purple-600 hover:bg-purple-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center">Generate M-FVF (PDF)</button>
+                     </div>
+                </section>
+                <section class="p-6 bg-gray-800 rounded-2xl shadow-lg overflow-x-auto">
+                     <h2 class="text-2xl font-semibold text-white mb-4">Monthly Log</h2>
+                     <table class="w-full text-sm text-left text-gray-300">
+                        <thead class="text-xs text-gray-400 uppercase bg-gray-700">
+                           <tr id="monthly-table-header"></tr>
+                        </thead>
+                        <tbody id="log-table-body"></tbody>
+                    </table>
+                </section>
+            </div>
+
+            <!-- YEARLY VIEW -->
+            <div id="yearly-view" class="view-container hidden">
+                <section class="mb-8 p-6 bg-gray-800 rounded-2xl shadow-lg">
+                    <div class="flex flex-wrap justify-between items-center mb-4">
+                        <h2 class="text-2xl font-semibold text-white">Yearly Summary</h2>
+                        <div class="flex items-center gap-2 mt-4 sm:mt-0">
+                            <label for="year-selector" class="text-sm font-medium text-gray-300">Select Year:</label>
+                            <input type="number" id="year-selector" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg p-2 w-28">
+                        </div>
+                    </div>
+                    <div id="yearly-summary-grid" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 text-center"></div>
+                </section>
+                 <section class="mb-8 p-6 bg-gray-800 rounded-2xl shadow-lg">
+                    <h2 class="text-2xl font-semibold text-white mb-4">Yearly Export</h2>
+                    <button id="export-yearly-btn" class="w-full text-white bg-blue-600 hover:bg-blue-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center">Export Yearly Report (PDF)</button>
+                </section>
+                <section class="p-6 bg-gray-800 rounded-2xl shadow-lg overflow-x-auto">
+                     <h2 class="text-2xl font-semibold text-white mb-4">Yearly Log</h2>
+                     <table class="w-full text-sm text-left text-gray-300">
+                         <thead class="text-xs text-gray-400 uppercase bg-gray-700">
+                           <tr id="yearly-table-header"></tr>
+                        </thead>
+                        <tbody id="yearly-log-table-body"></tbody>
+                    </table>
+                </section>
+            </div>
+
+            <!-- ALL TIME VIEW -->
+            <div id="all-time-view" class="view-container hidden">
+                 <section class="mb-8 p-6 bg-gray-800 rounded-2xl shadow-lg">
+                    <h2 class="text-2xl font-semibold text-white mb-4">All Time Summary</h2>
+                    <div id="all-time-summary-grid" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 text-center"></div>
+                </section>
+                 <section class="mb-8 p-6 bg-gray-800 rounded-2xl shadow-lg">
+                    <h2 class="text-2xl font-semibold text-white mb-4">All Time Export</h2>
+                    <button id="export-all-time-btn" class="w-full text-white bg-blue-600 hover:bg-blue-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center">Export Full History (PDF)</button>
+                </section>
+                <section class="p-6 bg-gray-800 rounded-2xl shadow-lg overflow-x-auto">
+                     <h2 class="text-2xl font-semibold text-white mb-4">Complete Log</h2>
+                     <table class="w-full text-sm text-left text-gray-300">
+                         <thead class="text-xs text-gray-400 uppercase bg-gray-700">
+                           <tr id="all-time-table-header"></tr>
+                        </thead>
+                        <tbody id="all-time-log-table-body"></tbody>
+                    </table>
+                </section>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Edit Modal -->
+    <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center p-4 z-50 hidden opacity-0 overflow-y-auto">
+        <div class="bg-gray-800 rounded-2xl shadow-xl w-full max-w-2xl p-6 transform transition-transform duration-300 scale-95 my-auto">
+             <h2 class="text-2xl font-semibold text-white mb-6">Edit Activity</h2>
+             <form id="edit-form">
+                <input type="hidden" id="edit-id">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div><label for="edit-date" class="block mb-2 text-sm">Date</label><input type="date" id="edit-date" class="bg-gray-700 border-gray-600 text-white rounded-lg w-full p-2.5"></div>
+                    <div><label for="edit-start-time" class="block mb-2 text-sm">Start Time</label><input type="time" id="edit-start-time" class="bg-gray-700 border-gray-600 text-white rounded-lg w-full p-2.5"></div>
+                    <div><label for="edit-end-time" class="block mb-2 text-sm">End Time</label><input type="time" id="edit-end-time" class="bg-gray-700 border-gray-600 text-white rounded-lg w-full p-2.5"></div>
+                    <div><label for="edit-activity-type" class="block mb-2 text-sm">Activity Type</label><select id="edit-activity-type" class="bg-gray-700 border-gray-600 text-white rounded-lg w-full p-2.5"><option>Restricted</option><option>Unrestricted</option></select></div>
+                    <div id="edit-unrestricted-wrapper" class="hidden md:col-span-2"><label for="edit-unrestricted-explanation" class="block mb-2 text-sm">Unrestricted Explanation</label><textarea id="edit-unrestricted-explanation" rows="2" class="bg-gray-700 border-gray-600 text-white rounded-lg w-full p-2.5"></textarea></div>
+                    <div><label for="edit-supervision-type" class="block mb-2 text-sm">Supervision Type</label><select id="edit-supervision-type" class="bg-gray-700 border-gray-600 text-white rounded-lg w-full p-2.5"><option>No Supervision</option><option>1:1 Meeting (with Supervisor)</option><option>Group Supervision</option><option>Observation with Client (by Supervisor)</option></select></div>
+                    <div id="edit-supervisor-name-wrapper" class="hidden"><label for="edit-supervisor-select" class="block mb-2 text-sm">Supervisor</label><select id="edit-supervisor-select" class="bg-gray-700 border-gray-600 text-white rounded-lg w-full p-2.5"></select></div>
+                    <div><label for="edit-client-present" class="block mb-2 text-sm">Client Present?</label><select id="edit-client-present" class="bg-gray-700 border-gray-600 text-white rounded-lg w-full p-2.5"><option>No</option><option>Yes</option></select></div>
+                    <div id="edit-client-name-wrapper" class="hidden"><label for="edit-client-name" class="block mb-2 text-sm">Client Name/ID</label><input type="text" id="edit-client-name" class="bg-gray-700 border-gray-600 text-white rounded-lg w-full p-2.5"></div>
+                    <div class="md:col-span-2"><label for="edit-notes" class="block mb-2 text-sm">Additional Notes</label><textarea id="edit-notes" rows="3" class="bg-gray-700 border-gray-600 text-white rounded-lg w-full p-2.5"></textarea></div>
+                </div>
+                <div class="mt-6 flex flex-col sm:flex-row gap-3">
+                    <button type="submit" class="w-full text-white bg-cyan-600 hover:bg-cyan-700 rounded-lg text-sm px-5 py-2.5">Save Changes</button>
+                    <button type="button" id="delete-button" class="w-full text-white bg-red-600 hover:bg-red-700 rounded-lg text-sm px-5 py-2.5">Delete</button>
+                    <button type="button" id="cancel-edit" class="w-full text-gray-300 bg-gray-600 hover:bg-gray-700 rounded-lg text-sm px-5 py-2.5">Cancel</button>
+                </div>
+             </form>
+        </div>
+    </div>
+    
+    <!-- Settings Panel -->
+    <div id="settings-panel" class="fixed top-0 right-0 h-full w-full max-w-md bg-gray-800 shadow-lg p-6 transform translate-x-full z-50 overflow-y-auto settings-panel">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-semibold text-white">Settings</h2>
+            <button id="close-settings-btn" class="text-gray-400 hover:text-white text-3xl">&times;</button>
+        </div>
+        <form id="profile-form">
+            <div class="mb-4">
+                <label for="trainee-name" class="block mb-2 text-sm font-medium text-gray-300">Your Name</label>
+                <input type="text" id="trainee-name" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg w-full p-2.5" placeholder="e.g., Jane Doe">
+            </div>
+            <div class="mb-6">
+                <label for="rbt-number" class="block mb-2 text-sm font-medium text-gray-300">RBT Number / BACB ID</label>
+                <input type="text" id="rbt-number" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg w-full p-2.5" placeholder="e.g., RBT-123456">
+            </div>
+            <button type="submit" class="w-full text-white bg-cyan-600 hover:bg-cyan-700 font-medium rounded-lg text-sm px-5 py-2.5 mb-6">Save Profile</button>
+        </form>
+        <hr class="border-gray-600 my-6">
+        <div>
+            <h3 class="text-xl font-semibold text-white mb-4">Manage Supervisors</h3>
+            <form id="supervisor-form" class="grid grid-cols-1 gap-4 mb-4">
+                 <div>
+                    <label for="supervisor-name-input" class="block mb-2 text-sm font-medium text-gray-300">Supervisor Name</label>
+                    <input type="text" id="supervisor-name-input" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg w-full p-2.5" required>
+                 </div>
+                 <div>
+                    <label for="supervisor-cert-input" class="block mb-2 text-sm font-medium text-gray-300">Certification #</label>
+                    <input type="text" id="supervisor-cert-input" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg w-full p-2.5" required>
+                 </div>
+                 <button type="submit" class="w-full text-white bg-green-600 hover:bg-green-700 font-medium rounded-lg text-sm px-5 py-2.5">Add Supervisor</button>
+            </form>
+            <div id="supervisors-list"></div>
+        </div>
+    </div>
+    
+    <!-- MFVF Supervisor Selection Modal -->
+    <div id="mfvf-modal" class="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center p-4 z-50 hidden opacity-0">
+        <div class="bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm p-6 transform transition-transform duration-300 scale-95">
+            <h2 class="text-xl font-semibold text-white mb-4">Generate M-FVF</h2>
+            <p class="text-gray-300 mb-4 text-sm">Please select the supervisor for whom you are generating this monthly form.</p>
+            <div>
+                <label for="mfvf-supervisor-select" class="block mb-2 text-sm font-medium">Supervisor</label>
+                <select id="mfvf-supervisor-select" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg w-full p-2.5"></select>
+            </div>
+            <div class="mt-6 flex gap-3">
+                <button id="mfvf-generate-confirm" class="w-full text-white bg-purple-600 hover:bg-purple-700 rounded-lg text-sm px-5 py-2.5">Generate</button>
+                <button id="mfvf-cancel" class="w-full text-gray-300 bg-gray-600 hover:bg-gray-700 rounded-lg text-sm px-5 py-2.5">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+
+        // --- Config & State ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyAl4i1nP24SOvAt1ifbGD0SZo2u_l4MnB8",
+            authDomain: "fieldwork-tracker-ae8f7.firebaseapp.com",
+            projectId: "fieldwork-tracker-ae8f7",
+            storageBucket: "fieldwork-tracker-ae8f7.firebasestorage.app",
+            messagingSenderId: "4649951899",
+            appId: "1:4649951899:web:28278ddb278baf67b39c3e"
+        };
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'fieldwork-tracker-default';
+        dayjs.extend(window.dayjs_plugin_customParseFormat);
+        const { jsPDF } = window.jspdf;
+        
+        let db, auth;
+        let userId = null;
+        let allEntries = [];
+        let profileData = { name: '', rbtNumber: '', supervisors: [] };
+
+        // --- DOM Elements ---
+        const loginView = document.getElementById('login-view');
+        const appContainer = document.getElementById('app-container');
+        const loginBtn = document.getElementById('login-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const userDisplay = document.getElementById('user-display');
+        const viewBtns = document.querySelectorAll('.view-btn');
+        const views = document.querySelectorAll('.view-container');
+        const monthSelector = document.getElementById('month-selector');
+        const yearSelector = document.getElementById('year-selector');
+        const monthlySummaryGrid = document.getElementById('monthly-summary-grid');
+        const yearlySummaryGrid = document.getElementById('yearly-summary-grid');
+        const allTimeSummaryGrid = document.getElementById('all-time-summary-grid');
+        const logTableBody = document.getElementById('log-table-body');
+        const yearlyLogTableBody = document.getElementById('yearly-log-table-body');
+        const allTimeLogTableBody = document.getElementById('all-time-log-table-body');
+        const trackerForm = document.getElementById('tracker-form');
+        const activityTypeSelect = document.getElementById('activity-type');
+        const unrestrictedWrapper = document.getElementById('unrestricted-wrapper');
+        const supervisionTypeSelect = document.getElementById('supervision-type');
+        const supervisorNameWrapper = document.getElementById('supervisor-name-wrapper');
+        const supervisorSelect = document.getElementById('supervisor-select');
+        const clientPresentSelect = document.getElementById('client-present');
+        const clientNameWrapper = document.getElementById('client-name-wrapper');
+        const editModal = document.getElementById('edit-modal');
+        const editForm = document.getElementById('edit-form');
+        const cancelEditBtn = document.getElementById('cancel-edit');
+        const deleteBtn = document.getElementById('delete-button');
+        const editActivityTypeSelect = document.getElementById('edit-activity-type');
+        const editUnrestrictedWrapper = document.getElementById('edit-unrestricted-wrapper');
+        const editSupervisionTypeSelect = document.getElementById('edit-supervision-type');
+        const editSupervisorNameWrapper = document.getElementById('edit-supervisor-name-wrapper');
+        const editSupervisorSelect = document.getElementById('edit-supervisor-select');
+        const editClientPresentSelect = document.getElementById('edit-client-present');
+        const editClientNameWrapper = document.getElementById('edit-client-name-wrapper');
+        const settingsPanel = document.getElementById('settings-panel');
+        const settingsBtn = document.getElementById('settings-btn');
+        const closeSettingsBtn = document.getElementById('close-settings-btn');
+        const profileForm = document.getElementById('profile-form');
+        const supervisorForm = document.getElementById('supervisor-form');
+        const supervisorsList = document.getElementById('supervisors-list');
+        const generateMfvfBtn = document.getElementById('generate-mfvf-btn');
+        const exportYearlyBtn = document.getElementById('export-yearly-btn');
+        const exportAllTimeBtn = document.getElementById('export-all-time-btn');
+        const mfvfModal = document.getElementById('mfvf-modal');
+        const mfvfSupervisorSelect = document.getElementById('mfvf-supervisor-select');
+        const mfvfGenerateConfirm = document.getElementById('mfvf-generate-confirm');
+        const mfvfCancel = document.getElementById('mfvf-cancel');
+        const tableHeaders = {
+            monthly: document.getElementById('monthly-table-header'),
+            yearly: document.getElementById('yearly-table-header'),
+            allTime: document.getElementById('all-time-table-header')
+        };
+        const tableHeaderHTML = `
+            <th class="px-4 py-3">Date</th>
+            <th class="px-4 py-3">Hours</th>
+            <th class="px-4 py-3">Type</th>
+            <th class="px-4 py-3">Supervision</th>
+            <th class="px-4 py-3">Supervisor</th>
+            <th class="px-4 py-3">Client</th>
+            <th class="px-4 py-3 hidden md:table-cell">Notes</th>
+            <th class="px-4 py-3 text-right">Actions</th>
+        `;
+        tableHeaders.monthly.innerHTML = tableHeaderHTML;
+        tableHeaders.yearly.innerHTML = tableHeaderHTML;
+        tableHeaders.allTime.innerHTML = tableHeaderHTML;
+
+        // --- Authentication ---
+        const handleGoogleLogin = async () => {
+            const provider = new GoogleAuthProvider();
+            try {
+                await signInWithPopup(auth, provider);
+            } catch (error) {
+                console.error("Google sign-in error", error);
+            }
+        };
+
+        const handleLogout = async () => {
+            try {
+                await signOut(auth);
+            } catch (error) {
+                console.error("Sign-out error", error);
+            }
+        };
+
+        // --- Core App Logic ---
+        const switchView = (viewId) => {
+            views.forEach(view => view.classList.add('hidden'));
+            document.getElementById(`${viewId}-view`).classList.remove('hidden');
+
+            viewBtns.forEach(btn => {
+                btn.classList.toggle('view-btn-active', btn.dataset.view === viewId);
+                btn.classList.toggle('view-btn', btn.dataset.view !== viewId);
+            });
+            
+            switch(viewId) {
+                case 'monthly': updateMonthlyView(); break;
+                case 'yearly': updateYearlyView(); break;
+                case 'all-time': updateAllTimeView(); break;
+            }
+        };
+        
+        const calculateHours = (start, end) => {
+            if (!start || !end) return 0;
+            const startTime = dayjs(`1970-01-01T${start}`);
+            let endTime = dayjs(`1970-01-01T${end}`);
+            if (endTime.isBefore(startTime)) endTime = endTime.add(1, 'day');
+            return endTime.diff(startTime, 'hour', true);
+        };
+        
+        const calculateSummaryData = (entries) => {
+            let total = 0, supervised = 0, restricted = 0, unrestricted = 0;
+            entries.forEach(entry => {
+                const hours = calculateHours(entry.startTime, entry.endTime);
+                total += hours;
+                if (entry.activityType === 'Restricted') restricted += hours;
+                else unrestricted += hours;
+                if (entry.supervisionType !== 'No Supervision') supervised += hours;
+            });
+            const percentage = total > 0 ? (supervised / total) * 100 : 0;
+            return { restricted, unrestricted, total, supervised, percentage };
+        };
+
+        const toggleFieldVisibility = (select, wrapper, conditionValue) => {
+            const conditionMet = Array.isArray(conditionValue) ? conditionValue.includes(select.value) : select.value === conditionValue;
+            if (conditionMet) wrapper.classList.remove('hidden');
+            else {
+                wrapper.classList.add('hidden');
+                const input = wrapper.querySelector('input, textarea, select');
+                if (input) input.value = '';
+            }
+        };
+
+        // --- Rendering ---
+        const createSummaryHTML = (data) => `
+            <div class="p-4 bg-gray-700 rounded-lg"><h3 class="text-sm font-medium text-gray-400">Restricted Hours</h3><p class="text-2xl font-bold text-yellow-400">${data.restricted.toFixed(2)}</p></div>
+            <div class="p-4 bg-gray-700 rounded-lg"><h3 class="text-sm font-medium text-gray-400">Unrestricted Hours</h3><p class="text-2xl font-bold text-green-400">${data.unrestricted.toFixed(2)}</p></div>
+            <div class="p-4 bg-gray-700 rounded-lg"><h3 class="text-sm font-medium text-gray-400">Total Hours</h3><p class="text-2xl font-bold text-white">${data.total.toFixed(2)}</p></div>
+            <div class="p-4 bg-gray-700 rounded-lg"><h3 class="text-sm font-medium text-gray-400">Supervised Hours</h3><p class="text-2xl font-bold text-cyan-400">${data.supervised.toFixed(2)}</p></div>
+            <div class="p-4 bg-gray-700 rounded-lg"><h3 class="text-sm font-medium text-gray-200">Supervision %</h3><p class="text-2xl font-bold text-black rounded-md px-2 ${data.percentage < 8 ? 'percentage-red' : data.percentage < 10 ? 'percentage-yellow' : 'percentage-green'}">${data.percentage.toFixed(2)}%</p></div>
+        `;
+
+        const renderTable = (entries, tableBodyElement) => {
+            tableBodyElement.innerHTML = '';
+            if (entries.length === 0) {
+                 tableBodyElement.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-gray-500">No activities logged for this period.</td></tr>`;
+                 return;
+            }
+            const sortedEntries = [...entries].sort((a,b) => new Date(b.date) - new Date(a.date));
+            sortedEntries.forEach(entry => {
+                const totalHours = calculateHours(entry.startTime, entry.endTime);
+                const row = document.createElement('tr');
+                row.className = 'bg-gray-800 border-b border-gray-700 hover:bg-gray-600';
+                const notesDisplay = entry.unrestrictedExplanation || entry.notes || '';
+                row.innerHTML = `
+                    <td class="px-4 py-3">${dayjs(entry.date).format('MM/DD/YYYY')}</td>
+                    <td class="px-4 py-3">${totalHours.toFixed(2)}</td>
+                    <td class="px-4 py-3"><span class="px-2 py-1 font-semibold leading-tight ${entry.activityType === 'Unrestricted' ? 'text-green-200 bg-green-800' : 'text-yellow-200 bg-yellow-800'} rounded-full text-xs">${entry.activityType}</span></td>
+                    <td class="px-4 py-3">${entry.supervisionType}</td>
+                    <td class="px-4 py-3">${entry.supervisorName || 'N/A'}</td>
+                    <td class="px-4 py-3">${entry.clientName || 'N/A'}</td>
+                    <td class="px-4 py-3 text-gray-400 hidden md:table-cell max-w-xs truncate" title="${notesDisplay}">${notesDisplay}</td>
+                    <td class="px-4 py-3 text-right">
+                        <button class="edit-btn font-medium text-cyan-400 hover:underline mr-3" data-id="${entry.id}">Edit</button>
+                        <button class="copy-btn font-medium text-amber-400 hover:underline" data-id="${entry.id}">Copy</button>
+                    </td>
+                `;
+                tableBodyElement.appendChild(row);
+            });
+        };
+        
+        const updateMonthlyView = () => {
+            const selectedMonth = monthSelector.value;
+            if (!selectedMonth) return;
+            const [year, month] = selectedMonth.split('-');
+            const monthlyEntries = allEntries.filter(e => {
+                const d = dayjs(e.date);
+                return d.year() == year && (d.month() + 1) == month;
+            });
+            monthlySummaryGrid.innerHTML = createSummaryHTML(calculateSummaryData(monthlyEntries));
+            renderTable(monthlyEntries, logTableBody);
+        };
+
+        const updateYearlyView = () => {
+            const selectedYear = yearSelector.value;
+            if (!selectedYear) return;
+            const yearlyEntries = allEntries.filter(e => dayjs(e.date).year() == selectedYear);
+            yearlySummaryGrid.innerHTML = createSummaryHTML(calculateSummaryData(yearlyEntries));
+            renderTable(yearlyEntries, yearlyLogTableBody);
+        };
+
+        const updateAllTimeView = () => {
+            allTimeSummaryGrid.innerHTML = createSummaryHTML(calculateSummaryData(allEntries));
+            renderTable(allEntries, allTimeLogTableBody);
+        };
+
+        // --- Event Handlers & Form Logic ---
+        const handleAddEntry = async (e) => {
+            e.preventDefault();
+            const newEntry = {
+                date: trackerForm.elements.date.value,
+                startTime: trackerForm.elements['start-time'].value,
+                endTime: trackerForm.elements['end-time'].value,
+                activityType: trackerForm.elements['activity-type'].value,
+                unrestrictedExplanation: trackerForm.elements['unrestricted-explanation'].value,
+                supervisionType: trackerForm.elements['supervision-type'].value,
+                supervisorName: trackerForm.elements['supervisor-select'].value,
+                clientPresent: trackerForm.elements['client-present'].value,
+                clientName: trackerForm.elements['client-name'].value,
+                notes: trackerForm.elements.notes.value,
+                userId
+            };
+            try {
+                const entriesRef = collection(db, `artifacts/${appId}/users/${userId}/fieldwork_entries`);
+                await addDoc(entriesRef, newEntry);
+                trackerForm.reset();
+                toggleFieldVisibility(activityTypeSelect, unrestrictedWrapper, 'Unrestricted');
+                toggleFieldVisibility(supervisionTypeSelect, supervisorNameWrapper, ['1:1 Meeting (with Supervisor)', 'Group Supervision', 'Observation with Client (by Supervisor)']);
+                toggleFieldVisibility(clientPresentSelect, clientNameWrapper, 'Yes');
+                trackerForm.elements.date.value = dayjs().format('YYYY-MM-DD');
+
+            } catch (error) { console.error("Error adding document:", error); }
+        };
+
+        const handleTableClick = (e) => {
+            const entryId = e.target.dataset.id;
+            if (!entryId) return;
+            const entry = allEntries.find(item => item.id === entryId);
+            if (!entry) return;
+            if (e.target.classList.contains('edit-btn')) openEditModal(entry);
+            else if (e.target.classList.contains('copy-btn')) copyEntryToForm(entry);
+        };
+
+        const copyEntryToForm = (entry) => {
+            trackerForm.elements.date.value = entry.date;
+            trackerForm.elements['start-time'].value = entry.startTime;
+            trackerForm.elements['end-time'].value = entry.endTime;
+            trackerForm.elements['activity-type'].value = entry.activityType;
+            trackerForm.elements['unrestricted-explanation'].value = entry.unrestrictedExplanation || '';
+            trackerForm.elements['supervision-type'].value = entry.supervisionType;
+            trackerForm.elements['supervisor-select'].value = entry.supervisorName || '';
+            trackerForm.elements['client-present'].value = entry.clientPresent;
+            trackerForm.elements['client-name'].value = entry.clientName || '';
+            trackerForm.elements.notes.value = entry.notes || '';
+            
+            toggleFieldVisibility(activityTypeSelect, unrestrictedWrapper, 'Unrestricted');
+            toggleFieldVisibility(supervisionTypeSelect, supervisorNameWrapper, ['1:1 Meeting (with Supervisor)', 'Group Supervision', 'Observation with Client (by Supervisor)']);
+            toggleFieldVisibility(clientPresentSelect, clientNameWrapper, 'Yes');
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+        
+        // --- Modals & Settings ---
+        const openEditModal = (entry) => {
+            editForm.elements['edit-id'].value = entry.id;
+            editForm.elements['edit-date'].value = entry.date;
+            editForm.elements['edit-start-time'].value = entry.startTime;
+            editForm.elements['edit-end-time'].value = entry.endTime;
+            editForm.elements['edit-activity-type'].value = entry.activityType;
+            editForm.elements['edit-unrestricted-explanation'].value = entry.unrestrictedExplanation || '';
+            editForm.elements['edit-supervision-type'].value = entry.supervisionType;
+            editForm.elements['edit-supervisor-select'].value = entry.supervisorName || '';
+            editForm.elements['edit-client-present'].value = entry.clientPresent;
+            editForm.elements['edit-client-name'].value = entry.clientName || '';
+            editForm.elements['edit-notes'].value = entry.notes || '';
+            
+            toggleFieldVisibility(editActivityTypeSelect, editUnrestrictedWrapper, 'Unrestricted');
+            toggleFieldVisibility(editSupervisionTypeSelect, editSupervisorNameWrapper, ['1:1 Meeting (with Supervisor)', 'Group Supervision', 'Observation with Client (by Supervisor)']);
+            toggleFieldVisibility(editClientPresentSelect, editClientNameWrapper, 'Yes');
+
+            editModal.classList.remove('hidden');
+            setTimeout(() => {
+                editModal.classList.remove('opacity-0');
+                editModal.querySelector('div').classList.remove('scale-95');
+            }, 10);
+        };
+        
+        const closeEditModal = () => {
+             editModal.classList.add('opacity-0');
+             editModal.querySelector('div').classList.add('scale-95');
+             setTimeout(() => editModal.classList.add('hidden'), 300);
+        };
+
+        const handleUpdateEntry = async (e) => {
+            e.preventDefault();
+            const entryId = editForm.elements['edit-id'].value;
+            const updatedEntry = {
+                date: editForm.elements['edit-date'].value,
+                startTime: editForm.elements['edit-start-time'].value,
+                endTime: editForm.elements['edit-end-time'].value,
+                activityType: editForm.elements['edit-activity-type'].value,
+                unrestrictedExplanation: editForm.elements['edit-unrestricted-explanation'].value,
+                supervisionType: editForm.elements['edit-supervision-type'].value,
+                supervisorName: editForm.elements['edit-supervisor-select'].value,
+                clientPresent: editForm.elements['edit-client-present'].value,
+                clientName: editForm.elements['edit-client-name'].value,
+                notes: editForm.elements['edit-notes'].value,
+            };
+            try {
+                const docRef = doc(db, `artifacts/${appId}/users/${userId}/fieldwork_entries`, entryId);
+                await updateDoc(docRef, updatedEntry);
+                closeEditModal();
+            } catch (error) { console.error("Error updating doc:", error); }
+        };
+
+        const handleDeleteEntry = async () => {
+             const entryId = editForm.elements['edit-id'].value;
+             if(!confirm("Are you sure you want to permanently delete this entry?")) return;
+             try {
+                await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/fieldwork_entries`, entryId));
+                closeEditModal();
+             } catch(error) { console.error("Error deleting doc:", error); }
+        };
+        
+        const openSettings = () => settingsPanel.classList.remove('translate-x-full');
+        const closeSettings = () => settingsPanel.classList.add('translate-x-full');
+        
+        const saveProfile = async (e) => {
+            e.preventDefault();
+            profileData.name = document.getElementById('trainee-name').value;
+            profileData.rbtNumber = document.getElementById('rbt-number').value;
+            const profileRef = doc(db, `artifacts/${appId}/users/${userId}/profile/data`);
+            await setDoc(profileRef, { name: profileData.name, rbtNumber: profileData.rbtNumber }, { merge: true });
+        };
+
+        const renderSupervisors = () => {
+            supervisorsList.innerHTML = '';
+            const supervisorDropdowns = [supervisorSelect, editSupervisorSelect, mfvfSupervisorSelect];
+            supervisorDropdowns.forEach(sel => sel.innerHTML = '<option value="">Select a supervisor...</option>');
+            
+            if (profileData.supervisors) {
+                profileData.supervisors.forEach(s => {
+                    const div = document.createElement('div');
+                    div.className = 'flex justify-between items-center bg-gray-700 p-2 rounded-lg mb-2';
+                    div.innerHTML = `<span>${s.name} (${s.cert})</span><button class="remove-supervisor-btn text-red-500 font-bold" data-name="${s.name}">&times;</button>`;
+                    supervisorsList.appendChild(div);
+
+                    supervisorDropdowns.forEach(sel => sel.add(new Option(`${s.name}`, s.name)));
+                });
+            }
+        };
+
+        const addSupervisor = async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('supervisor-name-input').value;
+            const cert = document.getElementById('supervisor-cert-input').value;
+            if (name && cert && !(profileData.supervisors || []).find(s => s.name === name)) {
+                if (!profileData.supervisors) profileData.supervisors = [];
+                profileData.supervisors.push({ name, cert });
+                const profileRef = doc(db, `artifacts/${appId}/users/${userId}/profile/data`);
+                await setDoc(profileRef, { supervisors: profileData.supervisors }, { merge: true });
+                supervisorForm.reset();
+            }
+        };
+        
+        const removeSupervisor = async (name) => {
+            profileData.supervisors = profileData.supervisors.filter(s => s.name !== name);
+            const profileRef = doc(db, `artifacts/${appId}/users/${userId}/profile/data`);
+            await setDoc(profileRef, { supervisors: profileData.supervisors }, { merge: true });
+        };
+        
+        // --- PDF Generation ---
+        const generatePdf = (title, entries) => {
+            const doc = new jsPDF();
+            const summary = calculateSummaryData(entries);
+
+            doc.setFontSize(18);
+            doc.text(title, 14, 22);
+            doc.setFontSize(11);
+            doc.text(`Trainee: ${profileData.name || 'N/A'}`, 14, 32);
+            doc.text(`Summary: Total: ${summary.total.toFixed(2)}hrs | Supervised: ${summary.supervised.toFixed(2)}hrs (${summary.percentage.toFixed(2)}%)`, 14, 38);
+
+            const tableColumn = ["Date", "Hours", "Type", "Supervision", "Supervisor", "Client", "Notes"];
+            const tableRows = [];
+            entries.forEach(entry => {
+                tableRows.push([
+                    dayjs(entry.date).format('MM/DD/YYYY'),
+                    calculateHours(entry.startTime, entry.endTime).toFixed(2),
+                    entry.activityType,
+                    entry.supervisionType,
+                    entry.supervisorName || 'N/A',
+                    entry.clientName || 'N/A',
+                    entry.unrestrictedExplanation || entry.notes || ''
+                ]);
+            });
+            doc.autoTable(tableColumn, tableRows, { startY: 50 });
+            doc.save(`${title.replace(/ /g, '_')}.pdf`);
+        }
+        
+        const generateMfvfPdf = () => {
+            if (!profileData.supervisors || profileData.supervisors.length === 0) {
+                 alert('Please add at least one supervisor in Settings before generating an M-FVF.');
+                 return;
+             }
+             mfvfModal.classList.remove('hidden');
+             setTimeout(() => mfvfModal.classList.remove('opacity-0'), 10);
+        };
+
+        const confirmGenerateMfvf = () => {
+            const selectedSupervisorName = mfvfSupervisorSelect.value;
+            const supervisor = profileData.supervisors.find(s => s.name === selectedSupervisorName);
+            if (!supervisor) { alert('Invalid supervisor selected.'); return; }
+            
+            const selectedMonth = monthSelector.value;
+            const [year, month] = selectedMonth.split('-');
+            const monthlyEntries = allEntries.filter(e => {
+                const d = dayjs(e.date);
+                return d.year() == year && (d.month() + 1) == month;
+            });
+            
+            const summary = calculateSummaryData(monthlyEntries);
+            const independentHours = summary.total - summary.supervised;
+            
+            const doc = new jsPDF();
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(16);
+            doc.text('Monthly Fieldwork Verification Form', 105, 22, { align: 'center' });
+            
+            doc.autoTable({
+                startY: 30,
+                theme: 'plain',
+                body: [
+                    [{content: `Trainee Name: ${profileData.name || ''}`, styles: {halign: 'left'}}, {content: `BACB ID #: ${profileData.rbtNumber || ''}`, styles: {halign: 'left'}}],
+                    [{content: `Month/Year: ${dayjs(selectedMonth).format('MMMM YYYY')}`, styles: {halign: 'left'}}, ''],
+                    [{content: `Supervisor Name: ${supervisor.name}`, styles: {halign: 'left'}}, {content: `Certification #: ${supervisor.cert}`, styles: {halign: 'left'}}]
+                ]
+            });
+
+            doc.autoTable({
+                startY: doc.lastAutoTable.finalY + 10,
+                head: [['Fieldwork Hours (this month only)', '']],
+                body: [
+                    ['A. Independent Hours (supervisor not present):', independentHours.toFixed(2)],
+                    ['B. Supervised Hours (supervisor present):', summary.supervised.toFixed(2)],
+                    [{content: 'Total Fieldwork Hours', styles: {fontStyle: 'bold'}}, {content: summary.total.toFixed(2), styles: {fontStyle: 'bold'}}],
+                    [{content: 'Percent of Hours Supervised', styles: {fontStyle: 'bold'}}, {content: `${summary.percentage.toFixed(2)}%`, styles: {fontStyle: 'bold'}}]
+                ],
+                 columnStyles: { 1: { halign: 'right' } },
+            });
+            
+            const finalY = doc.lastAutoTable.finalY;
+            doc.setFontSize(10);
+            doc.text('By signing below, we hereby attest that the information on this form is true and correct.', 14, finalY + 15);
+            doc.text('_________________________', 14, finalY + 40);
+            doc.text('Trainee Signature & Date', 14, finalY + 45);
+            doc.text('_________________________', 120, finalY + 40);
+            doc.text('Supervisor Signature & Date', 120, finalY + 45);
+            
+            doc.save(`M-FVF_${profileData.name}_${dayjs(selectedMonth).format('MMM_YYYY')}_${supervisor.name}.pdf`);
+            mfvfModal.classList.add('opacity-0');
+            setTimeout(() => mfvfModal.classList.add('hidden'), 300);
+        };
+        
+        
+        // --- Initialization ---
+        window.onload = () => {
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+            
+            // Setup static event listeners
+            loginBtn.addEventListener('click', handleGoogleLogin);
+            logoutBtn.addEventListener('click', handleLogout);
+            viewBtns.forEach(btn => btn.addEventListener('click', (e) => switchView(e.target.dataset.view)));
+            monthSelector.addEventListener('change', updateMonthlyView);
+            yearSelector.addEventListener('change', updateYearlyView);
+            trackerForm.addEventListener('submit', handleAddEntry);
+            logTableBody.addEventListener('click', handleTableClick);
+            yearlyLogTableBody.addEventListener('click', handleTableClick);
+            allTimeLogTableBody.addEventListener('click', handleTableClick);
+            editForm.addEventListener('submit', handleUpdateEntry);
+            deleteBtn.addEventListener('click', handleDeleteEntry);
+            cancelEditBtn.addEventListener('click', closeEditModal);
+            settingsBtn.addEventListener('click', openSettings);
+            closeSettingsBtn.addEventListener('click', closeSettings);
+            profileForm.addEventListener('submit', saveProfile);
+            supervisorForm.addEventListener('submit', addSupervisor);
+            supervisorsList.addEventListener('click', (e) => {
+                if (e.target.classList.contains('remove-supervisor-btn')) removeSupervisor(e.target.dataset.name);
+            });
+            activityTypeSelect.addEventListener('change', () => toggleFieldVisibility(activityTypeSelect, unrestrictedWrapper, 'Unrestricted'));
+            supervisionTypeSelect.addEventListener('change', () => toggleFieldVisibility(supervisionTypeSelect, supervisorNameWrapper, ['1:1 Meeting (with Supervisor)', 'Group Supervision', 'Observation with Client (by Supervisor)']));
+            clientPresentSelect.addEventListener('change', () => toggleFieldVisibility(clientPresentSelect, clientNameWrapper, 'Yes'));
+            editActivityTypeSelect.addEventListener('change', () => toggleFieldVisibility(editActivityTypeSelect, editUnrestrictedWrapper, 'Unrestricted'));
+            editSupervisionTypeSelect.addEventListener('change', () => toggleFieldVisibility(editSupervisionTypeSelect, editSupervisorNameWrapper, ['1:1 Meeting (with Supervisor)', 'Group Supervision', 'Observation with Client (by Supervisor)']));
+            editClientPresentSelect.addEventListener('change', () => toggleFieldVisibility(editClientPresentSelect, editClientNameWrapper, 'Yes'));
+            generateMfvfBtn.addEventListener('click', generateMfvfPdf);
+            mfvfCancel.addEventListener('click', () => { mfvfModal.classList.add('opacity-0'); setTimeout(() => mfvfModal.classList.add('hidden'), 300) });
+            mfvfGenerateConfirm.addEventListener('click', confirmGenerateMfvf);
+            exportYearlyBtn.addEventListener('click', () => {
+                const year = yearSelector.value;
+                const entries = allEntries.filter(e => dayjs(e.date).year() == year);
+                generatePdf(`Yearly Report ${year}`, entries);
+            });
+            exportAllTimeBtn.addEventListener('click', () => generatePdf('Full Fieldwork History', allEntries));
+            
+            onAuthStateChanged(auth, user => {
+                if (user) {
+                    userId = user.uid;
+                    loginView.classList.add('hidden');
+                    appContainer.classList.remove('hidden');
+                    userDisplay.textContent = user.displayName || user.email;
+
+                    const profileRef = doc(db, `artifacts/${appId}/users/${userId}/profile/data`);
+                    onSnapshot(profileRef, (doc) => {
+                        if (doc.exists()) {
+                            profileData = { supervisors: [], ...doc.data() };
+                            document.getElementById('trainee-name').value = profileData.name || user.displayName || '';
+                            document.getElementById('rbt-number').value = profileData.rbtNumber || '';
+                        } else {
+                            document.getElementById('trainee-name').value = user.displayName || '';
+                        }
+                         renderSupervisors();
+                    });
+
+                    const entriesRef = collection(db, `artifacts/${appId}/users/${userId}/fieldwork_entries`);
+                    onSnapshot(entriesRef, snapshot => {
+                        allEntries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        const activeViewBtn = document.querySelector('.view-btn-active');
+                        const activeViewId = activeViewBtn ? activeViewBtn.dataset.view : 'monthly';
+                        switchView(activeViewId);
+                    });
+                     switchView('monthly');
+                } else {
+                    userId = null;
+                    appContainer.classList.add('hidden');
+                    loginView.classList.remove('hidden');
+                    allEntries = [];
+                    updateMonthlyView();
+                    updateYearlyView();
+                    updateAllTimeView();
+                }
+            });
+
+            monthSelector.value = dayjs().format('YYYY-MM');
+            yearSelector.value = dayjs().year();
+            trackerForm.elements.date.value = dayjs().format('YYYY-MM-DD');
+            switchView('monthly');
+        };
+    </script>
+</body>
+</html>
+
