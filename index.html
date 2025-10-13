@@ -69,7 +69,7 @@
                             <input type="month" id="month-selector" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg p-2">
                         </div>
                     </div>
-                    <div id="monthly-summary-grid" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 text-center"></div>
+                    <div id="monthly-summary-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-center"></div>
                 </section>
                 <section class="mb-8 p-6 bg-gray-800 rounded-2xl shadow-lg">
                     <h2 class="text-2xl font-semibold text-white mb-4">Log New Activity</h2>
@@ -159,7 +159,7 @@
                             <input type="number" id="year-selector" class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg p-2 w-28">
                         </div>
                     </div>
-                    <div id="yearly-summary-grid" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 text-center"></div>
+                    <div id="yearly-summary-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-center"></div>
                 </section>
                  <section class="mb-8 p-6 bg-gray-800 rounded-2xl shadow-lg">
                     <h2 class="text-2xl font-semibold text-white mb-4">Yearly Export</h2>
@@ -180,7 +180,7 @@
             <div id="all-time-view" class="view-container hidden">
                  <section class="mb-8 p-6 bg-gray-800 rounded-2xl shadow-lg">
                     <h2 class="text-2xl font-semibold text-white mb-4">All Time Summary</h2>
-                    <div id="all-time-summary-grid" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 text-center"></div>
+                    <div id="all-time-summary-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-center"></div>
                 </section>
                  <section class="mb-8 p-6 bg-gray-800 rounded-2xl shadow-lg">
                     <h2 class="text-2xl font-semibold text-white mb-4">All Time Export</h2>
@@ -419,16 +419,19 @@
         };
         
         const calculateSummaryData = (entries) => {
-            let total = 0, supervised = 0, restricted = 0, unrestricted = 0;
+            let total = 0, supervised = 0, restricted = 0, unrestricted = 0, contacts = 0;
             entries.forEach(entry => {
                 const hours = calculateHours(entry.startTime, entry.endTime);
                 total += hours;
                 if (entry.activityType === 'Restricted') restricted += hours;
                 else unrestricted += hours;
-                if (entry.supervisionType !== 'No Supervision') supervised += hours;
+                if (entry.supervisionType !== 'No Supervision') {
+                    supervised += hours;
+                    contacts++;
+                }
             });
             const percentage = total > 0 ? (supervised / total) * 100 : 0;
-            return { restricted, unrestricted, total, supervised, percentage };
+            return { restricted, unrestricted, total, supervised, percentage, contacts };
         };
 
         const toggleFieldVisibility = (select, wrapper, conditionValue) => {
@@ -447,6 +450,7 @@
             <div class="p-4 bg-gray-700 rounded-lg"><h3 class="text-sm font-medium text-gray-400">Unrestricted Hours</h3><p class="text-2xl font-bold text-green-400">${data.unrestricted.toFixed(2)}</p></div>
             <div class="p-4 bg-gray-700 rounded-lg"><h3 class="text-sm font-medium text-gray-400">Total Hours</h3><p class="text-2xl font-bold text-white">${data.total.toFixed(2)}</p></div>
             <div class="p-4 bg-gray-700 rounded-lg"><h3 class="text-sm font-medium text-gray-400">Supervised Hours</h3><p class="text-2xl font-bold text-cyan-400">${data.supervised.toFixed(2)}</p></div>
+            <div class="p-4 bg-gray-700 rounded-lg"><h3 class="text-sm font-medium text-gray-400">Supervisor Contacts</h3><p class="text-2xl font-bold text-white">${data.contacts}</p></div>
             <div class="p-4 bg-gray-700 rounded-lg"><h3 class="text-sm font-medium text-gray-200">Supervision %</h3><p class="text-2xl font-bold text-black rounded-md px-2 ${data.percentage < 8 ? 'percentage-red' : data.percentage < 10 ? 'percentage-yellow' : 'percentage-green'}">${data.percentage.toFixed(2)}%</p></div>
         `;
 
