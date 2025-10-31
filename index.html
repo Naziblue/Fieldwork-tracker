@@ -643,24 +643,6 @@
                 editUnrestrictedTypeSelect.value = '';
             }
         };
-        
-        const toggleUnrestrictedActivityVisibility = () => {
-            if (activityTypeSelect.value === 'Unrestricted' && supervisionTypeSelect.value === 'No Supervision') {
-                unrestrictedTypeWrapper.classList.remove('hidden');
-            } else {
-                unrestrictedTypeWrapper.classList.add('hidden');
-                unrestrictedTypeSelect.value = '';
-            }
-        };
-
-        const toggleEditUnrestrictedActivityVisibility = () => {
-             if (editActivityTypeSelect.value === 'Unrestricted' && editSupervisionTypeSelect.value === 'No Supervision') {
-                editUnrestrictedTypeWrapper.classList.remove('hidden');
-            } else {
-                editUnrestrictedTypeWrapper.classList.add('hidden');
-                editUnrestrictedTypeSelect.value = '';
-            }
-        };
 
         // --- Rendering ---
         const createSummaryHTML = (data) => `
