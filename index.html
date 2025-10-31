@@ -22,6 +22,7 @@
                 text: '#E4E4E4',       // light gray
                 accent1: '#A8DADC',     // light cyan
                 accent2: '#FFC1CC',     // soft pink
+                'pastel-blue': '#ADD8E6', // Added new pastel blue
                 button: '#B39CD0',     // lavender
                 'button-hover': '#a188c0' // darker lavender
               }
@@ -35,8 +36,18 @@
         .percentage-yellow { background-color: #f59e0b !important; }
         .percentage-green { background-color: #22c55e !important; }
         .modal, .settings-panel { transition: opacity 0.3s ease, transform 0.3s ease-in-out; }
-        .view-btn-active { background-color: #B39CD0; color: white; } /* Use button color */
-        .view-btn { background-color: #4b5563; color: #d1d5db; }
+        
+        /* Updated nav button styles */
+        .view-btn {
+            background-color: transparent;
+            color: #B39CD0;
+            border: 1px solid #B39CD0;
+            transition: all 0.2s ease;
+        }
+        .view-btn:hover, .view-btn-active { 
+            background-color: #B39CD0; 
+            color: white; 
+        }
 
         /* Overrides for new theme */
         .bg-gray-800 { background-color: #4B5563; } /* gray-600 */
@@ -48,6 +59,19 @@
         .bg-gray-600 { background-color: #4B5563; }
         .hover\:bg-gray-600:hover { background-color: #525c6b; }
         .hover\:bg-gray-700:hover { background-color: #374151; }
+
+        /* New fashionable styles */
+        .section-header {
+            color: #A8DADC; /* accent1 */
+            border-bottom: 1px solid #525c6b; /* gray-700 */
+            padding-bottom: 0.5rem; /* pb-2 */
+        }
+        .summary-box {
+            background-color: transparent;
+            border: 1px solid #525c6b; /* gray-700 */
+            border-radius: 0.75rem; /* rounded-lg */
+            padding: 1rem; /* p-4 */
+        }
         
     </style>
 </head>
@@ -56,7 +80,7 @@
     <!-- Login View -->
     <div id="login-view" class="flex flex-col items-center justify-center min-h-screen p-4">
         <div class="text-center max-w-md">
-            <h1 class="text-4xl font-bold text-accent1 mb-2">Fieldwork Tracking</h1>
+            <h1 class="text-4xl font-bold text-pastel-blue mb-2">Fieldwork Tracking</h1>
             <p class="text-gray-300 mb-8">Please sign in to access your fieldwork log.</p>
             <div class="flex flex-col gap-4">
                 <button id="login-btn" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center mx-auto w-full">
@@ -76,7 +100,7 @@
     <!-- Main App Container (hidden by default) -->
     <div id="app-container" class="container mx-auto p-4 md:p-8 hidden">
         <header class="text-center mb-6 relative">
-            <h1 class="text-3xl md:text-4xl font-bold text-accent1">Fieldwork Tracking</h1>
+            <h1 class="text-3xl md:text-4xl font-bold text-pastel-blue">Fieldwork Tracking</h1>
             <div class="absolute top-0 right-0 flex items-center gap-4">
                 <div id="user-display" class="text-sm text-gray-300"></div>
                 <button id="logout-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 rounded-lg" title="Logout">
@@ -101,16 +125,16 @@
             <div id="monthly-view" class="view-container hidden">
                 <section class="mb-8 p-6 bg-gray-600 rounded-2xl shadow-lg">
                     <div class="flex flex-wrap justify-between items-center mb-4">
-                        <h2 class="text-2xl font-semibold text-text">Monthly Summary</h2>
+                        <h2 class="text-2xl font-semibold section-header mb-4">Monthly Summary</h2>
                         <div class="flex items-center gap-2 mt-4 sm:mt-0">
                             <label for="month-selector" class="text-sm font-medium text-gray-300">Select Month:</label>
                             <input type="month" id="month-selector" class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg p-2">
                         </div>
                     </div>
-                    <div id="monthly-summary-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-center"></div>
+                    <div id="monthly-summary-grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 text-center"></div>
                 </section>
                 <section class="mb-8 p-6 bg-gray-600 rounded-2xl shadow-lg">
-                    <h2 class="text-2xl font-semibold text-text mb-4">Log New Activity</h2>
+                    <h2 class="text-2xl font-semibold section-header mb-4">Log New Activity</h2>
                     <form id="tracker-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
                         <div>
                             <label for="date" class="block mb-2 text-sm font-medium text-gray-300">Date</label>
@@ -196,14 +220,14 @@
                     </form>
                 </section>
                 <section class="mb-8 p-6 bg-gray-600 rounded-2xl shadow-lg">
-                     <h2 class="text-2xl font-semibold text-text mb-4">Monthly Exports</h2>
+                     <h2 class="text-2xl font-semibold section-header mb-4">Monthly Exports</h2>
                      <div class="flex flex-col md:flex-row gap-4">
                          <button id="generate-mfvf-btn" class="flex-1 w-full text-white bg-button hover:bg-button-hover font-medium rounded-lg text-sm px-5 py-2.5 text-center">Generate M-FVF (PDF)</button>
                          <button id="export-monthly-csv-btn" class="flex-1 w-full text-white bg-purple-600 hover:bg-purple-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center">Export to Excel (.csv)</button>
                      </div>
                 </section>
                 <section class="p-6 bg-gray-600 rounded-2xl shadow-lg overflow-x-auto">
-                     <h2 class="text-2xl font-semibold text-text mb-4">Monthly Log</h2>
+                     <h2 class="text-2xl font-semibold section-header mb-4">Monthly Log</h2>
                      <table class="w-full text-sm text-left text-gray-300">
                         <thead class="text-xs text-gray-400 uppercase bg-gray-700">
                            <tr id="monthly-table-header"></tr>
@@ -217,23 +241,23 @@
             <div id="yearly-view" class="view-container hidden">
                 <section class="mb-8 p-6 bg-gray-600 rounded-2xl shadow-lg">
                     <div class="flex flex-wrap justify-between items-center mb-4">
-                        <h2 class="text-2xl font-semibold text-text">Yearly Summary</h2>
+                        <h2 class="text-2xl font-semibold section-header mb-4">Yearly Summary</h2>
                         <div class="flex items-center gap-2 mt-4 sm:mt-0">
                             <label for="year-selector" class="text-sm font-medium text-gray-300">Select Year:</label>
                             <input type="number" id="year-selector" class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg p-2 w-28">
                         </div>
                     </div>
-                    <div id="yearly-summary-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-center"></div>
+                    <div id="yearly-summary-grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 text-center"></div>
                 </section>
                  <section class="mb-8 p-6 bg-gray-600 rounded-2xl shadow-lg">
-                    <h2 class="text-2xl font-semibold text-text mb-4">Yearly Export</h2>
+                    <h2 class="text-2xl font-semibold section-header mb-4">Yearly Export</h2>
                     <div class="flex flex-col md:flex-row gap-4">
                         <button id="export-yearly-pdf-btn" class="flex-1 w-full text-white bg-teal-600 hover:bg-teal-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center">Export Yearly Report (PDF)</button>
                         <button id="export-yearly-csv-btn" class="flex-1 w-full text-white bg-purple-600 hover:bg-purple-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center">Export to Excel (.csv)</button>
                     </div>
                 </section>
                 <section class="p-6 bg-gray-600 rounded-2xl shadow-lg overflow-x-auto">
-                     <h2 class="text-2xl font-semibold text-text mb-4">Yearly Log</h2>
+                     <h2 class="text-2xl font-semibold section-header mb-4">Yearly Log</h2>
                      <table class="w-full text-sm text-left text-gray-300">
                          <thead class="text-xs text-gray-400 uppercase bg-gray-700">
                            <tr id="yearly-table-header"></tr>
@@ -246,18 +270,18 @@
             <!-- ALL TIME VIEW -->
             <div id="all-time-view" class="view-container hidden">
                  <section class="mb-8 p-6 bg-gray-600 rounded-2xl shadow-lg">
-                    <h2 class="text-2xl font-semibold text-text mb-4">All Time Summary</h2>
-                    <div id="all-time-summary-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-center"></div>
+                    <h2 class="text-2xl font-semibold section-header mb-4">All Time Summary</h2>
+                    <div id="all-time-summary-grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 text-center"></div>
                 </section>
                  <section class="mb-8 p-6 bg-gray-600 rounded-2xl shadow-lg">
-                    <h2 class="text-2xl font-semibold text-text mb-4">All Time Export</h2>
+                    <h2 class="text-2xl font-semibold section-header mb-4">All Time Export</h2>
                     <div class="flex flex-col md:flex-row gap-4">
                         <button id="export-all-time-pdf-btn" class="flex-1 w-full text-white bg-teal-600 hover:bg-teal-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center">Export Full History (PDF)</button>
                         <button id="export-all-time-csv-btn" class="flex-1 w-full text-white bg-purple-600 hover:bg-purple-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center">Export to Excel (.csv)</button>
                     </div>
                 </section>
                 <section class="p-6 bg-gray-600 rounded-2xl shadow-lg overflow-x-auto">
-                     <h2 class="text-2xl font-semibold text-text mb-4">Cumulative Progress</h2>
+                     <h2 class="text-2xl font-semibold section-header mb-4">Cumulative Progress</h2>
                      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                          <div class="bg-gray-700 p-4 rounded-lg">
                              <h3 class="text-lg font-medium text-text mb-2 text-center">Total Hours (Goal: 1500)</h3>
@@ -274,7 +298,7 @@
                      </div>
                 </section>
                 <section class="mt-8 p-6 bg-gray-600 rounded-2xl shadow-lg overflow-x-auto">
-                     <h2 class="text-2xl font-semibold text-text mb-4">Complete Log</h2>
+                     <h2 class="text-2xl font-semibold section-header mb-4">Complete Log</h2>
                      <table class="w-full text-sm text-left text-gray-300">
                          <thead class="text-xs text-gray-400 uppercase bg-gray-700">
                            <tr id="all-time-table-header"></tr>
@@ -661,12 +685,13 @@
 
         // --- Rendering ---
         const createSummaryHTML = (data) => `
-            <div class="p-4 bg-gray-500 rounded-lg"><h3 class="text-sm font-medium text-gray-300">Restricted Hours</h3><p class="text-2xl font-bold text-accent2">${data.restricted.toFixed(2)}</p></div>
-            <div class="p-4 bg-gray-500 rounded-lg"><h3 class="text-sm font-medium text-gray-300">Unrestricted Hours</h3><p class="text-2xl font-bold text-purple-400">${data.unrestricted.toFixed(2)}</p></div>
-            <div class="p-4 bg-gray-500 rounded-lg"><h3 class="text-sm font-medium text-gray-300">Total Hours</h3><p class="text-2xl font-bold text-text">${data.total.toFixed(2)}</p></div>
-            <div class="p-4 bg-gray-500 rounded-lg"><h3 class="text-sm font-medium text-gray-300">Supervised Hours</h3><p class="text-2xl font-bold text-accent1">${data.supervised.toFixed(2)}</p></div>
-            <div class="p-4 bg-gray-500 rounded-lg"><h3 class="text-sm font-medium text-gray-300">Supervisor Contacts</h3><p class="text-2xl font-bold text-text">${data.contacts}</p></div>
-            <div class="p-4 bg-gray-500 rounded-lg"><h3 class="text-sm font-medium text-gray-200">Supervision %</h3><p class="text-2xl font-bold text-black rounded-md px-2 ${data.percentage < 8 ? 'percentage-red' : data.percentage < 10 ? 'percentage-yellow' : 'percentage-green'}">${data.percentage.toFixed(2)}%</p></div>
+            <div class="summary-box"><h3 class="text-sm font-medium text-gray-300">Restricted Hours</h3><p class="text-2xl font-bold text-accent2">${data.restricted.toFixed(2)}</p></div>
+            <div class="summary-box"><h3 class="text-sm font-medium text-gray-300">Unrestricted Hours</h3><p class="text-2xl font-bold text-purple-400">${data.unrestricted.toFixed(2)}</p></div>
+            <div class="summary-box"><h3 class="text-sm font-medium text-gray-300">Total Hours</h3><p class="text-2xl font-bold text-text">${data.total.toFixed(2)}</p></div>
+            <div class="summary-box"><h3 class="text-sm font-medium text-gray-300">Supervised Hours</h3><p class="text-2xl font-bold text-accent1">${data.supervised.toFixed(2)}</p></div>
+            <div class="summary-box"><h3 class="text-sm font-medium text-gray-300">Supervisor Contacts</h3><p class="text-2xl font-bold text-text">${data.contacts}</p></div>
+            <div class="summary-box"><h3 class="text-sm font-medium text-gray-300">Supervision %</h3><p class="text-2xl font-bold text-black rounded-md px-2 ${data.percentage < 8 ? 'percentage-red' : data.percentage < 10 ? 'percentage-yellow' : 'percentage-green'}">${data.percentage.toFixed(2)}%</p></div>
+            <div class="summary-box"><h3 class="text-sm font-medium text-gray-300">Hours Remaining</h3><p class="text-2xl font-bold text-text">${Math.max(0, 1500 - data.total).toFixed(2)}</p></div>
         `;
 
         const renderTable = (entries, tableBodyElement) => {
@@ -1169,6 +1194,7 @@
             const summary = calculateSummaryData(entries);
 
             doc.setFontSize(18);
+            doc.setTextColor('#B39CD0'); // Lavender
             doc.text(title, 14, 22);
             doc.setFontSize(11);
             doc.setTextColor(50, 50, 50); // Dark gray text
@@ -1200,7 +1226,7 @@
             doc.autoTable(tableColumn, tableRows, { 
                 startY: 50,
                 styles: { fontSize: 8 },
-                headStyles: { fillColor: '#A8DADC', textColor: '#2C2C2C' },
+                headStyles: { fillColor: '#A8DADC', textColor: '#2C2C2C' }, // Light Cyan Head
                 columnStyles: {
                     0: { cellWidth: 18 },
                     1: { cellWidth: 28 },
@@ -1244,7 +1270,7 @@
             const doc = new jsPDF(); // Default portrait
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(16);
-            doc.setTextColor('#2C2C2C'); // Dark text
+            doc.setTextColor('#B39CD0'); // Lavender
             doc.text('Monthly Fieldwork Verification Form', 105, 22, { align: 'center' });
             
             doc.autoTable({
