@@ -261,15 +261,21 @@
                      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                          <div class="bg-gray-700 p-4 rounded-lg">
                              <h3 class="text-lg font-medium text-text mb-2 text-center">Total Hours (Goal: 1500)</h3>
-                             <canvas id="totalHoursChart"></canvas>
+                             <div class="h-48">
+                                 <canvas id="totalHoursChart"></canvas>
+                             </div>
                          </div>
                          <div class="bg-gray-700 p-4 rounded-lg">
                              <h3 class="text-lg font-medium text-text mb-2 text-center">Unrestricted Hours (Goal: 900)</h3>
-                             <canvas id="unrestrictedHoursChart"></canvas>
+                             <div class="h-48">
+                                 <canvas id="unrestrictedHoursChart"></canvas>
+                             </div>
                          </div>
                          <div class="bg-gray-700 p-4 rounded-lg">
                              <h3 class="text-lg font-medium text-text mb-2 text-center">Restricted Hours (Goal: 600)</h3>
-                             <canvas id="restrictedHoursChart"></canvas>
+                             <div class="h-48">
+                                 <canvas id="restrictedHoursChart"></canvas>
+                             </div>
                          </div>
                      </div>
                 </section>
@@ -735,47 +741,97 @@
         // --- Chart Rendering ---
         const renderAllTimeCharts = (entries) => {
             Object.values(chartInstances).forEach(chart => chart.destroy());
+            chartInstances = {};
             
-            if (entries.length === 0) return;
+            if (entries.length === 0) {
+                // Show empty charts with goal lines
+                const emptyChartConfig = (label, goal, color) => ({
+                    type: 'line',
+                    data: {
+                        labels: ['Start'],
+                        datasets: [{
+                            label: label,
+                            data: [0],
+                            borderColor: color,
+                            backgroundColor: `${color}33`,
+                            fill: true,
+                            tension: 0.1
+                        }, {
+                            label: 'Goal',
+                            data: [goal],
+                            borderColor: '#ef4444',
+                            borderDash: [5, 5],
+                            pointRadius: 0,
+                            fill: false
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: goal,
+                                ticks: { color: '#9ca3af' }
+                            },
+                            x: { ticks: { color: '#9ca3af' } }
+                        },
+                        plugins: { legend: { display: false } }
+                    }
+                });
+                
+                chartInstances.total = new Chart(chartContexts.total, emptyChartConfig('Total Hours', 1500, '#A8DADC'));
+                chartInstances.restricted = new Chart(chartContexts.restricted, emptyChartConfig('Restricted Hours', 600, '#FFC1CC'));
+                chartInstances.unrestricted = new Chart(chartContexts.unrestricted, emptyChartConfig('Unrestricted Hours', 900, '#c084fc'));
+                return;
+            }
 
             const sortedEntries = [...entries].sort((a,b) => new Date(a.date) - new Date(b.date));
             const startDate = dayjs(sortedEntries[0].date).startOf('month');
+            const endDate = dayjs(sortedEntries[sortedEntries.length - 1].date).startOf('month');
             const today = dayjs().startOf('month');
             
-            let monthSpan = today.diff(startDate, 'month') + 1;
-            monthSpan = Math.max(1, monthSpan); // Ensure at least 1 month
-            
-            const totalMonths = Math.min(monthSpan, 36); // Cap at 36 months
+            const actualEndDate = endDate.isAfter(today) ? endDate : today;
+            const totalMonths = actualEndDate.diff(startDate, 'month') + 1;
             
             const labels = [];
             for (let i = 0; i < totalMonths; i++) {
                 labels.push(startDate.add(i, 'month').format('MMM YYYY'));
             }
 
-            let dataTotal = new Array(totalMonths).fill(0);
-            let dataRestricted = new Array(totalMonths).fill(0);
-            let dataUnrestricted = new Array(totalMonths).fill(0);
+            let monthlyTotal = new Array(totalMonths).fill(0);
+            let monthlyRestricted = new Array(totalMonths).fill(0);
+            let monthlyUnrestricted = new Array(totalMonths).fill(0);
 
+            // Calculate monthly totals
             entries.forEach(entry => {
                 const entryDate = dayjs(entry.date);
                 const monthIndex = entryDate.diff(startDate, 'month');
 
-                if (monthIndex < 0 || monthIndex >= totalMonths) return;
-
-                const hours = calculateHours(entry.startTime, entry.endTime);
-                dataTotal[monthIndex] += hours;
-                if (entry.activityType === 'Restricted') {
-                    dataRestricted[monthIndex] += hours;
-                } else {
-                    dataUnrestricted[monthIndex] += hours;
+                if (monthIndex >= 0 && monthIndex < totalMonths) {
+                    const hours = calculateHours(entry.startTime, entry.endTime);
+                    monthlyTotal[monthIndex] += hours;
+                    if (entry.activityType === 'Restricted') {
+                        monthlyRestricted[monthIndex] += hours;
+                    } else {
+                        monthlyUnrestricted[monthIndex] += hours;
+                    }
                 }
             });
 
-            // Create cumulative data
+            // Create cumulative data (running totals)
+            let cumulativeTotal = new Array(totalMonths);
+            let cumulativeRestricted = new Array(totalMonths);
+            let cumulativeUnrestricted = new Array(totalMonths);
+            
+            cumulativeTotal[0] = monthlyTotal[0];
+            cumulativeRestricted[0] = monthlyRestricted[0];
+            cumulativeUnrestricted[0] = monthlyUnrestricted[0];
+            
             for (let i = 1; i < totalMonths; i++) {
-                dataTotal[i] += dataTotal[i-1];
-                dataRestricted[i] += dataRestricted[i-1];
-                dataUnrestricted[i] += dataUnrestricted[i-1];
+                cumulativeTotal[i] = cumulativeTotal[i-1] + monthlyTotal[i];
+                cumulativeRestricted[i] = cumulativeRestricted[i-1] + monthlyRestricted[i];
+                cumulativeUnrestricted[i] = cumulativeUnrestricted[i-1] + monthlyUnrestricted[i];
             }
 
             const chartConfig = (label, data, goal, color) => ({
@@ -786,31 +842,37 @@
                         label: label,
                         data: data,
                         borderColor: color,
-                        backgroundColor: `${color}1A`, // 0.1 alpha
+                        backgroundColor: `${color}33`,
                         fill: true,
-                        tension: 0.1
+                        tension: 0.1,
+                        stepped: true
+                    }, {
+                        label: 'Goal',
+                        data: new Array(totalMonths).fill(goal),
+                        borderColor: '#ef4444',
+                        borderDash: [5, 5],
+                        pointRadius: 0,
+                        fill: false
                     }]
                 },
                 options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
                     scales: {
                         y: {
                             beginAtZero: true,
-                            suggestedMax: goal,
+                            suggestedMax: Math.max(goal, Math.max(...data) * 1.1),
                             ticks: { color: '#9ca3af' }
                         },
-                        x: {
-                            ticks: { color: '#9ca3af' }
-                        }
+                        x: { ticks: { color: '#9ca3af' } }
                     },
-                    plugins: {
-                        legend: { display: false }
-                    }
+                    plugins: { legend: { display: false } }
                 }
             });
             
-            chartInstances.total = new Chart(chartContexts.total, chartConfig('Total Hours', dataTotal, 1500, '#A8DADC'));
-            chartInstances.restricted = new Chart(chartContexts.restricted, chartConfig('Restricted Hours', dataRestricted, 600, '#FFC1CC'));
-            chartInstances.unrestricted = new Chart(chartContexts.unrestricted, chartConfig('Unrestricted Hours', dataUnrestricted, 900, '#c084fc')); // Purple-400
+            chartInstances.total = new Chart(chartContexts.total, chartConfig('Total Hours', cumulativeTotal, 1500, '#A8DADC'));
+            chartInstances.restricted = new Chart(chartContexts.restricted, chartConfig('Restricted Hours', cumulativeRestricted, 600, '#FFC1CC'));
+            chartInstances.unrestricted = new Chart(chartContexts.unrestricted, chartConfig('Unrestricted Hours', cumulativeUnrestricted, 900, '#c084fc'));
         };
 
         // --- Data Handling (Firebase & Local) ---
