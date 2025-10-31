@@ -387,6 +387,19 @@
             </div>
         </div>
     </div>
+    
+    <!-- PDF Preview Modal -->
+    <div id="pdf-preview-modal" class="fixed inset-0 bg-black bg-opacity-70 flex flex-col p-4 z-50 hidden opacity-0">
+        <div class="bg-gray-700 rounded-lg p-4 flex-shrink-0 flex items-center justify-between">
+            <h2 class="text-xl font-semibold text-text">PDF Preview</h2>
+            <div class="flex gap-4">
+                <button id="pdf-download-btn" class="w-full text-white bg-button hover:bg-button-hover rounded-lg text-sm px-5 py-2.5">Download</button>
+                <button id="pdf-close-btn" class="w-full text-gray-300 bg-gray-500 hover:bg-gray-600 rounded-lg text-sm px-5 py-2.5">Close</button>
+            </div>
+        </div>
+        <iframe id="pdf-iframe" class="w-full h-full bg-white rounded-b-lg flex-grow"></iframe>
+    </div>
+
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
@@ -413,6 +426,8 @@
         let unsubscribeEntries = null;
         let unsubscribeProfile = null;
         let chartInstances = {};
+        let currentPdfDoc = null;
+        let currentPdfFilename = "report.pdf";
 
         // --- DOM Elements ---
         const loginView = document.getElementById('login-view');
@@ -475,6 +490,12 @@
         const mfvfSupervisorSelect = document.getElementById('mfvf-supervisor-select');
         const mfvfGenerateConfirm = document.getElementById('mfvf-generate-confirm');
         const mfvfCancel = document.getElementById('mfvf-cancel');
+        
+        const pdfPreviewModal = document.getElementById('pdf-preview-modal');
+        const pdfIframe = document.getElementById('pdf-iframe');
+        const pdfDownloadBtn = document.getElementById('pdf-download-btn');
+        const pdfCloseBtn = document.getElementById('pdf-close-btn');
+
         const chartContexts = {
             total: document.getElementById('totalHoursChart').getContext('2d'),
             restricted: document.getElementById('restrictedHoursChart').getContext('2d'),
@@ -1060,6 +1081,32 @@
             }
         };
         
+        // --- PDF Preview Modal ---
+        const showPdfPreview = (doc, filename) => {
+            currentPdfDoc = doc;
+            currentPdfFilename = filename;
+            const dataUri = doc.output('datauristring');
+            pdfIframe.src = dataUri;
+            pdfPreviewModal.classList.remove('hidden');
+            setTimeout(() => pdfPreviewModal.classList.remove('opacity-0'), 10);
+        };
+
+        const closePdfPreview = () => {
+            pdfPreviewModal.classList.add('opacity-0');
+            setTimeout(() => {
+                pdfPreviewModal.classList.add('hidden');
+                pdfIframe.src = ''; // Clear iframe content
+                currentPdfDoc = null;
+                currentPdfFilename = '';
+            }, 300);
+        };
+
+        const downloadPdf = () => {
+            if (currentPdfDoc) {
+                currentPdfDoc.save(currentPdfFilename);
+            }
+        };
+
         // --- CSV / PDF Generation ---
         const exportToCsv = (entries, summaryData, filename) => {
             const headers = [
@@ -1117,13 +1164,14 @@
             document.body.removeChild(link);
         };
         
-        const generatePdf = (title, entries) => {
-            const doc = new jsPDF();
+        const generatePdf = (title, entries, orientation = 'landscape') => {
+            const doc = new jsPDF({ orientation: orientation });
             const summary = calculateSummaryData(entries);
 
             doc.setFontSize(18);
             doc.text(title, 14, 22);
             doc.setFontSize(11);
+            doc.setTextColor(50, 50, 50); // Dark gray text
             doc.text(`Trainee: ${profileData.name || 'N/A'}`, 14, 32);
             doc.text(`Summary: Total: ${summary.total.toFixed(2)}hrs | Supervised: ${summary.supervised.toFixed(2)}hrs (${summary.percentage.toFixed(2)}%) | Contacts: ${summary.contacts}`, 14, 38);
 
@@ -1152,6 +1200,7 @@
             doc.autoTable(tableColumn, tableRows, { 
                 startY: 50,
                 styles: { fontSize: 8 },
+                headStyles: { fillColor: '#A8DADC', textColor: '#2C2C2C' },
                 columnStyles: {
                     0: { cellWidth: 18 },
                     1: { cellWidth: 28 },
@@ -1164,7 +1213,8 @@
                     8: { cellWidth: 'auto' },
                 }
             });
-            doc.save(`${title.replace(/ /g, '_')}.pdf`);
+            
+            showPdfPreview(doc, `${title.replace(/ /g, '_')}.pdf`);
         }
         
         const generateMfvfPdf = () => {
@@ -1191,14 +1241,16 @@
             const summary = calculateSummaryData(monthlyEntries);
             const independentHours = summary.total - summary.supervised;
             
-            const doc = new jsPDF();
+            const doc = new jsPDF(); // Default portrait
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(16);
+            doc.setTextColor('#2C2C2C'); // Dark text
             doc.text('Monthly Fieldwork Verification Form', 105, 22, { align: 'center' });
             
             doc.autoTable({
                 startY: 30,
                 theme: 'plain',
+                styles: { textColor: '#2C2C2C' },
                 body: [
                     [{content: `Trainee Name: ${profileData.name || ''}`, styles: {halign: 'left'}}, {content: `BACB ID #: ${profileData.rbtNumber || ''}`, styles: {halign: 'left'}}],
                     [{content: `Month/Year: ${dayjs(selectedMonth).format('MMMM YYYY')}`, styles: {halign: 'left'}}, ''],
@@ -1215,7 +1267,9 @@
                     [{content: 'Total Fieldwork Hours', styles: {fontStyle: 'bold'}}, {content: summary.total.toFixed(2), styles: {fontStyle: 'bold'}}],
                     [{content: 'Percent of Hours Supervised', styles: {fontStyle: 'bold'}}, {content: `${summary.percentage.toFixed(2)}%`, styles: {fontStyle: 'bold'}}]
                 ],
+                 headStyles: { fillColor: '#B39CD0', textColor: '#2C2C2C' },
                  columnStyles: { 1: { halign: 'right' } },
+                 styles: { textColor: '#2C2C2C' },
             });
             
             const finalY = doc.lastAutoTable.finalY;
@@ -1226,9 +1280,10 @@
             doc.text('_________________________', 120, finalY + 40);
             doc.text('Supervisor Signature & Date', 120, finalY + 45);
             
-            doc.save(`M-FVF_${profileData.name}_${dayjs(selectedMonth).format('MMM_YYYY')}_${supervisor.name}.pdf`);
             mfvfModal.classList.add('opacity-0');
             setTimeout(() => mfvfModal.classList.add('hidden'), 300);
+            
+            showPdfPreview(doc, `M-FVF_${profileData.name}_${dayjs(selectedMonth).format('MMM_YYYY')}_${supervisor.name}.pdf`);
         };
         
         
@@ -1301,7 +1356,7 @@
             exportYearlyPdfBtn.addEventListener('click', () => {
                 const year = yearSelector.value;
                 const entries = allEntries.filter(e => dayjs(e.date).year() == year);
-                generatePdf(`Yearly Report ${year}`, entries);
+                generatePdf(`Yearly Report ${year}`, entries, 'landscape');
             });
             exportYearlyCsvBtn.addEventListener('click', () => {
                 const year = yearSelector.value;
@@ -1309,11 +1364,15 @@
                 const summary = calculateSummaryData(entries);
                 exportToCsv(entries, summary, `Yearly_Log_${year}.csv`);
             });
-            exportAllTimePdfBtn.addEventListener('click', () => generatePdf('Full Fieldwork History', allEntries));
+            exportAllTimePdfBtn.addEventListener('click', () => generatePdf('Full Fieldwork History', allEntries, 'landscape'));
             exportAllTimeCsvBtn.addEventListener('click', () => {
                 const summary = calculateSummaryData(allEntries);
                 exportToCsv(allEntries, summary, 'Full_Fieldwork_History.csv');
             });
+
+            // PDF Preview Modal Listeners
+            pdfCloseBtn.addEventListener('click', closePdfPreview);
+            pdfDownloadBtn.addEventListener('click', downloadPdf);
 
             
             onAuthStateChanged(auth, user => {
@@ -1381,3 +1440,4 @@
     </script>
 </body>
 </html>
+
