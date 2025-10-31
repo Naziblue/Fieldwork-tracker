@@ -261,21 +261,15 @@
                      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                          <div class="bg-gray-700 p-4 rounded-lg">
                              <h3 class="text-lg font-medium text-text mb-2 text-center">Total Hours (Goal: 1500)</h3>
-                             <div class="h-48">
-                                 <canvas id="totalHoursChart"></canvas>
-                             </div>
+                             <canvas id="totalHoursChart"></canvas>
                          </div>
                          <div class="bg-gray-700 p-4 rounded-lg">
                              <h3 class="text-lg font-medium text-text mb-2 text-center">Unrestricted Hours (Goal: 900)</h3>
-                             <div class="h-48">
-                                 <canvas id="unrestrictedHoursChart"></canvas>
-                             </div>
+                             <canvas id="unrestrictedHoursChart"></canvas>
                          </div>
                          <div class="bg-gray-700 p-4 rounded-lg">
                              <h3 class="text-lg font-medium text-text mb-2 text-center">Restricted Hours (Goal: 600)</h3>
-                             <div class="h-48">
-                                 <canvas id="restrictedHoursChart"></canvas>
-                             </div>
+                             <canvas id="restrictedHoursChart"></canvas>
                          </div>
                      </div>
                 </section>
@@ -723,97 +717,47 @@
         // --- Chart Rendering ---
         const renderAllTimeCharts = (entries) => {
             Object.values(chartInstances).forEach(chart => chart.destroy());
-            chartInstances = {};
             
-            if (entries.length === 0) {
-                // Show empty charts with goal lines
-                const emptyChartConfig = (label, goal, color) => ({
-                    type: 'line',
-                    data: {
-                        labels: ['Start'],
-                        datasets: [{
-                            label: label,
-                            data: [0],
-                            borderColor: color,
-                            backgroundColor: `${color}33`,
-                            fill: true,
-                            tension: 0.1
-                        }, {
-                            label: 'Goal',
-                            data: [goal],
-                            borderColor: '#ef4444',
-                            borderDash: [5, 5],
-                            pointRadius: 0,
-                            fill: false
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                max: goal,
-                                ticks: { color: '#9ca3af' }
-                            },
-                            x: { ticks: { color: '#9ca3af' } }
-                        },
-                        plugins: { legend: { display: false } }
-                    }
-                });
-                
-                chartInstances.total = new Chart(chartContexts.total, emptyChartConfig('Total Hours', 1500, '#A8DADC'));
-                chartInstances.restricted = new Chart(chartContexts.restricted, emptyChartConfig('Restricted Hours', 600, '#FFC1CC'));
-                chartInstances.unrestricted = new Chart(chartContexts.unrestricted, emptyChartConfig('Unrestricted Hours', 900, '#c084fc'));
-                return;
-            }
+            if (entries.length === 0) return;
 
             const sortedEntries = [...entries].sort((a,b) => new Date(a.date) - new Date(b.date));
             const startDate = dayjs(sortedEntries[0].date).startOf('month');
-            const endDate = dayjs(sortedEntries[sortedEntries.length - 1].date).startOf('month');
             const today = dayjs().startOf('month');
             
-            const actualEndDate = endDate.isAfter(today) ? endDate : today;
-            const totalMonths = actualEndDate.diff(startDate, 'month') + 1;
+            let monthSpan = today.diff(startDate, 'month') + 1;
+            monthSpan = Math.max(1, monthSpan); // Ensure at least 1 month
+            
+            const totalMonths = Math.min(monthSpan, 36); // Cap at 36 months
             
             const labels = [];
             for (let i = 0; i < totalMonths; i++) {
                 labels.push(startDate.add(i, 'month').format('MMM YYYY'));
             }
 
-            let monthlyTotal = new Array(totalMonths).fill(0);
-            let monthlyRestricted = new Array(totalMonths).fill(0);
-            let monthlyUnrestricted = new Array(totalMonths).fill(0);
+            let dataTotal = new Array(totalMonths).fill(0);
+            let dataRestricted = new Array(totalMonths).fill(0);
+            let dataUnrestricted = new Array(totalMonths).fill(0);
 
-            // Calculate monthly totals
             entries.forEach(entry => {
                 const entryDate = dayjs(entry.date);
                 const monthIndex = entryDate.diff(startDate, 'month');
 
-                if (monthIndex >= 0 && monthIndex < totalMonths) {
-                    const hours = calculateHours(entry.startTime, entry.endTime);
-                    monthlyTotal[monthIndex] += hours;
-                    if (entry.activityType === 'Restricted') {
-                        monthlyRestricted[monthIndex] += hours;
-                    } else {
-                        monthlyUnrestricted[monthIndex] += hours;
-                    }
+                if (monthIndex < 0 || monthIndex >= totalMonths) return;
+
+                const hours = calculateHours(entry.startTime, entry.endTime);
+                dataTotal[monthIndex] += hours;
+                if (entry.activityType === 'Restricted') {
+                    dataRestricted[monthIndex] += hours;
+                } else {
+                    dataUnrestricted[monthIndex] += hours;
                 }
             });
 
-            // Create cumulative data (running totals)
-            let cumulativeTotal = new Array(totalMonths);
-            let cumulativeRestricted = new Array(totalMonths);
-            let cumulativeUnrestricted = new Array(totalMonths);
-            
-            cumulativeTotal[0] = monthlyTotal[0];
-            cumulativeRestricted[0] = monthlyRestricted[0];
-            cumulativeUnrestricted[0] = monthlyUnrestricted[0];
-            
+            // Create cumulative data
             for (let i = 1; i < totalMonths; i++) {
-                cumulativeTotal[i] = cumulativeTotal[i-1] + monthlyTotal[i];
-                cumulativeRestricted[i] = cumulativeRestricted[i-1] + monthlyRestricted[i];
-                cumulativeUnrestricted[i] = cumulativeUnrestricted[i-1] + monthlyUnrestricted[i];
+                dataTotal[i] += dataTotal[i-1];
+                dataRestricted[i] += dataRestricted[i-1];
+                dataUnrestricted[i] += dataUnrestricted[i-1];
             }
 
             const chartConfig = (label, data, goal, color) => ({
@@ -824,37 +768,31 @@
                         label: label,
                         data: data,
                         borderColor: color,
-                        backgroundColor: `${color}33`,
+                        backgroundColor: `${color}1A`, // 0.1 alpha
                         fill: true,
-                        tension: 0.1,
-                        stepped: true
-                    }, {
-                        label: 'Goal',
-                        data: new Array(totalMonths).fill(goal),
-                        borderColor: '#ef4444',
-                        borderDash: [5, 5],
-                        pointRadius: 0,
-                        fill: false
+                        tension: 0.1
                     }]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
                     scales: {
                         y: {
                             beginAtZero: true,
-                            suggestedMax: Math.max(goal, Math.max(...data) * 1.1),
+                            suggestedMax: goal,
                             ticks: { color: '#9ca3af' }
                         },
-                        x: { ticks: { color: '#9ca3af' } }
+                        x: {
+                            ticks: { color: '#9ca3af' }
+                        }
                     },
-                    plugins: { legend: { display: false } }
+                    plugins: {
+                        legend: { display: false }
+                    }
                 }
             });
             
-            chartInstances.total = new Chart(chartContexts.total, chartConfig('Total Hours', cumulativeTotal, 1500, '#A8DADC'));
-            chartInstances.restricted = new Chart(chartContexts.restricted, chartConfig('Restricted Hours', cumulativeRestricted, 600, '#FFC1CC'));
-            chartInstances.unrestricted = new Chart(chartContexts.unrestricted, chartConfig('Unrestricted Hours', cumulativeUnrestricted, 900, '#c084fc'));
+            chartInstances.total = new Chart(chartContexts.total, chartConfig('Total Hours', dataTotal, 1500, '#A8DADC'));
+            chartInstances.restricted = new Chart(chartContexts.restricted, chartConfig('Restricted Hours', dataRestricted, 600, '#FFC1CC'));
+            chartInstances.unrestricted = new Chart(chartContexts.unrestricted, chartConfig('Unrestricted Hours', dataUnrestricted, 900, '#c084fc')); // Purple-400
         };
 
         // --- Data Handling (Firebase & Local) ---
@@ -1296,147 +1234,150 @@
         
         // --- Initialization ---
         
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        db = getFirestore(app);
-        auth = getAuth(app);
-        
-        // Setup static event listeners
-        loginBtn.addEventListener('click', handleGoogleLogin);
-        guestLoginBtn.addEventListener('click', handleGuestLogin);
-        logoutBtn.addEventListener('click', handleLogout);
-        viewBtns.forEach(btn => btn.addEventListener('click', (e) => switchView(e.target.dataset.view)));
-        monthSelector.addEventListener('change', updateMonthlyView);
-        yearSelector.addEventListener('change', updateYearlyView);
-        trackerForm.addEventListener('submit', handleAddEntry);
-        logTableBody.addEventListener('click', handleTableClick);
-        yearlyLogTableBody.addEventListener('click', handleTableClick);
-        allTimeLogTableBody.addEventListener('click', handleTableClick);
-        editForm.addEventListener('submit', handleUpdateEntry);
-        deleteBtn.addEventListener('click', handleDeleteEntry);
-        cancelEditBtn.addEventListener('click', closeEditModal);
-        settingsBtn.addEventListener('click', openSettings);
-        closeSettingsBtn.addEventListener('click', closeSettings);
-        profileForm.addEventListener('submit', saveProfile);
-        supervisorForm.addEventListener('submit', addSupervisor);
-        supervisorsList.addEventListener('click', (e) => {
-            if (e.target.classList.contains('remove-supervisor-btn')) removeSupervisor(e.target.dataset.name);
-        });
-        
-        // Conditional logic listeners
-        activityTypeSelect.addEventListener('change', () => {
-            toggleFieldVisibility(activityTypeSelect, unrestrictedWrapper, 'Unrestricted');
-            toggleUnrestrictedActivityVisibility();
-        });
-        supervisionTypeSelect.addEventListener('change', () => {
-            toggleFieldVisibility(supervisionTypeSelect, supervisorNameWrapper, ['1:1 Meeting (with Supervisor)', 'Group Supervision', 'Observation with Client (by Supervisor)']);
-            toggleUnrestrictedActivityVisibility();
-        });
-        clientPresentSelect.addEventListener('change', () => toggleFieldVisibility(clientPresentSelect, clientNameWrapper, 'Yes'));
-        editActivityTypeSelect.addEventListener('change', () => {
-            toggleFieldVisibility(editActivityTypeSelect, editUnrestrictedWrapper, 'Unrestricted');
-            toggleEditUnrestrictedActivityVisibility();
-        });
-        editSupervisionTypeSelect.addEventListener('change', () => {
-            toggleFieldVisibility(editSupervisionTypeSelect, editSupervisorNameWrapper, ['1:1 Meeting (with Supervisor)', 'Group Supervision', 'Observation with Client (by Supervisor)']);
-            toggleEditUnrestrictedActivityVisibility();
-        });
-        editClientPresentSelect.addEventListener('change', () => toggleFieldVisibility(editClientPresentSelect, editClientNameWrapper, 'Yes'));
-        
-        // Export Listeners
-        generateMfvfBtn.addEventListener('click', generateMfvfPdf);
-        mfvfCancel.addEventListener('click', () => { mfvfModal.classList.add('opacity-0'); setTimeout(() => mfvfModal.classList.add('hidden'), 300) });
-        mfvfGenerateConfirm.addEventListener('click', confirmGenerateMfvf);
-        
-        exportMonthlyCsvBtn.addEventListener('click', () => {
-            const selectedMonth = monthSelector.value;
-            const [year, month] = selectedMonth.split('-');
-            const entries = allEntries.filter(e => {
-                const d = dayjs(e.date);
-                return d.year() == year && (d.month() + 1) == month;
+        // This wrapper ensures the script runs only after the HTML document is fully loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize Firebase
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+            
+            // Setup static event listeners
+            loginBtn.addEventListener('click', handleGoogleLogin);
+            guestLoginBtn.addEventListener('click', handleGuestLogin);
+            logoutBtn.addEventListener('click', handleLogout);
+            viewBtns.forEach(btn => btn.addEventListener('click', (e) => switchView(e.target.dataset.view)));
+            monthSelector.addEventListener('change', updateMonthlyView);
+            yearSelector.addEventListener('change', updateYearlyView);
+            trackerForm.addEventListener('submit', handleAddEntry);
+            logTableBody.addEventListener('click', handleTableClick);
+            yearlyLogTableBody.addEventListener('click', handleTableClick);
+            allTimeLogTableBody.addEventListener('click', handleTableClick);
+            editForm.addEventListener('submit', handleUpdateEntry);
+            deleteBtn.addEventListener('click', handleDeleteEntry);
+            cancelEditBtn.addEventListener('click', closeEditModal);
+            settingsBtn.addEventListener('click', openSettings);
+            closeSettingsBtn.addEventListener('click', closeSettings);
+            profileForm.addEventListener('submit', saveProfile);
+            supervisorForm.addEventListener('submit', addSupervisor);
+            supervisorsList.addEventListener('click', (e) => {
+                if (e.target.classList.contains('remove-supervisor-btn')) removeSupervisor(e.target.dataset.name);
             });
-            const summary = calculateSummaryData(entries);
-            exportToCsv(entries, summary, `Monthly_Log_${dayjs(selectedMonth).format('MMM_YYYY')}.csv`);
-        });
-        exportYearlyPdfBtn.addEventListener('click', () => {
-            const year = yearSelector.value;
-            const entries = allEntries.filter(e => dayjs(e.date).year() == year);
-            generatePdf(`Yearly Report ${year}`, entries);
-        });
-        exportYearlyCsvBtn.addEventListener('click', () => {
-            const year = yearSelector.value;
-            const entries = allEntries.filter(e => dayjs(e.date).year() == year);
-            const summary = calculateSummaryData(entries);
-            exportToCsv(entries, summary, `Yearly_Log_${year}.csv`);
-        });
-        exportAllTimePdfBtn.addEventListener('click', () => generatePdf('Full Fieldwork History', allEntries));
-        exportAllTimeCsvBtn.addEventListener('click', () => {
-            const summary = calculateSummaryData(allEntries);
-            exportToCsv(allEntries, summary, 'Full_Fieldwork_History.csv');
-        });
+            
+            // Conditional logic listeners
+            activityTypeSelect.addEventListener('change', () => {
+                toggleFieldVisibility(activityTypeSelect, unrestrictedWrapper, 'Unrestricted');
+                toggleUnrestrictedActivityVisibility();
+            });
+            supervisionTypeSelect.addEventListener('change', () => {
+                toggleFieldVisibility(supervisionTypeSelect, supervisorNameWrapper, ['1:1 Meeting (with Supervisor)', 'Group Supervision', 'Observation with Client (by Supervisor)']);
+                toggleUnrestrictedActivityVisibility();
+            });
+            clientPresentSelect.addEventListener('change', () => toggleFieldVisibility(clientPresentSelect, clientNameWrapper, 'Yes'));
+            editActivityTypeSelect.addEventListener('change', () => {
+                toggleFieldVisibility(editActivityTypeSelect, editUnrestrictedWrapper, 'Unrestricted');
+                toggleEditUnrestrictedActivityVisibility();
+            });
+            editSupervisionTypeSelect.addEventListener('change', () => {
+                toggleFieldVisibility(editSupervisionTypeSelect, editSupervisorNameWrapper, ['1:1 Meeting (with Supervisor)', 'Group Supervision', 'Observation with Client (by Supervisor)']);
+                toggleEditUnrestrictedActivityVisibility();
+            });
+            editClientPresentSelect.addEventListener('change', () => toggleFieldVisibility(editClientPresentSelect, editClientNameWrapper, 'Yes'));
+            
+            // Export Listeners
+            generateMfvfBtn.addEventListener('click', generateMfvfPdf);
+            mfvfCancel.addEventListener('click', () => { mfvfModal.classList.add('opacity-0'); setTimeout(() => mfvfModal.classList.add('hidden'), 300) });
+            mfvfGenerateConfirm.addEventListener('click', confirmGenerateMfvf);
+            
+            exportMonthlyCsvBtn.addEventListener('click', () => {
+                const selectedMonth = monthSelector.value;
+                const [year, month] = selectedMonth.split('-');
+                const entries = allEntries.filter(e => {
+                    const d = dayjs(e.date);
+                    return d.year() == year && (d.month() + 1) == month;
+                });
+                const summary = calculateSummaryData(entries);
+                exportToCsv(entries, summary, `Monthly_Log_${dayjs(selectedMonth).format('MMM_YYYY')}.csv`);
+            });
+            exportYearlyPdfBtn.addEventListener('click', () => {
+                const year = yearSelector.value;
+                const entries = allEntries.filter(e => dayjs(e.date).year() == year);
+                generatePdf(`Yearly Report ${year}`, entries);
+            });
+            exportYearlyCsvBtn.addEventListener('click', () => {
+                const year = yearSelector.value;
+                const entries = allEntries.filter(e => dayjs(e.date).year() == year);
+                const summary = calculateSummaryData(entries);
+                exportToCsv(entries, summary, `Yearly_Log_${year}.csv`);
+            });
+            exportAllTimePdfBtn.addEventListener('click', () => generatePdf('Full Fieldwork History', allEntries));
+            exportAllTimeCsvBtn.addEventListener('click', () => {
+                const summary = calculateSummaryData(allEntries);
+                exportToCsv(allEntries, summary, 'Full_Fieldwork_History.csv');
+            });
 
-        
-        onAuthStateChanged(auth, user => {
-            // Clear any existing data listeners
-            if (unsubscribeEntries) unsubscribeEntries();
-            if (unsubscribeProfile) unsubscribeProfile();
+            
+            onAuthStateChanged(auth, user => {
+                // Clear any existing data listeners
+                if (unsubscribeEntries) unsubscribeEntries();
+                if (unsubscribeProfile) unsubscribeProfile();
 
-            if (user && !user.isAnonymous) { // Google User
-                userId = user.uid;
-                loginView.classList.add('hidden');
-                appContainer.classList.remove('hidden');
-                userDisplay.textContent = user.displayName || user.email;
+                if (user && !user.isAnonymous) { // Google User
+                    userId = user.uid;
+                    loginView.classList.add('hidden');
+                    appContainer.classList.remove('hidden');
+                    userDisplay.textContent = user.displayName || user.email;
 
-                const profileRef = doc(db, `artifacts/${appId}/users/${userId}/profile/data`);
-                unsubscribeProfile = onSnapshot(profileRef, (doc) => {
-                    const currentUser = auth.currentUser;
-                    if (doc.exists()) {
-                        const data = doc.data();
-                        profileData = {
-                            name: data.name || (currentUser ? currentUser.displayName : ''),
-                            rbtNumber: data.rbtNumber || '',
-                            supervisors: data.supervisors || []
-                        };
-                    } else {
-                        profileData = {
-                            name: currentUser ? currentUser.displayName : '',
-                            rbtNumber: '',
-                            supervisors: []
-                        };
+                    const profileRef = doc(db, `artifacts/${appId}/users/${userId}/profile/data`);
+                    unsubscribeProfile = onSnapshot(profileRef, (doc) => {
+                        const currentUser = auth.currentUser;
+                        if (doc.exists()) {
+                            const data = doc.data();
+                            profileData = {
+                                name: data.name || (currentUser ? currentUser.displayName : ''),
+                                rbtNumber: data.rbtNumber || '',
+                                supervisors: data.supervisors || []
+                            };
+                        } else {
+                            profileData = {
+                                name: currentUser ? currentUser.displayName : '',
+                                rbtNumber: '',
+                                supervisors: []
+                            };
+                        }
+                        document.getElementById('trainee-name').value = profileData.name;
+                        document.getElementById('rbt-number').value = profileData.rbtNumber;
+                        renderSupervisors();
+                    });
+
+                    const entriesRef = collection(db, `artifacts/${appId}/users/${userId}/fieldwork_entries`);
+                    unsubscribeEntries = onSnapshot(entriesRef, snapshot => {
+                        allEntries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        const activeViewBtn = document.querySelector('.view-btn-active');
+                        const activeViewId = activeViewBtn ? activeViewBtn.dataset.view : 'monthly';
+                        switchView(activeViewId);
+                    });
+                        switchView('monthly');
+                } else { // No Google user (either logged out or guest)
+                    if (userId !== 'guest') { // Only reset if not already in guest mode
+                        userId = null;
+                        appContainer.classList.add('hidden');
+                        loginView.classList.remove('hidden');
+                        allEntries = [];
+                        profileData = { name: '', rbtNumber: '', supervisors: [] };
+                        updateMonthlyView();
+                        updateYearlyView();
+                        updateAllTimeView();
                     }
-                    document.getElementById('trainee-name').value = profileData.name;
-                    document.getElementById('rbt-number').value = profileData.rbtNumber;
-                    renderSupervisors();
-                });
-
-                const entriesRef = collection(db, `artifacts/${appId}/users/${userId}/fieldwork_entries`);
-                unsubscribeEntries = onSnapshot(entriesRef, snapshot => {
-                    allEntries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    const activeViewBtn = document.querySelector('.view-btn-active');
-                    const activeViewId = activeViewBtn ? activeViewBtn.dataset.view : 'monthly';
-                    switchView(activeViewId);
-                });
-                    switchView('monthly');
-            } else { // No Google user (either logged out or guest)
-                if (userId !== 'guest') { // Only reset if not already in guest mode
-                    userId = null;
-                    appContainer.classList.add('hidden');
-                    loginView.classList.remove('hidden');
-                    allEntries = [];
-                    profileData = { name: '', rbtNumber: '', supervisors: [] };
-                    updateMonthlyView();
-                    updateYearlyView();
-                    updateAllTimeView();
                 }
-            }
-        });
+            });
 
-        monthSelector.value = dayjs().format('YYYY-MM');
-        yearSelector.value = dayjs().year();
-        trackerForm.elements.date.value = dayjs().format('YYYY-MM-DD');
-        switchView('monthly');
+            // Set default values AFTER listeners are attached
+            monthSelector.value = dayjs().format('YYYY-MM');
+            yearSelector.value = dayjs().year();
+            trackerForm.elements.date.value = dayjs().format('YYYY-MM-DD');
+            switchView('monthly');
+        });
         
     </script>
 </body>
 </html>
-
