@@ -150,7 +150,7 @@
                         </div>
                         <div>
                             <label for="setting" class="block mb-2 text-sm font-medium text-gray-300">Setting</label>
-                            <select id="setting" class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5">
+                            <select id="setting" class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5" required>
                                 <option>School</option>
                                 <option>Home</option>
                                 <option>Clinic</option>
@@ -173,9 +173,9 @@
                                 <option>Observation with Client (by Supervisor)</option>
                             </select>
                         </div>
-                        <div id="supervisor-name-wrapper" class="hidden">
-                            <label for="supervisor-select" class="block mb-2 text-sm font-medium text-gray-300">Supervisor</label>
-                            <select id="supervisor-select" class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5">
+                        <div id="supervisor-name-wrapper">
+                            <label for="supervisor-select" class="block mb-2 text-sm font-medium text-gray-300">Overseeing Supervisor</label>
+                            <select id="supervisor-select" class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5" required>
                                 <option value="">Select a supervisor...</option>
                             </select>
                         </div>
@@ -186,9 +186,9 @@
                                 <option>Yes</option>
                             </select>
                         </div>
-                        <div id="client-name-wrapper" class="hidden">
-                            <label for="client-name" class="block mb-2 text-sm font-medium text-gray-300">Client Name/ID</label>
-                            <input type="text" id="client-name" class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5" placeholder="e.g., Client A">
+                        <div id="client-name-wrapper">
+                            <label for="client-name" class="block mb-2 text-sm font-medium text-gray-300">Client Name / Student ID</label>
+                            <input type="text" id="client-name" class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5" placeholder="e.g., Student A" required>
                         </div>
                         
                         <!-- Conditional Unrestricted Activity Type -->
@@ -211,8 +211,8 @@
                         </div>
                         
                          <div class="md:col-span-2 lg:col-span-4">
-                            <label for="notes" class="block mb-2 text-sm font-medium text-gray-300">Additional Notes</label>
-                            <textarea id="notes" rows="2" class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5" placeholder="Any other relevant details..."></textarea>
+                            <label for="notes" class="block mb-2 text-sm font-medium text-gray-300">Additional Notes (Required)</label>
+                            <textarea id="notes" rows="2" class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5" placeholder="Explain the direct care and ABA strategies used during restricted hours..." required></textarea>
                         </div>
                         <div class="md:col-span-2 lg:col-span-4">
                              <button type="submit" class="w-full text-white bg-button hover:bg-button-hover font-medium rounded-lg text-sm px-5 py-2.5 text-center">Add Entry</button>
@@ -331,9 +331,15 @@
                     </div>
                     <div><label for="edit-activity-type" class="block mb-2 text-sm">Activity Type</label><select id="edit-activity-type" class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5"><option>Restricted</option><option>Unrestricted</option></select></div>
                     <div><label for="edit-supervision-type" class="block mb-2 text-sm">Supervision Type</label><select id="edit-supervision-type" class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5"><option>No Supervision</option><option>1:1 Meeting (with Supervisor)</option><option>Group Supervision</option><option>Observation with Client (by Supervisor)</option></select></div>
-                    <div id="edit-supervisor-name-wrapper" class="hidden"><label for="edit-supervisor-select" class="block mb-2 text-sm">Supervisor</label><select id="edit-supervisor-select" class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5"></select></div>
+                    <div id="edit-supervisor-name-wrapper">
+                        <label for="edit-supervisor-select" class="block mb-2 text-sm">Overseeing Supervisor</label>
+                        <select id="edit-supervisor-select" class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5" required></select>
+                    </div>
                     <div><label for="edit-client-present" class="block mb-2 text-sm">Client Present?</label><select id="edit-client-present" class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5"><option>No</option><option>Yes</option></select></div>
-                    <div id="edit-client-name-wrapper" class="hidden"><label for="edit-client-name" class="block mb-2 text-sm">Client Name/ID</label><input type="text" id="edit-client-name" class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5"></div>
+                    <div id="edit-client-name-wrapper">
+                        <label for="edit-client-name" class="block mb-2 text-sm">Client Name / Student ID</label>
+                        <input type="text" id="edit-client-name" class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5" required>
+                    </div>
                     
                     <!-- Conditional Unrestricted Activity Type -->
                     <div id="edit-unrestricted-type-wrapper" class="hidden md:col-span-2">
@@ -350,7 +356,7 @@
                     </div>
                     
                     <div id="edit-unrestricted-wrapper" class="hidden md:col-span-2"><label for="edit-unrestricted-explanation" class="block mb-2 text-sm">Unrestricted Explanation</label><textarea id="edit-unrestricted-explanation" rows="2" class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5"></textarea></div>
-                    <div class="md:col-span-2"><label for="edit-notes" class="block mb-2 text-sm">Additional Notes</label><textarea id="edit-notes" rows="3" class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5"></textarea></div>
+                    <div class="md:col-span-2"><label for="edit-notes" class="block mb-2 text-sm">Additional Notes (Required)</label><textarea id="edit-notes" rows="3" class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5" required></textarea></div>
                 </div>
                 <div class="mt-6 flex flex-col sm:flex-row gap-3">
                     <button type="submit" class="w-full text-white bg-button hover:bg-button-hover rounded-lg text-sm px-5 py-2.5">Save Changes</button>
@@ -876,7 +882,7 @@
             trackerForm.reset();
             // Reset all conditional fields
             toggleFieldVisibility(activityTypeSelect, unrestrictedWrapper, 'Unrestricted');
-            toggleFieldVisibility(supervisionTypeSelect, supervisorNameWrapper, ['1:1 Meeting (with Supervisor)', 'Group Supervision', 'Observation with Client (by Supervisor)']);
+            // Removed: toggleFieldVisibility(supervisionTypeSelect, supervisorNameWrapper, ...); // Supervisor always visible
             toggleFieldVisibility(clientPresentSelect, clientNameWrapper, 'Yes');
             toggleUnrestrictedActivityVisibility();
             trackerForm.elements.date.value = dayjs().format('YYYY-MM-DD');
@@ -907,7 +913,7 @@
             
             // Trigger all conditional visibilities
             toggleFieldVisibility(activityTypeSelect, unrestrictedWrapper, 'Unrestricted');
-            toggleFieldVisibility(supervisionTypeSelect, supervisorNameWrapper, ['1:1 Meeting (with Supervisor)', 'Group Supervision', 'Observation with Client (by Supervisor)']);
+            // Removed: toggleFieldVisibility(supervisionTypeSelect, supervisorNameWrapper, ...);
             toggleFieldVisibility(clientPresentSelect, clientNameWrapper, 'Yes');
             toggleUnrestrictedActivityVisibility();
             
@@ -931,7 +937,7 @@
             
             // Trigger all conditional visibilities
             toggleFieldVisibility(editActivityTypeSelect, editUnrestrictedWrapper, 'Unrestricted');
-            toggleFieldVisibility(editSupervisionTypeSelect, editSupervisorNameWrapper, ['1:1 Meeting (with Supervisor)', 'Group Supervision', 'Observation with Client (by Supervisor)']);
+            // Removed: toggleFieldVisibility(editSupervisionTypeSelect, editSupervisorNameWrapper, ...);
             toggleFieldVisibility(editClientPresentSelect, editClientNameWrapper, 'Yes');
             toggleEditUnrestrictedActivityVisibility();
 
@@ -1350,19 +1356,21 @@
                 toggleUnrestrictedActivityVisibility();
             });
             supervisionTypeSelect.addEventListener('change', () => {
-                toggleFieldVisibility(supervisionTypeSelect, supervisorNameWrapper, ['1:1 Meeting (with Supervisor)', 'Group Supervision', 'Observation with Client (by Supervisor)']);
+                // No longer toggling supervisor wrapper as it's required
                 toggleUnrestrictedActivityVisibility();
             });
-            clientPresentSelect.addEventListener('change', () => toggleFieldVisibility(clientPresentSelect, clientNameWrapper, 'Yes'));
+            clientPresentSelect.addEventListener('change', () => {
+                 // No longer toggling client name wrapper as it's required
+            });
+            
             editActivityTypeSelect.addEventListener('change', () => {
                 toggleFieldVisibility(editActivityTypeSelect, editUnrestrictedWrapper, 'Unrestricted');
                 toggleEditUnrestrictedActivityVisibility();
             });
             editSupervisionTypeSelect.addEventListener('change', () => {
-                toggleFieldVisibility(editSupervisionTypeSelect, editSupervisorNameWrapper, ['1:1 Meeting (with Supervisor)', 'Group Supervision', 'Observation with Client (by Supervisor)']);
                 toggleEditUnrestrictedActivityVisibility();
             });
-            editClientPresentSelect.addEventListener('change', () => toggleFieldVisibility(editClientPresentSelect, editClientNameWrapper, 'Yes'));
+            
             
             // Export Listeners
             generateMfvfBtn.addEventListener('click', generateMfvfPdf);
@@ -1466,4 +1474,3 @@
     </script>
 </body>
 </html>
-
