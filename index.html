@@ -1091,8 +1091,8 @@
 
             // Trigger all conditional visibilities
             toggleFieldVisibility(activityTypeSelect, unrestrictedWrapper, 'Unrestricted');
-            toggleFieldVisibility(supervisionTypeSelect, supervisorNameWrapper, ['1:1 Meeting (with Supervisor)', 'Group Supervision', 'Observation with Client (by Supervisor)']);
-            toggleFieldVisibility(clientPresentSelect, clientNameWrapper, 'Yes');
+            // Removed: toggleFieldVisibility(supervisionTypeSelect, supervisorNameWrapper, ...);
+            // Removed: toggleFieldVisibility(clientPresentSelect, clientNameWrapper, 'Yes');
             toggleUnrestrictedActivityVisibility();
 
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1115,8 +1115,8 @@
 
             // Trigger all conditional visibilities
             toggleFieldVisibility(editActivityTypeSelect, editUnrestrictedWrapper, 'Unrestricted');
-            toggleFieldVisibility(editSupervisionTypeSelect, editSupervisorNameWrapper, ['1:1 Meeting (with Supervisor)', 'Group Supervision', 'Observation with Client (by Supervisor)']);
-            toggleFieldVisibility(editClientPresentSelect, editClientNameWrapper, 'Yes');
+            // Removed: toggleFieldVisibility(editSupervisionTypeSelect, editSupervisorNameWrapper, ...);
+            // Removed: toggleFieldVisibility(editClientPresentSelect, editClientNameWrapper, 'Yes');
             toggleEditUnrestrictedActivityVisibility();
 
             editModal.classList.remove('hidden');
@@ -1125,11 +1125,45 @@
                 editModal.querySelector('div').classList.remove('scale-95');
             }, 10);
         };
+        // --- Data Handling (Firebase & Local) ---
 
-        const closeEditModal = () => {
-            editModal.classList.add('opacity-0');
-            editModal.querySelector('div').classList.add('scale-95');
-            setTimeout(() => editModal.classList.add('hidden'), 300);
+        const handleAddEntry = async (e) => {
+            e.preventDefault();
+            const newEntry = {
+                date: trackerForm.elements.date.value,
+                startTime: trackerForm.elements['start-time'].value,
+                endTime: trackerForm.elements['end-time'].value,
+                setting: trackerForm.elements.setting.value,
+                activityType: trackerForm.elements['activity-type'].value,
+                unrestrictedExplanation: trackerForm.elements['unrestricted-explanation'].value,
+                unrestrictedActivityType: trackerForm.elements['unrestricted-type-select'].value,
+                supervisionType: trackerForm.elements['supervision-type'].value,
+                supervisorName: trackerForm.elements['supervisor-select'].value,
+                clientPresent: trackerForm.elements['client-present'].value,
+                clientName: trackerForm.elements['client-name'].value,
+                notes: trackerForm.elements.notes.value,
+            };
+
+            if (userId === 'guest') {
+                newEntry.id = crypto.randomUUID();
+                allEntries.push(newEntry);
+                saveEntriesToLocalStorage();
+                updateMonthlyView();
+            } else {
+                newEntry.userId = userId;
+                try {
+                    const entriesRef = collection(db, `artifacts/${appId}/users/${userId}/fieldwork_entries`);
+                    await addDoc(entriesRef, newEntry);
+                } catch (error) { console.error("Error adding document:", error); }
+            }
+
+            trackerForm.reset();
+            // Reset all conditional fields
+            toggleFieldVisibility(activityTypeSelect, unrestrictedWrapper, 'Unrestricted');
+            // Removed: toggleFieldVisibility(supervisionTypeSelect, supervisorNameWrapper, ...); // Supervisor always visible
+            // Removed: toggleFieldVisibility(clientPresentSelect, clientNameWrapper, 'Yes'); // Client name always visible
+            toggleUnrestrictedActivityVisibility();
+            trackerForm.elements.date.value = dayjs().format('YYYY-MM-DD');
         };
 
         const handleUpdateEntry = async (e) => {
@@ -1601,6 +1635,7 @@
                 toggleUnrestrictedActivityVisibility();
             });
             supervisionTypeSelect.addEventListener('change', () => {
+                // No longer toggling supervisor wrapper as it's required
                 toggleUnrestrictedActivityVisibility();
             });
             clientPresentSelect.addEventListener('change', () => {
@@ -1613,6 +1648,9 @@
             });
             editSupervisionTypeSelect.addEventListener('change', () => {
                 toggleEditUnrestrictedActivityVisibility();
+            });
+            editClientPresentSelect.addEventListener('change', () => {
+                // No longer toggling client name wrapper as it's required
             });
 
             // Export Listeners
