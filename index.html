@@ -15,11 +15,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <!-- 
-      SECURITY: This loads the secret key from a separate file 'secrets.js'.
-      It handles the error gracefully if the file is missing.
+      AI Feature Commented Out
+      <script src="secrets.js" onerror="console.log('No local secrets file found. Using manual entry mode.')"></script>
     -->
-    <script src="secrets.js"
-        onerror="console.log('secrets.js not found (this is normal in production if using other injection methods)')"></script>
 
     <script>
         // Custom color palette configuration for Tailwind CSS
@@ -304,10 +302,11 @@
                         <div class="md:col-span-2 lg:col-span-4 relative">
                             <div class="flex justify-between items-center mb-2">
                                 <label class="text-sm font-medium text-gray-300">Additional Notes (Required)</label>
-                                <button type="button" id="ai-generate-btn"
-                                    class="text-xs bg-purple-600 hover:bg-purple-700 text-white px-2 py-1 rounded flex items-center gap-1">
+                                <!-- AI Button Commented Out 
+                                <button type="button" id="ai-generate-btn" class="text-xs bg-purple-600 hover:bg-purple-700 text-white px-2 py-1 rounded flex items-center gap-1">
                                     <span>✨ Auto-Generate Note</span>
                                 </button>
+                                -->
                             </div>
                             <textarea id="notes" rows="2"
                                 class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5"
@@ -541,6 +540,13 @@
                     class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5"
                     placeholder="e.g., RBT-123456">
             </div>
+            <!-- API Key Field REMOVED AS REQUESTED 
+            <div class="mb-6">
+                <label for="gemini-api-key" class="block mb-2 text-sm font-medium text-gray-300">Gemini API Key (for Auto-Notes)</label>
+                <input type="password" id="gemini-api-key" class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5" placeholder="Paste your AIza... key here">
+                <p class="text-xs text-gray-400 mt-1">Stored locally in your browser. Never sent to our servers.</p>
+            </div>
+            -->
             <button type="submit"
                 class="w-full text-white bg-button hover:bg-button-hover font-medium rounded-lg text-sm px-5 py-2.5 mb-6">Save
                 Profile</button>
@@ -701,10 +707,10 @@
         const pdfDownloadBtn = document.getElementById('pdf-download-btn');
         const pdfCloseBtn = document.getElementById('pdf-close-btn');
 
-        // New AI Button
+        // New AI Button (Commented out)
         const aiGenerateBtn = document.getElementById('ai-generate-btn');
         const notesField = document.getElementById('notes');
-        const apiKeyInput = document.getElementById('gemini-api-key');
+        // const apiKeyInput = document.getElementById('gemini-api-key');
 
 
         const chartContexts = {
@@ -1245,8 +1251,15 @@
             const name = document.getElementById('trainee-name').value;
             const rbtNumber = document.getElementById('rbt-number').value;
 
+            // Get API Key if present
+            // let geminiApiKey = '';
+            // if (apiKeyInput) {
+            //    geminiApiKey = apiKeyInput.value;
+            // }
+
             profileData.name = name;
             profileData.rbtNumber = rbtNumber;
+            // profileData.geminiApiKey = geminiApiKey; // Save key locally
 
             if (userId === 'guest') {
                 saveProfileToLocalStorage();
@@ -1608,7 +1621,7 @@
             pdfDownloadBtn.addEventListener('click', downloadPdf);
 
             // AI Button listener
-            aiGenerateBtn.addEventListener('click', generateNoteWithAI);
+            //aiGenerateBtn.addEventListener('click', generateNoteWithAI);
 
             onAuthStateChanged(auth, user => {
                 if (unsubscribeEntries) unsubscribeEntries();
