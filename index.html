@@ -605,7 +605,21 @@
         import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- Config & State ---
-        const firebaseConfig = JSON.parse(__firebase_config);
+        let firebaseConfig;
+        try {
+            firebaseConfig = JSON.parse(__firebase_config);
+        } catch (e) {
+            // Fallback for local development or if env variable is missing
+            firebaseConfig = {
+                apiKey: "AIzaSyAl4i1nP24SOvAt1ifbGD0SZo2u_l4MnB8",
+                authDomain: "fieldwork-tracker-ae8f7.firebaseapp.com",
+                projectId: "fieldwork-tracker-ae8f7",
+                storageBucket: "fieldwork-tracker-ae8f7.firebasestorage.app",
+                messagingSenderId: "4649951899",
+                appId: "1:4649951899:web:28278ddb278baf67b39c3e"
+            };
+        }
+
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'fieldwork-tracker-default';
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
@@ -1177,10 +1191,7 @@
 
             // Trigger all conditional visibilities
             toggleFieldVisibility(editActivityTypeSelect, editUnrestrictedWrapper, 'Unrestricted');
-            
-            // Ensure client name is always visible in edit mode
-            editClientNameWrapper.classList.remove('hidden');
-            
+            toggleFieldVisibility(editClientPresentSelect, editClientNameWrapper, 'Yes');
             toggleEditUnrestrictedActivityVisibility();
 
             editModal.classList.remove('hidden');
