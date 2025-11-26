@@ -14,13 +14,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- 
-      SECURITY: This loads the secret key from a separate file 'secrets.js'.
-      It handles the error gracefully if the file is missing.
-    -->
-    <script src="secrets.js"
-        onerror="console.log('secrets.js not found (this is normal in production if using other injection methods)')"></script>
-
     <script>
         // Custom color palette configuration for Tailwind CSS
         tailwind.config = {
@@ -46,14 +39,17 @@
 
         .percentage-red {
             background-color: #ef4444 !important;
+            color: white !important;
         }
 
         .percentage-yellow {
             background-color: #f59e0b !important;
+            color: black !important;
         }
 
         .percentage-green {
             background-color: #22c55e !important;
+            color: black !important;
         }
 
         .modal,
@@ -168,12 +164,12 @@
             <p class="text-gray-300 mb-8">Please sign in to access your fieldwork log.</p>
             <div class="flex flex-col gap-4">
                 <button id="login-btn"
-                    class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center mx-auto w-full">
+                    class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center mx-auto w-full transition-colors">
                     Sign in with Google
                 </button>
                 <button id="guest-login-btn"
-                    class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center mx-auto w-full">
-                    Sign in as Guest
+                    class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center mx-auto w-full transition-colors">
+                    Sign in as Guest (Local Only)
                 </button>
             </div>
             <p class="text-xs text-gray-400 mt-4">Guest login data is only saved in this browser. Clear your browser
@@ -187,13 +183,13 @@
         <header class="text-center mb-6 relative">
             <h1 class="text-3xl md:text-4xl font-bold text-pastel-blue">Fieldwork Tracking</h1>
             <div class="absolute top-0 right-0 flex items-center gap-4">
-                <div id="user-display" class="text-sm text-gray-300"></div>
-                <button id="logout-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 rounded-lg"
+                <div id="user-display" class="text-sm text-gray-300 hidden md:block"></div>
+                <button id="logout-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 rounded-lg text-sm"
                     title="Logout">
                     Log Out
                 </button>
                 <button id="settings-btn"
-                    class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-2 rounded-lg" title="Settings">
+                    class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-2 rounded-lg text-sm" title="Settings">
                     Settings
                 </button>
             </div>
@@ -216,7 +212,7 @@
                         <div class="flex items-center gap-2 mt-4 sm:mt-0">
                             <label for="month-selector" class="text-sm font-medium text-gray-300">Select Month:</label>
                             <input type="month" id="month-selector"
-                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg p-2">
+                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg p-2 focus:ring-accent1 focus:border-accent1">
                         </div>
                     </div>
                     <div id="monthly-summary-grid"
@@ -228,19 +224,19 @@
                         <!-- Inputs -->
                         <div><label class="block mb-2 text-sm font-medium text-gray-300">Date</label><input type="date"
                                 id="date"
-                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5"
+                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1"
                                 required></div>
                         <div><label class="block mb-2 text-sm font-medium text-gray-300">Start Time</label><input
                                 type="time" id="start-time"
-                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5"
+                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1"
                                 required></div>
                         <div><label class="block mb-2 text-sm font-medium text-gray-300">End Time</label><input
                                 type="time" id="end-time"
-                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5"
+                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1"
                                 required></div>
                         <div><label class="block mb-2 text-sm font-medium text-gray-300">Setting</label><select
                                 id="setting"
-                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5">
+                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1">
                                 <option>School</option>
                                 <option>Home</option>
                                 <option>Clinic</option>
@@ -248,13 +244,13 @@
                             </select></div>
                         <div><label class="block mb-2 text-sm font-medium text-gray-300">Activity Type</label><select
                                 id="activity-type"
-                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5">
+                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1">
                                 <option>Restricted</option>
                                 <option>Unrestricted</option>
                             </select></div>
                         <div><label class="block mb-2 text-sm font-medium text-gray-300">Supervision Type</label><select
                                 id="supervision-type"
-                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5">
+                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1">
                                 <option>No Supervision</option>
                                 <option>1:1 Meeting (with Supervisor)</option>
                                 <option>Group Supervision</option>
@@ -264,26 +260,26 @@
                         <div id="supervisor-name-wrapper"><label
                                 class="block mb-2 text-sm font-medium text-gray-300">Overseeing
                                 Supervisor</label><select id="supervisor-select"
-                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5"
+                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1"
                                 required>
                                 <option value="">Select a supervisor...</option>
                             </select></div>
                         <div><label class="block mb-2 text-sm font-medium text-gray-300">Client Present?</label><select
                                 id="client-present"
-                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5">
+                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1">
                                 <option>No</option>
                                 <option>Yes</option>
                             </select></div>
                         <div id="client-name-wrapper"><label class="block mb-2 text-sm font-medium text-gray-300">Client
                                 Name / Student ID</label><input type="text" id="client-name"
-                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5"
+                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1"
                                 placeholder="e.g., Student A" required></div>
 
                         <!-- Conditional Unrestricted Activity Type -->
                         <div id="unrestricted-type-wrapper" class="hidden md:col-span-2">
                             <label class="block mb-2 text-sm font-medium text-gray-300">Unrestricted Activity</label>
                             <select id="unrestricted-type-select"
-                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5">
+                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1">
                                 <option value="">Select Activity...</option>
                                 <option>Observation</option>
                                 <option>Training</option>
@@ -297,25 +293,22 @@
                         <div id="unrestricted-wrapper" class="hidden md:col-span-2 lg:col-span-4">
                             <label class="block mb-2 text-sm font-medium text-gray-300">Unrestricted Explanation</label>
                             <textarea id="unrestricted-explanation" rows="2"
-                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5"
+                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1"
                                 placeholder="e.g., Parent training, data analysis..."></textarea>
                         </div>
 
                         <div class="md:col-span-2 lg:col-span-4 relative">
                             <div class="flex justify-between items-center mb-2">
                                 <label class="text-sm font-medium text-gray-300">Additional Notes (Required)</label>
-                                <button type="button" id="ai-generate-btn"
-                                    class="text-xs bg-purple-600 hover:bg-purple-700 text-white px-2 py-1 rounded flex items-center gap-1">
-                                    <span>✨ Auto-Generate Note</span>
-                                </button>
+                                <!-- AI Button Removed -->
                             </div>
                             <textarea id="notes" rows="2"
-                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5"
+                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1"
                                 placeholder="Explain the direct care and ABA strategies used..." required></textarea>
                         </div>
                         <div class="md:col-span-2 lg:col-span-4">
                             <button type="submit"
-                                class="w-full text-white bg-button hover:bg-button-hover font-medium rounded-lg text-sm px-5 py-2.5 text-center">Add
+                                class="w-full text-white bg-button hover:bg-button-hover font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors">Add
                                 Entry</button>
                         </div>
                     </form>
@@ -324,10 +317,10 @@
                     <h2 class="text-2xl font-semibold section-header mb-4">Monthly Exports</h2>
                     <div class="flex flex-col md:flex-row gap-4">
                         <button id="generate-mfvf-btn"
-                            class="flex-1 w-full text-white bg-button hover:bg-button-hover font-medium rounded-lg text-sm px-5 py-2.5 text-center">Generate
+                            class="flex-1 w-full text-white bg-button hover:bg-button-hover font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors">Generate
                             M-FVF (PDF)</button>
                         <button id="export-monthly-csv-btn"
-                            class="flex-1 w-full text-white bg-purple-600 hover:bg-purple-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center">Export
+                            class="flex-1 w-full text-white bg-purple-600 hover:bg-purple-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors">Export
                             to Excel (.csv)</button>
                     </div>
                 </section>
@@ -350,7 +343,7 @@
                         <div class="flex items-center gap-2 mt-4 sm:mt-0">
                             <label for="year-selector" class="text-sm font-medium text-gray-300">Select Year:</label>
                             <input type="number" id="year-selector"
-                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg p-2 w-28">
+                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg p-2 w-28 focus:ring-accent1 focus:border-accent1">
                         </div>
                     </div>
                     <div id="yearly-summary-grid"
@@ -360,10 +353,10 @@
                     <h2 class="text-2xl font-semibold section-header mb-4">Yearly Export</h2>
                     <div class="flex flex-col md:flex-row gap-4">
                         <button id="export-yearly-pdf-btn"
-                            class="flex-1 w-full text-white bg-teal-600 hover:bg-teal-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center">Export
+                            class="flex-1 w-full text-white bg-teal-600 hover:bg-teal-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors">Export
                             Yearly Report (PDF)</button>
                         <button id="export-yearly-csv-btn"
-                            class="flex-1 w-full text-white bg-purple-600 hover:bg-purple-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center">Export
+                            class="flex-1 w-full text-white bg-purple-600 hover:bg-purple-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors">Export
                             to Excel (.csv)</button>
                     </div>
                 </section>
@@ -389,10 +382,10 @@
                     <h2 class="text-2xl font-semibold section-header mb-4">All Time Export</h2>
                     <div class="flex flex-col md:flex-row gap-4">
                         <button id="export-all-time-pdf-btn"
-                            class="flex-1 w-full text-white bg-teal-600 hover:bg-teal-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center">Export
+                            class="flex-1 w-full text-white bg-teal-600 hover:bg-teal-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors">Export
                             Full History (PDF)</button>
                         <button id="export-all-time-csv-btn"
-                            class="flex-1 w-full text-white bg-purple-600 hover:bg-purple-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center">Export
+                            class="flex-1 w-full text-white bg-purple-600 hover:bg-purple-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors">Export
                             to Excel (.csv)</button>
                     </div>
                 </section>
@@ -437,17 +430,17 @@
                 <input type="hidden" id="edit-id">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div><label for="edit-date" class="block mb-2 text-sm">Date</label><input type="date" id="edit-date"
-                            class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5"></div>
+                            class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1"></div>
                     <div><label for="edit-start-time" class="block mb-2 text-sm">Start Time</label><input type="time"
-                            id="edit-start-time" class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5">
+                            id="edit-start-time" class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1">
                     </div>
                     <div><label for="edit-end-time" class="block mb-2 text-sm">End Time</label><input type="time"
-                            id="edit-end-time" class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5">
+                            id="edit-end-time" class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1">
                     </div>
                     <div>
                         <label for="edit-setting" class="block mb-2 text-sm font-medium text-gray-300">Setting</label>
                         <select id="edit-setting"
-                            class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5">
+                            class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1">
                             <option>School</option>
                             <option>Home</option>
                             <option>Clinic</option>
@@ -456,13 +449,13 @@
                     </div>
                     <div><label for="edit-activity-type" class="block mb-2 text-sm">Activity Type</label><select
                             id="edit-activity-type"
-                            class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5">
+                            class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1">
                             <option>Restricted</option>
                             <option>Unrestricted</option>
                         </select></div>
                     <div><label for="edit-supervision-type" class="block mb-2 text-sm">Supervision Type</label><select
                             id="edit-supervision-type"
-                            class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5">
+                            class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1">
                             <option>No Supervision</option>
                             <option>1:1 Meeting (with Supervisor)</option>
                             <option>Group Supervision</option>
@@ -470,24 +463,24 @@
                         </select></div>
                     <div id="edit-supervisor-name-wrapper"><label for="edit-supervisor-select"
                             class="block mb-2 text-sm">Overseeing Supervisor</label><select id="edit-supervisor-select"
-                            class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5" required></select>
+                            class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1" required></select>
                     </div>
                     <div><label for="edit-client-present" class="block mb-2 text-sm">Client Present?</label><select
                             id="edit-client-present"
-                            class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5">
+                            class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1">
                             <option>No</option>
                             <option>Yes</option>
                         </select></div>
                     <div id="edit-client-name-wrapper"><label for="edit-client-name" class="block mb-2 text-sm">Client
                             Name / Student ID</label><input type="text" id="edit-client-name"
-                            class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5" required></div>
+                            class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1" required></div>
 
                     <!-- Conditional Unrestricted Activity Type -->
                     <div id="edit-unrestricted-type-wrapper" class="hidden md:col-span-2">
                         <label for="edit-unrestricted-type-select"
                             class="block mb-2 text-sm font-medium text-gray-300">Unrestricted Activity</label>
                         <select id="edit-unrestricted-type-select"
-                            class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5">
+                            class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1">
                             <option value="">Select Activity...</option>
                             <option>Observation</option>
                             <option>Training</option>
@@ -501,20 +494,20 @@
                     <div id="edit-unrestricted-wrapper" class="hidden md:col-span-2"><label
                             for="edit-unrestricted-explanation" class="block mb-2 text-sm">Unrestricted
                             Explanation</label><textarea id="edit-unrestricted-explanation" rows="2"
-                            class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5"></textarea></div>
+                            class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1"></textarea></div>
                     <div class="md:col-span-2"><label for="edit-notes" class="block mb-2 text-sm">Additional Notes
                             (Required)</label><textarea id="edit-notes" rows="3"
-                            class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5" required></textarea>
+                            class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1" required></textarea>
                     </div>
                 </div>
                 <div class="mt-6 flex flex-col sm:flex-row gap-3">
                     <button type="submit"
-                        class="w-full text-white bg-button hover:bg-button-hover rounded-lg text-sm px-5 py-2.5">Save
+                        class="w-full text-white bg-button hover:bg-button-hover rounded-lg text-sm px-5 py-2.5 transition-colors">Save
                         Changes</button>
                     <button type="button" id="delete-button"
-                        class="w-full text-white bg-red-600 hover:bg-red-700 rounded-lg text-sm px-5 py-2.5">Delete</button>
+                        class="w-full text-white bg-red-600 hover:bg-red-700 rounded-lg text-sm px-5 py-2.5 transition-colors">Delete</button>
                     <button type="button" id="cancel-edit"
-                        class="w-full text-gray-300 bg-gray-500 hover:bg-gray-600 rounded-lg text-sm px-5 py-2.5">Cancel</button>
+                        class="w-full text-gray-300 bg-gray-500 hover:bg-gray-600 rounded-lg text-sm px-5 py-2.5 transition-colors">Cancel</button>
                 </div>
             </form>
         </div>
@@ -531,18 +524,18 @@
             <div class="mb-4">
                 <label for="trainee-name" class="block mb-2 text-sm font-medium text-gray-300">Your Name</label>
                 <input type="text" id="trainee-name"
-                    class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5"
+                    class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1"
                     placeholder="e.g., Jane Doe">
             </div>
             <div class="mb-6">
                 <label for="rbt-number" class="block mb-2 text-sm font-medium text-gray-300">RBT Number / BACB
                     ID</label>
                 <input type="text" id="rbt-number"
-                    class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5"
+                    class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1"
                     placeholder="e.g., RBT-123456">
             </div>
             <button type="submit"
-                class="w-full text-white bg-button hover:bg-button-hover font-medium rounded-lg text-sm px-5 py-2.5 mb-6">Save
+                class="w-full text-white bg-button hover:bg-button-hover font-medium rounded-lg text-sm px-5 py-2.5 mb-6 transition-colors">Save
                 Profile</button>
         </form>
         <hr class="border-gray-500 my-6">
@@ -553,16 +546,16 @@
                     <label for="supervisor-name-input" class="block mb-2 text-sm font-medium text-gray-300">Supervisor
                         Name</label>
                     <input type="text" id="supervisor-name-input"
-                        class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5" required>
+                        class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1" required>
                 </div>
                 <div>
                     <label for="supervisor-cert-input"
                         class="block mb-2 text-sm font-medium text-gray-300">Certification #</label>
                     <input type="text" id="supervisor-cert-input"
-                        class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5" required>
+                        class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1" required>
                 </div>
                 <button type="submit"
-                    class="w-full text-white bg-purple-600 hover:bg-purple-700 font-medium rounded-lg text-sm px-5 py-2.5">Add
+                    class="w-full text-white bg-purple-600 hover:bg-purple-700 font-medium rounded-lg text-sm px-5 py-2.5 transition-colors">Add
                     Supervisor</button>
             </form>
             <div id="supervisors-list"></div>
@@ -580,13 +573,13 @@
             <div>
                 <label for="mfvf-supervisor-select" class="block mb-2 text-sm font-medium">Supervisor</label>
                 <select id="mfvf-supervisor-select"
-                    class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5"></select>
+                    class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1"></select>
             </div>
             <div class="mt-6 flex gap-3">
                 <button id="mfvf-generate-confirm"
-                    class="w-full text-white bg-button hover:bg-button-hover rounded-lg text-sm px-5 py-2.5">Generate</button>
+                    class="w-full text-white bg-button hover:bg-button-hover rounded-lg text-sm px-5 py-2.5 transition-colors">Generate</button>
                 <button id="mfvf-cancel"
-                    class="w-full text-gray-300 bg-gray-500 hover:bg-gray-600 rounded-lg text-sm px-5 py-2.5">Cancel</button>
+                    class="w-full text-gray-300 bg-gray-500 hover:bg-gray-600 rounded-lg text-sm px-5 py-2.5 transition-colors">Cancel</button>
             </div>
         </div>
     </div>
@@ -597,9 +590,9 @@
             <h2 class="text-xl font-semibold text-text">PDF Preview</h2>
             <div class="flex gap-4">
                 <button id="pdf-download-btn"
-                    class="w-full text-white bg-button hover:bg-button-hover rounded-lg text-sm px-5 py-2.5">Download</button>
+                    class="w-full text-white bg-button hover:bg-button-hover rounded-lg text-sm px-5 py-2.5 transition-colors">Download</button>
                 <button id="pdf-close-btn"
-                    class="w-full text-gray-300 bg-gray-500 hover:bg-gray-600 rounded-lg text-sm px-5 py-2.5">Close</button>
+                    class="w-full text-gray-300 bg-gray-500 hover:bg-gray-600 rounded-lg text-sm px-5 py-2.5 transition-colors">Close</button>
             </div>
         </div>
         <iframe id="pdf-iframe" class="w-full h-full bg-white rounded-b-lg flex-grow"></iframe>
@@ -607,25 +600,20 @@
 
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- Config & State ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyAl4i1nP24SOvAt1ifbGD0SZo2u_l4MnB8",
-            authDomain: "fieldwork-tracker-ae8f7.firebaseapp.com",
-            projectId: "fieldwork-tracker-ae8f7",
-            storageBucket: "fieldwork-tracker-ae8f7.firebasestorage.app",
-            messagingSenderId: "4649951899",
-            appId: "1:4649951899:web:28278ddb278baf67b39c3e"
-        };
+        const firebaseConfig = JSON.parse(__firebase_config);
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'fieldwork-tracker-default';
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
         dayjs.extend(window.dayjs_plugin_customParseFormat);
         const { jsPDF } = window.jspdf;
 
         let db, auth;
-        let userId = null; // Can be Google UID or 'guest'
+        let userId = null; // Can be Firebase UID or 'guest'
         let allEntries = [];
         let profileData = { name: '', rbtNumber: '', supervisors: [] };
         let unsubscribeEntries = null;
@@ -701,11 +689,7 @@
         const pdfDownloadBtn = document.getElementById('pdf-download-btn');
         const pdfCloseBtn = document.getElementById('pdf-close-btn');
 
-        // New AI Button
-        const aiGenerateBtn = document.getElementById('ai-generate-btn');
-        const notesField = document.getElementById('notes');
-        const apiKeyInput = document.getElementById('gemini-api-key');
-
+        // Note: AI variables removed
 
         const chartContexts = {
             total: document.getElementById('totalHoursChart').getContext('2d'),
@@ -740,10 +724,13 @@
             const provider = new GoogleAuthProvider();
             try {
                 await signInWithPopup(auth, provider);
+                // Auth state listener will handle UI update
             } catch (error) {
                 console.error("Google sign-in error", error.code, error.message);
                 if (error.code === 'auth/unauthorized-domain') {
                     loginErrorMessage.innerHTML = `<strong>Login Failed:</strong> This website's address is not authorized for login. <br>Please go to your Firebase project -> Authentication -> Settings -> Authorized domains, and add the domain where this app is running.`;
+                } else if (error.code === 'auth/popup-blocked') {
+                    loginErrorMessage.innerHTML = `<strong>Popup Blocked:</strong> Please allow popups for this site to sign in with Google.`;
                 } else {
                     loginErrorMessage.textContent = `An error occurred during login: ${error.message}`;
                 }
@@ -761,7 +748,7 @@
                 profileData.supervisors.forEach(s => {
                     const div = document.createElement('div');
                     div.className = 'flex justify-between items-center bg-gray-500 p-2 rounded-lg mb-2';
-                    div.innerHTML = `<span>${s.name} (${s.cert})</span><button class="remove-supervisor-btn text-red-500 font-bold" data-name="${s.name}">&times;</button>`;
+                    div.innerHTML = `<span>${s.name} (${s.cert})</span><button class="remove-supervisor-btn text-red-500 font-bold hover:text-red-300" data-name="${s.name}">&times;</button>`;
                     supervisorsList.appendChild(div);
 
                     supervisorDropdowns.forEach(sel => sel.add(new Option(`${s.name}`, s.name)));
@@ -917,7 +904,7 @@
             <div class="summary-box"><h3 class="text-sm font-medium text-gray-300">Total Hours</h3><p class="text-2xl font-bold text-text">${data.total.toFixed(2)}</p></div>
             <div class="summary-box"><h3 class="text-sm font-medium text-gray-300">Supervised Hours</h3><p class="text-2xl font-bold text-accent1">${data.supervised.toFixed(2)}</p></div>
             <div class="summary-box"><h3 class="text-sm font-medium text-gray-300">Supervisor Contacts</h3><p class="text-2xl font-bold text-text">${data.contacts}</p></div>
-            <div class="summary-box"><h3 class="text-sm font-medium text-gray-300">Supervision %</h3><p class="text-2xl font-bold text-black rounded-md px-2 ${data.percentage < 8 ? 'percentage-red' : data.percentage < 10 ? 'percentage-yellow' : 'percentage-green'}">${data.percentage.toFixed(2)}%</p></div>
+            <div class="summary-box"><h3 class="text-sm font-medium text-gray-300">Supervision %</h3><p class="text-2xl font-bold text-black rounded-md px-2 ${data.percentage < 5 ? 'percentage-red' : data.percentage < 10 ? 'percentage-yellow' : 'percentage-green'}">${data.percentage.toFixed(2)}%</p></div>
             <div class="summary-box"><h3 class="text-sm font-medium text-gray-300">Hours Remaining</h3><p class="text-2xl font-bold text-text">${Math.max(0, 1500 - data.total).toFixed(2)}</p></div>
         `;
 
@@ -931,7 +918,7 @@
             sortedEntries.forEach(entry => {
                 const totalHours = calculateHours(entry.startTime, entry.endTime);
                 const row = document.createElement('tr');
-                row.className = 'bg-gray-600 border-b border-gray-700 hover:bg-gray-500';
+                row.className = 'bg-gray-600 border-b border-gray-700 hover:bg-gray-500 transition-colors';
 
                 let notesDisplay = entry.notes || '';
                 if (entry.unrestrictedActivityType) {
@@ -1091,7 +1078,7 @@
                 newEntry.id = crypto.randomUUID();
                 allEntries.push(newEntry);
                 saveEntriesToLocalStorage();
-                updateMonthlyView(); // Refresh view
+                switchView(document.querySelector('.view-btn-active').dataset.view);
             } else {
                 newEntry.userId = userId;
                 try {
@@ -1114,6 +1101,31 @@
             if (!entry) return;
             if (e.target.classList.contains('edit-btn')) openEditModal(entry);
             else if (e.target.classList.contains('copy-btn')) copyEntryToForm(entry);
+        };
+
+        const copyEntryToForm = (entry) => {
+            trackerForm.elements.date.value = entry.date;
+            trackerForm.elements['start-time'].value = entry.startTime;
+            trackerForm.elements['end-time'].value = entry.endTime;
+            trackerForm.elements.setting.value = entry.setting || 'School';
+            trackerForm.elements['activity-type'].value = entry.activityType;
+            trackerForm.elements['supervision-type'].value = entry.supervisionType;
+            trackerForm.elements['supervisor-select'].value = entry.supervisorName || '';
+            trackerForm.elements['client-present'].value = entry.clientPresent;
+            trackerForm.elements['client-name'].value = entry.clientName || '';
+            trackerForm.elements.notes.value = entry.notes || '';
+            
+            // Handle unrestricted fields
+            if (entry.activityType === 'Unrestricted') {
+                trackerForm.elements['unrestricted-type-select'].value = entry.unrestrictedActivityType || '';
+                trackerForm.elements['unrestricted-explanation'].value = entry.unrestrictedExplanation || '';
+            }
+
+            // Trigger change events to update UI visibility
+            trackerForm.elements['activity-type'].dispatchEvent(new Event('change'));
+            
+            // Scroll to top to see the form
+            document.querySelector('#monthly-view').scrollIntoView({ behavior: 'smooth' });
         };
 
         const handleGuestLogin = () => {
@@ -1139,9 +1151,9 @@
                 updateYearlyView();
                 updateAllTimeView();
             } else {
-                // Handle Firebase Google logout
                 try {
                     await signOut(auth);
+                    // Auth state listener handles UI updates
                 } catch (error) {
                     console.error("Sign-out error", error);
                 }
@@ -1474,66 +1486,7 @@
             showPdfPreview(doc, `M-FVF_${profileData.name}_${dayjs(selectedMonth).format('MMM_YYYY')}_${supervisor.name}.pdf`);
         };
 
-        // --- NEW: AI Note Generation Logic ---
-        const generateNoteWithAI = async () => {
-            // Fallback logic: Check window.GEMINI_API_KEY first (local/netlify), then profileData (old method)
-            const effectiveKey = window.GEMINI_API_KEY || profileData.geminiApiKey;
-
-            if (!effectiveKey) {
-                alert("API Key missing. Please configure secrets.js (local) or Environment Variables (Netlify).");
-                return;
-            }
-
-            const setting = settingSelect.value;
-            const activity = activityTypeSelect.value;
-            const supervision = supervisionTypeSelect.value;
-            const client = clientNameWrapper.querySelector('input').value || "the client";
-
-            // Basic context building
-            let prompt = `Write a single professional fieldwork note for a behavior analysis student.
-            Context:
-            - Setting: ${setting}
-            - Activity Type: ${activity}
-            - Supervision: ${supervision}
-            - Client: ${client}
-            `;
-
-            if (activity === 'Unrestricted') {
-                const type = unrestrictedTypeSelect.value;
-                prompt += `- Unrestricted Task: ${type || 'General unrestricted work'}\n`;
-            } else {
-                prompt += `- Focus: Direct implementation of ABA strategies.\n`;
-            }
-
-            prompt += `Please write 1-2 sentences describing potential activities in this scenario. Focus on objective, behavioral language.`;
-
-            aiGenerateBtn.disabled = true;
-            aiGenerateBtn.innerHTML = '<span class="spinner"></span> Generating...';
-
-            try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${effectiveKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-                });
-
-                const data = await response.json();
-                if (data.candidates && data.candidates[0].content) {
-                    const note = data.candidates[0].content.parts[0].text;
-                    notesField.value = note.trim();
-                } else {
-                    console.error("AI Error:", data);
-                    alert("Failed to generate note. Check console for details.");
-                }
-            } catch (error) {
-                console.error("Network Error:", error);
-                alert("Network error connecting to AI service.");
-            } finally {
-                aiGenerateBtn.disabled = false;
-                aiGenerateBtn.innerHTML = '<span>✨ Auto-Generate Note</span>';
-            }
-        };
-
+        // Note: generateNoteWithAI function removed
 
         // --- Initialization ---
 
@@ -1543,6 +1496,17 @@
             const app = initializeApp(firebaseConfig);
             db = getFirestore(app);
             auth = getAuth(app);
+
+            // Pre-authenticate with environment token to ensure Firestore works immediately
+            // This is critical for the preview environment
+            const initAuth = async () => {
+                // If initial auth token exists, sign in (for preview env)
+                // Otherwise do nothing and let user click Sign In
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                }
+            };
+            initAuth();
 
             // Setup static event listeners
             loginBtn.addEventListener('click', handleGoogleLogin);
@@ -1599,7 +1563,7 @@
                 const summary = calculateSummaryData(entries);
                 exportToCsv(entries, summary, `Monthly_Log_${dayjs(selectedMonth).format('MMM_YYYY')}.csv`);
             });
-            // ... [Other export listeners] ...
+            
             exportYearlyPdfBtn.addEventListener('click', () => { const year = yearSelector.value; const entries = allEntries.filter(e => dayjs(e.date).year() == year); generatePdf(`Yearly Report ${year}`, entries, 'landscape'); });
             exportYearlyCsvBtn.addEventListener('click', () => { const year = yearSelector.value; const entries = allEntries.filter(e => dayjs(e.date).year() == year); const summary = calculateSummaryData(entries); exportToCsv(entries, summary, `Yearly_Log_${year}.csv`); });
             exportAllTimePdfBtn.addEventListener('click', () => generatePdf('Full Fieldwork History', allEntries, 'landscape'));
@@ -1607,19 +1571,24 @@
             pdfCloseBtn.addEventListener('click', closePdfPreview);
             pdfDownloadBtn.addEventListener('click', downloadPdf);
 
-            // AI Button listener
-            aiGenerateBtn.addEventListener('click', generateNoteWithAI);
+            // Note: AI button listener removed
 
+            // Listen for auth state changes
             onAuthStateChanged(auth, user => {
                 if (unsubscribeEntries) unsubscribeEntries();
                 if (unsubscribeProfile) unsubscribeProfile();
 
-                if (user && !user.isAnonymous) { // Google User
+                // Check for authenticated user (Google or Anonymous/Custom Token)
+                // We exclude local 'guest' logic here, handled separately
+                if (user && userId !== 'guest') { 
                     userId = user.uid;
                     loginView.classList.add('hidden');
                     appContainer.classList.remove('hidden');
-                    userDisplay.textContent = user.displayName || user.email;
+                    
+                    // Show a generic name if displayName is missing (common with anon auth)
+                    userDisplay.textContent = user.displayName || "Authenticated User";
 
+                    // Profile Sync
                     const profileRef = doc(db, `artifacts/${appId}/users/${userId}/profile/data`);
                     unsubscribeProfile = onSnapshot(profileRef, (doc) => {
                         const currentUser = auth.currentUser;
@@ -1628,24 +1597,21 @@
                             profileData = {
                                 name: data.name || (currentUser ? currentUser.displayName : ''),
                                 rbtNumber: data.rbtNumber || '',
-                                supervisors: data.supervisors || [],
-                                geminiApiKey: data.geminiApiKey || ''
+                                supervisors: data.supervisors || []
                             };
                         } else {
                             profileData = {
                                 name: currentUser ? currentUser.displayName : '',
                                 rbtNumber: '',
-                                supervisors: [],
-                                geminiApiKey: ''
+                                supervisors: []
                             };
                         }
-                        document.getElementById('trainee-name').value = profileData.name;
-                        document.getElementById('rbt-number').value = profileData.rbtNumber;
-                        if (apiKeyInput) {
-                            apiKeyInput.value = profileData.geminiApiKey; // Load key
-                        }
+                        document.getElementById('trainee-name').value = profileData.name || '';
+                        document.getElementById('rbt-number').value = profileData.rbtNumber || '';
                         renderSupervisors();
                     });
+
+                    // Entries Sync
                     const entriesRef = collection(db, `artifacts/${appId}/users/${userId}/fieldwork_entries`);
                     unsubscribeEntries = onSnapshot(entriesRef, snapshot => {
                         allEntries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -1653,14 +1619,16 @@
                         const activeViewId = activeViewBtn ? activeViewBtn.dataset.view : 'monthly';
                         switchView(activeViewId);
                     });
+                    
                     switchView('monthly');
-                } else { // No Google user
+                } else { 
+                    // No Firebase user
                     if (userId !== 'guest') {
                         userId = null;
                         appContainer.classList.add('hidden');
                         loginView.classList.remove('hidden');
                         allEntries = [];
-                        profileData = { name: '', rbtNumber: '', supervisors: [], geminiApiKey: '' };
+                        profileData = { name: '', rbtNumber: '', supervisors: [] };
                         updateMonthlyView();
                         updateYearlyView();
                         updateAllTimeView();
