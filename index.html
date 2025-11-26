@@ -898,14 +898,15 @@
         };
 
         // --- Rendering ---
-        const createSummaryHTML = (data) => `
+        // CHANGED: Added allTimeTotal parameter to correctly calculate Hours Remaining in any view
+        const createSummaryHTML = (data, allTimeTotal) => `
             <div class="summary-box"><h3 class="text-sm font-medium text-gray-300">Restricted Hours</h3><p class="text-2xl font-bold text-accent2">${data.restricted.toFixed(2)}</p></div>
             <div class="summary-box"><h3 class="text-sm font-medium text-gray-300">Unrestricted Hours</h3><p class="text-2xl font-bold text-purple-400">${data.unrestricted.toFixed(2)}</p></div>
             <div class="summary-box"><h3 class="text-sm font-medium text-gray-300">Total Hours</h3><p class="text-2xl font-bold text-text">${data.total.toFixed(2)}</p></div>
             <div class="summary-box"><h3 class="text-sm font-medium text-gray-300">Supervised Hours</h3><p class="text-2xl font-bold text-accent1">${data.supervised.toFixed(2)}</p></div>
             <div class="summary-box"><h3 class="text-sm font-medium text-gray-300">Supervisor Contacts</h3><p class="text-2xl font-bold text-text">${data.contacts}</p></div>
             <div class="summary-box"><h3 class="text-sm font-medium text-gray-300">Supervision %</h3><p class="text-2xl font-bold text-black rounded-md px-2 ${data.percentage < 5 ? 'percentage-red' : data.percentage < 10 ? 'percentage-yellow' : 'percentage-green'}">${data.percentage.toFixed(2)}%</p></div>
-            <div class="summary-box"><h3 class="text-sm font-medium text-gray-300">Hours Remaining</h3><p class="text-2xl font-bold text-text">${Math.max(0, 1500 - data.total).toFixed(2)}</p></div>
+            <div class="summary-box"><h3 class="text-sm font-medium text-gray-300">Hours Remaining</h3><p class="text-2xl font-bold text-text">${Math.max(0, 1500 - allTimeTotal).toFixed(2)}</p></div>
         `;
 
         const renderTable = (entries, tableBodyElement) => {
@@ -955,7 +956,11 @@
                 const d = dayjs(e.date);
                 return d.year() == year && (d.month() + 1) == month;
             });
-            monthlySummaryGrid.innerHTML = createSummaryHTML(calculateSummaryData(monthlyEntries));
+            
+            // Calculate all-time total for the Hours Remaining card
+            const allTimeTotal = calculateSummaryData(allEntries).total;
+            
+            monthlySummaryGrid.innerHTML = createSummaryHTML(calculateSummaryData(monthlyEntries), allTimeTotal);
             renderTable(monthlyEntries, logTableBody);
         };
 
@@ -963,13 +968,18 @@
             const selectedYear = yearSelector.value;
             if (!selectedYear) return;
             const yearlyEntries = allEntries.filter(e => dayjs(e.date).year() == selectedYear);
-            yearlySummaryGrid.innerHTML = createSummaryHTML(calculateSummaryData(yearlyEntries));
+            
+            // Calculate all-time total for the Hours Remaining card
+            const allTimeTotal = calculateSummaryData(allEntries).total;
+            
+            yearlySummaryGrid.innerHTML = createSummaryHTML(calculateSummaryData(yearlyEntries), allTimeTotal);
             renderTable(yearlyEntries, yearlyLogTableBody);
         };
 
         const updateAllTimeView = () => {
             const summary = calculateSummaryData(allEntries);
-            allTimeSummaryGrid.innerHTML = createSummaryHTML(summary);
+            // For All Time view, the current data total IS the all time total
+            allTimeSummaryGrid.innerHTML = createSummaryHTML(summary, summary.total);
             renderTable(allEntries, allTimeLogTableBody);
             renderAllTimeCharts(allEntries);
         };
