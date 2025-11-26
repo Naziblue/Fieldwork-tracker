@@ -14,6 +14,13 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    <!-- 
+      SECURITY: This loads the secret key from a separate file 'secrets.js' if it exists.
+      It handles the error gracefully if the file is missing (common in production).
+    -->
+    <script src="secrets.js"
+        onerror="console.log('secrets.js not found (normal for production if using environment variables)')"></script>
+
     <script>
         // Custom color palette configuration for Tailwind CSS
         tailwind.config = {
@@ -84,10 +91,8 @@
             background-color: #6B7280;
         }
 
-        /* New fashionable styles */
         .section-header {
             color: #A8DADC;
-            /* accent1 */
             border-bottom: 1px solid #525c6b;
             padding-bottom: 0.5rem;
         }
@@ -99,7 +104,6 @@
             padding: 1rem;
         }
 
-        /* Loading spinner for AI */
         .spinner {
             border: 3px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
@@ -146,7 +150,7 @@
         </div>
     </div>
 
-    <!-- Main App Container (hidden by default) -->
+    <!-- Main App Container -->
     <div id="app-container" class="container mx-auto p-4 md:p-8 hidden">
         <header class="text-center mb-6 relative">
             <h1 class="text-3xl md:text-4xl font-bold text-pastel-blue">Fieldwork Tracking</h1>
@@ -401,14 +405,13 @@
             <form id="edit-form">
                 <input type="hidden" id="edit-id">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div><label for="edit-date" class="block mb-2 text-sm">Date</label><input type="date" id="edit-date"
+                    <!-- Inputs -->
+                    <div><label class="block mb-2 text-sm">Date</label><input type="date" id="edit-date"
                             class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5"></div>
-                    <div><label for="edit-start-time" class="block mb-2 text-sm">Start Time</label><input type="time"
-                            id="edit-start-time" class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5">
-                    </div>
-                    <div><label for="edit-end-time" class="block mb-2 text-sm">End Time</label><input type="time"
-                            id="edit-end-time" class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5">
-                    </div>
+                    <div><label class="block mb-2 text-sm">Start Time</label><input type="time" id="edit-start-time"
+                            class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5"></div>
+                    <div><label class="block mb-2 text-sm">End Time</label><input type="time" id="edit-end-time"
+                            class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5"></div>
                     <div>
                         <label for="edit-setting" class="block mb-2 text-sm font-medium text-gray-300">Setting</label>
                         <select id="edit-setting"
@@ -443,15 +446,15 @@
                             <option>No</option>
                             <option>Yes</option>
                         </select></div>
-                    <div id="edit-client-name-wrapper"><label for="edit-client-name" class="block mb-2 text-sm">Client
-                            Name / Student ID</label><input type="text" id="edit-client-name"
+
+                    <!-- Client Name / Student ID: Always visible -->
+                    <div id="edit-client-name-wrapper"><label class="block mb-2 text-sm">Client Name / Student
+                            ID</label><input type="text" id="edit-client-name"
                             class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5" required></div>
 
-                    <!-- Conditional Unrestricted Activity Type -->
-                    <div id="edit-unrestricted-type-wrapper" class="hidden md:col-span-2">
-                        <label for="edit-unrestricted-type-select"
-                            class="block mb-2 text-sm font-medium text-gray-300">Unrestricted Activity</label>
-                        <select id="edit-unrestricted-type-select"
+                    <div id="edit-unrestricted-type-wrapper" class="hidden md:col-span-2"><label
+                            class="block mb-2 text-sm">Unrestricted Activity</label><select
+                            id="edit-unrestricted-type-select"
                             class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5">
                             <option value="">Select Activity...</option>
                             <option>Observation</option>
@@ -460,14 +463,12 @@
                             <option>Graphing/Analysis</option>
                             <option>Research</option>
                             <option>Writing Programs/Reports</option>
-                        </select>
-                    </div>
-
+                        </select></div>
                     <div id="edit-unrestricted-wrapper" class="hidden md:col-span-2"><label
-                            for="edit-unrestricted-explanation" class="block mb-2 text-sm">Unrestricted
-                            Explanation</label><textarea id="edit-unrestricted-explanation" rows="2"
+                            class="block mb-2 text-sm">Unrestricted Explanation</label><textarea
+                            id="edit-unrestricted-explanation" rows="2"
                             class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5"></textarea></div>
-                    <div class="md:col-span-2"><label for="edit-notes" class="block mb-2 text-sm">Additional Notes
+                    <div class="md:col-span-2"><label class="block mb-2 text-sm">Additional Notes
                             (Required)</label><textarea id="edit-notes" rows="3"
                             class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5" required></textarea>
                     </div>
@@ -506,13 +507,7 @@
                     class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5"
                     placeholder="e.g., RBT-123456">
             </div>
-            <!-- API Key Field REMOVED AS REQUESTED 
-            <div class="mb-6">
-                <label for="gemini-api-key" class="block mb-2 text-sm font-medium text-gray-300">Gemini API Key (for Auto-Notes)</label>
-                <input type="password" id="gemini-api-key" class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5" placeholder="Paste your AIza... key here">
-                <p class="text-xs text-gray-400 mt-1">Stored locally in your browser. Never sent to our servers.</p>
-            </div>
-            -->
+            <!-- API Key Field REMOVED -->
             <button type="submit"
                 class="w-full text-white bg-button hover:bg-button-hover font-medium rounded-lg text-sm px-5 py-2.5 mb-6">Save
                 Profile</button>
@@ -606,7 +601,7 @@
         let currentPdfDoc = null;
         let currentPdfFilename = "report.pdf";
 
-        // Define all logic functions BEFORE DOMContentLoaded to ensure visibility and prevent reference errors
+        // Define all logic functions BEFORE DOMContentLoaded
         const calculateHours = (start, end) => {
             if (!start || !end) return 0;
             const startTime = dayjs(`1970-01-01T${start}`);
@@ -650,6 +645,8 @@
             const activityTypeSelect = document.getElementById('activity-type');
             const unrestrictedWrapper = document.getElementById('unrestricted-wrapper');
             const supervisionTypeSelect = document.getElementById('supervision-type');
+            const supervisorNameWrapper = document.getElementById('supervisor-name-wrapper');
+            const supervisorSelect = document.getElementById('supervisor-select');
             const clientPresentSelect = document.getElementById('client-present');
             const clientNameWrapper = document.getElementById('client-name-wrapper');
             const settingSelect = document.getElementById('setting');
@@ -691,9 +688,7 @@
             const pdfIframe = document.getElementById('pdf-iframe');
             const pdfDownloadBtn = document.getElementById('pdf-download-btn');
             const pdfCloseBtn = document.getElementById('pdf-close-btn');
-            const supervisorSelect = document.getElementById('supervisor-select');
-
-            const apiKeyInput = document.getElementById('gemini-api-key');
+            // const apiKeyInput = document.getElementById('gemini-api-key'); // Removed from DOM
 
             // Define functions using DOM elements inside DOMContentLoaded
             const toggleFieldVisibility = (select, wrapper, conditionValue) => {
@@ -799,19 +794,14 @@
             };
 
             const updateMonthlyView = () => {
-                const selectedMonth = monthSelector.value;
-                if (!selectedMonth) return;
+                const selectedMonth = monthSelector.value; if (!selectedMonth) return;
                 const [year, month] = selectedMonth.split('-');
-                const monthlyEntries = allEntries.filter(e => {
-                    const d = dayjs(e.date);
-                    return d.year() == year && (d.month() + 1) == month;
-                });
+                const monthlyEntries = allEntries.filter(e => { const d = dayjs(e.date); return d.year() == year && (d.month() + 1) == month; });
                 document.getElementById('monthly-summary-grid').innerHTML = createSummaryHTML(calculateSummaryData(monthlyEntries));
                 renderTable(monthlyEntries, logTableBody);
             };
             const updateYearlyView = () => {
-                const selectedYear = yearSelector.value;
-                if (!selectedYear) return;
+                const selectedYear = yearSelector.value; if (!selectedYear) return;
                 const yearlyEntries = allEntries.filter(e => dayjs(e.date).year() == selectedYear);
                 document.getElementById('yearly-summary-grid').innerHTML = createSummaryHTML(calculateSummaryData(yearlyEntries));
                 renderTable(yearlyEntries, yearlyLogTableBody);
@@ -826,10 +816,7 @@
             const switchView = (viewId) => {
                 views.forEach(view => view.classList.add('hidden'));
                 document.getElementById(`${viewId}-view`).classList.remove('hidden');
-                viewBtns.forEach(btn => {
-                    btn.classList.toggle('view-btn-active', btn.dataset.view === viewId);
-                    btn.classList.toggle('view-btn', btn.dataset.view !== viewId);
-                });
+                viewBtns.forEach(btn => { btn.classList.toggle('view-btn-active', btn.dataset.view === viewId); btn.classList.toggle('view-btn', btn.dataset.view !== viewId); });
                 if (viewId === 'monthly') updateMonthlyView();
                 else if (viewId === 'yearly') updateYearlyView();
                 else if (viewId === 'all-time') updateAllTimeView();
@@ -841,8 +828,7 @@
                 supervisorDropdowns.forEach(sel => sel.innerHTML = '<option value="">Select a supervisor...</option>');
                 if (profileData.supervisors) {
                     profileData.supervisors.forEach(s => {
-                        const div = document.createElement('div');
-                        div.className = 'flex justify-between items-center bg-gray-500 p-2 rounded-lg mb-2';
+                        const div = document.createElement('div'); div.className = 'flex justify-between items-center bg-gray-500 p-2 rounded-lg mb-2';
                         div.innerHTML = `<span>${s.name} (${s.cert})</span><button class="remove-supervisor-btn text-red-500 font-bold" data-name="${s.name}">&times;</button>`;
                         supervisorsList.appendChild(div);
                         supervisorDropdowns.forEach(sel => sel.add(new Option(`${s.name}`, s.name)));
@@ -851,43 +837,27 @@
             };
 
             const addSupervisor = async (e) => {
-                e.preventDefault();
-                const name = document.getElementById('supervisor-name-input').value;
-                const cert = document.getElementById('supervisor-cert-input').value;
+                e.preventDefault(); const addBtn = supervisorForm.querySelector('button[type="submit"]'); addBtn.disabled = true;
+                const name = document.getElementById('supervisor-name-input').value; const cert = document.getElementById('supervisor-cert-input').value;
                 if (!profileData.supervisors) profileData.supervisors = [];
                 if (name && cert && !profileData.supervisors.find(s => s.name === name)) {
                     profileData.supervisors.push({ name, cert });
-                    if (userId === 'guest') {
-                        saveProfileToLocalStorage();
-                        renderSupervisors();
-                        supervisorForm.reset();
-                    } else {
-                        const profileRef = doc(db, `artifacts/${appId}/users/${userId}/profile/data`);
-                        try {
-                            await setDoc(profileRef, { supervisors: profileData.supervisors }, { merge: true });
-                            supervisorForm.reset();
-                        } catch (error) { profileData.supervisors.pop(); }
-                    }
+                    if (userId === 'guest') { saveProfileToLocalStorage(); renderSupervisors(); supervisorForm.reset(); }
+                    else { try { await setDoc(doc(db, `artifacts/${appId}/users/${userId}/profile/data`), { supervisors: profileData.supervisors }, { merge: true }); supervisorForm.reset(); } catch (error) { profileData.supervisors.pop(); } }
                 }
+                addBtn.disabled = false;
             };
 
             const removeSupervisor = async (name) => {
                 profileData.supervisors = profileData.supervisors.filter(s => s.name !== name);
-                if (userId === 'guest') {
-                    saveProfileToLocalStorage();
-                    renderSupervisors();
-                } else {
-                    await setDoc(doc(db, `artifacts/${appId}/users/${userId}/profile/data`), { supervisors: profileData.supervisors }, { merge: true });
-                }
+                if (userId === 'guest') { saveProfileToLocalStorage(); renderSupervisors(); }
+                else { await setDoc(doc(db, `artifacts/${appId}/users/${userId}/profile/data`), { supervisors: profileData.supervisors }, { merge: true }); }
             };
 
             const loadDataFromLocalStorage = () => {
                 allEntries = JSON.parse(localStorage.getItem('fieldwork_entries')) || [];
-                profileData = JSON.parse(localStorage.getItem('fieldwork_profile')) || { name: 'Guest User', rbtNumber: '', supervisors: [], geminiApiKey: '' };
-                document.getElementById('trainee-name').value = profileData.name;
-                document.getElementById('rbt-number').value = profileData.rbtNumber;
-                // removed api key loading
-                renderSupervisors();
+                profileData = JSON.parse(localStorage.getItem('fieldwork_profile')) || { name: 'Guest User', rbtNumber: '', supervisors: [] };
+                document.getElementById('trainee-name').value = profileData.name; document.getElementById('rbt-number').value = profileData.rbtNumber; renderSupervisors();
             };
 
             const saveEntriesToLocalStorage = () => localStorage.setItem('fieldwork_entries', JSON.stringify(allEntries));
@@ -902,54 +872,18 @@
                 switchView('monthly');
             };
             const handleLogout = async () => {
-                if (userId === 'guest') {
-                    userId = null;
-                    appContainer.classList.add('hidden');
-                    loginView.classList.remove('hidden');
-                    allEntries = [];
-                    profileData = { name: '', rbtNumber: '', supervisors: [], geminiApiKey: '' };
-                } else {
-                    try { await signOut(auth); } catch (error) { console.error("Sign-out error", error); }
-                }
+                if (userId === 'guest') { userId = null; appContainer.classList.add('hidden'); loginView.classList.remove('hidden'); allEntries = []; profileData = { name: '', rbtNumber: '', supervisors: [] }; }
+                else { try { await signOut(auth); } catch (error) { console.error("Sign-out error", error); } }
             };
-
             const handleGoogleLogin = async () => {
-                loginErrorMessage.classList.add('hidden');
-                const provider = new GoogleAuthProvider();
-                try { await signInWithPopup(auth, provider); }
-                catch (error) {
-                    console.error("Google sign-in error", error);
-                    if (error.code === 'auth/unauthorized-domain') loginErrorMessage.innerHTML = `<strong>Login Failed:</strong> Domain not authorized in Firebase.`;
-                    else loginErrorMessage.textContent = `Login error: ${error.message}`;
-                    loginErrorMessage.classList.remove('hidden');
-                }
-            };
-
-            const generateNoteWithAI = async () => {
-                // Feature Disabled
-                /*
-                const effectiveKey = window.GEMINI_API_KEY || profileData.geminiApiKey;
-                if (!effectiveKey) {
-                    alert("API Key missing. Please configure secrets.js (local) or Environment Variables (Netlify).");
-                    return;
-                }
-                // ... (rest of AI logic commented out)
-                */
-                alert("AI Auto-Generate is currently disabled.");
+                loginErrorMessage.classList.add('hidden'); const provider = new GoogleAuthProvider();
+                try { await signInWithPopup(auth, provider); } catch (error) { console.error("Google sign-in error", error); if (error.code === 'auth/unauthorized-domain') loginErrorMessage.innerHTML = `<strong>Login Failed:</strong> Domain not authorized.`; else loginErrorMessage.textContent = `Login error: ${error.message}`; loginErrorMessage.classList.remove('hidden'); }
             };
 
             const showPdfPreview = (doc, filename) => {
-                currentPdfDoc = doc;
-                currentPdfFilename = filename;
-                const dataUri = doc.output('datauristring');
-                pdfIframe.src = dataUri;
-                pdfPreviewModal.classList.remove('hidden');
-                setTimeout(() => pdfPreviewModal.classList.remove('opacity-0'), 10);
+                currentPdfDoc = doc; currentPdfFilename = filename; const dataUri = doc.output('datauristring'); pdfIframe.src = dataUri; pdfPreviewModal.classList.remove('hidden'); setTimeout(() => pdfPreviewModal.classList.remove('opacity-0'), 10);
             };
-            const closePdfPreview = () => {
-                pdfPreviewModal.classList.add('opacity-0');
-                setTimeout(() => { pdfPreviewModal.classList.add('hidden'); pdfIframe.src = ''; }, 300);
-            };
+            const closePdfPreview = () => { pdfPreviewModal.classList.add('opacity-0'); setTimeout(() => { pdfPreviewModal.classList.add('hidden'); pdfIframe.src = ''; }, 300); };
             const downloadPdf = () => { if (currentPdfDoc) currentPdfDoc.save(currentPdfFilename); };
 
             const exportToCsv = (entries, summaryData, filename) => {
@@ -997,167 +931,94 @@
             const handleAddEntry = async (e) => {
                 e.preventDefault();
                 const newEntry = {
-                    date: trackerForm.elements.date.value,
-                    startTime: trackerForm.elements['start-time'].value,
-                    endTime: trackerForm.elements['end-time'].value,
-                    setting: trackerForm.elements.setting.value,
-                    activityType: trackerForm.elements['activity-type'].value,
-                    unrestrictedExplanation: trackerForm.elements['unrestricted-explanation'].value,
-                    unrestrictedActivityType: trackerForm.elements['unrestricted-type-select'].value,
-                    supervisionType: trackerForm.elements['supervision-type'].value,
-                    supervisorName: trackerForm.elements['supervisor-select'].value,
-                    clientPresent: trackerForm.elements['client-present'].value,
-                    clientName: trackerForm.elements['client-name'].value,
-                    notes: trackerForm.elements.notes.value,
+                    date: trackerForm.elements.date.value, startTime: trackerForm.elements['start-time'].value, endTime: trackerForm.elements['end-time'].value,
+                    setting: trackerForm.elements.setting.value, activityType: trackerForm.elements['activity-type'].value,
+                    unrestrictedExplanation: trackerForm.elements['unrestricted-explanation'].value, unrestrictedActivityType: trackerForm.elements['unrestricted-type-select'].value,
+                    supervisionType: trackerForm.elements['supervision-type'].value, supervisorName: trackerForm.elements['supervisor-select'].value,
+                    clientPresent: trackerForm.elements['client-present'].value, clientName: trackerForm.elements['client-name'].value, notes: trackerForm.elements.notes.value,
                 };
-
-                if (userId === 'guest') {
-                    newEntry.id = crypto.randomUUID();
-                    allEntries.push(newEntry);
-                    saveEntriesToLocalStorage();
-                    updateMonthlyView();
-                } else {
-                    newEntry.userId = userId;
-                    try { await addDoc(collection(db, `artifacts/${appId}/users/${userId}/fieldwork_entries`), newEntry); } catch (error) { console.error("Error adding document:", error); }
-                }
-                trackerForm.reset();
-                toggleFieldVisibility(activityTypeSelect, unrestrictedWrapper, 'Unrestricted');
-                toggleUnrestrictedActivityVisibility();
-                trackerForm.elements.date.value = dayjs().format('YYYY-MM-DD');
+                if (userId === 'guest') { newEntry.id = crypto.randomUUID(); allEntries.push(newEntry); saveEntriesToLocalStorage(); updateMonthlyView(); }
+                else { newEntry.userId = userId; try { await addDoc(collection(db, `artifacts/${appId}/users/${userId}/fieldwork_entries`), newEntry); } catch (error) { console.error("Error adding document:", error); } }
+                trackerForm.reset(); toggleFieldVisibility(activityTypeSelect, unrestrictedWrapper, 'Unrestricted'); toggleUnrestrictedActivityVisibility(); trackerForm.elements.date.value = dayjs().format('YYYY-MM-DD');
             };
 
             const handleUpdateEntry = async (e) => {
                 e.preventDefault();
                 const entryId = editForm.elements['edit-id'].value;
                 const updatedEntryData = {
-                    date: editForm.elements['edit-date'].value,
-                    startTime: editForm.elements['edit-start-time'].value,
-                    endTime: editForm.elements['edit-end-time'].value,
-                    setting: editForm.elements['edit-setting'].value,
-                    activityType: editForm.elements['edit-activity-type'].value,
-                    unrestrictedExplanation: editForm.elements['edit-unrestricted-explanation'].value,
-                    unrestrictedActivityType: editForm.elements['edit-unrestricted-type-select'].value,
-                    supervisionType: editForm.elements['edit-supervision-type'].value,
-                    supervisorName: editForm.elements['edit-supervisor-select'].value,
-                    clientPresent: editForm.elements['edit-client-present'].value,
-                    clientName: editForm.elements['edit-client-name'].value,
-                    notes: editForm.elements['edit-notes'].value,
+                    date: editForm.elements['edit-date'].value, startTime: editForm.elements['edit-start-time'].value, endTime: editForm.elements['edit-end-time'].value,
+                    setting: editForm.elements['edit-setting'].value, activityType: editForm.elements['edit-activity-type'].value,
+                    unrestrictedExplanation: editForm.elements['edit-unrestricted-explanation'].value, unrestrictedActivityType: editForm.elements['edit-unrestricted-type-select'].value,
+                    supervisionType: editForm.elements['edit-supervision-type'].value, supervisorName: editForm.elements['edit-supervisor-select'].value,
+                    clientPresent: editForm.elements['edit-client-present'].value, clientName: editForm.elements['edit-client-name'].value, notes: editForm.elements['edit-notes'].value,
                 };
-
-                if (userId === 'guest') {
-                    const index = allEntries.findIndex(e => e.id === entryId);
-                    if (index > -1) {
-                        allEntries[index] = { ...allEntries[index], ...updatedEntryData };
-                        saveEntriesToLocalStorage();
-                        switchView(document.querySelector('.view-btn-active').dataset.view);
-                    }
-                } else {
-                    try { await updateDoc(doc(db, `artifacts/${appId}/users/${userId}/fieldwork_entries`, entryId), updatedEntryData); } catch (error) { console.error("Error updating doc:", error); }
-                }
+                if (userId === 'guest') { const index = allEntries.findIndex(e => e.id === entryId); if (index > -1) { allEntries[index] = { ...allEntries[index], ...updatedEntryData }; saveEntriesToLocalStorage(); switchView(document.querySelector('.view-btn-active').dataset.view); } }
+                else { try { await updateDoc(doc(db, `artifacts/${appId}/users/${userId}/fieldwork_entries`, entryId), updatedEntryData); } catch (error) { console.error("Error updating doc:", error); } }
                 closeEditModal();
             };
 
             const handleDeleteEntry = async () => {
-                const entryId = editForm.elements['edit-id'].value;
-                if (!confirm("Are you sure you want to permanently delete this entry?")) return;
-                if (userId === 'guest') {
-                    allEntries = allEntries.filter(e => e.id !== entryId);
-                    saveEntriesToLocalStorage();
-                    switchView(document.querySelector('.view-btn-active').dataset.view);
-                } else {
-                    try { await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/fieldwork_entries`, entryId)); }
-                    catch (error) { console.error("Error deleting doc:", error); }
-                }
+                const entryId = editForm.elements['edit-id'].value; if (!confirm("Delete entry?")) return;
+                if (userId === 'guest') { allEntries = allEntries.filter(e => e.id !== entryId); saveEntriesToLocalStorage(); switchView(document.querySelector('.view-btn-active').dataset.view); }
+                else { try { await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/fieldwork_entries`, entryId)); } catch (error) { console.error("Error deleting:", error); } }
                 closeEditModal();
             };
 
             const handleTableClick = (e) => {
-                const entryId = e.target.dataset.id;
-                if (!entryId) return;
-                const entry = allEntries.find(item => item.id === entryId);
-                if (!entry) return;
-                if (e.target.classList.contains('edit-btn')) openEditModal(entry);
-                else if (e.target.classList.contains('copy-btn')) copyEntryToForm(entry);
-            };
-            const openEditModal = (entry) => {
-                editForm.elements['edit-id'].value = entry.id;
-                editForm.elements['edit-date'].value = entry.date;
-                editForm.elements['edit-start-time'].value = entry.startTime;
-                editForm.elements['edit-end-time'].value = entry.endTime;
-                editForm.elements['edit-setting'].value = entry.setting || 'School';
-                editForm.elements['edit-activity-type'].value = entry.activityType;
-                editForm.elements['edit-unrestricted-explanation'].value = entry.unrestrictedExplanation || '';
-                editForm.elements['edit-unrestricted-type-select'].value = entry.unrestrictedActivityType || '';
-                editForm.elements['edit-supervision-type'].value = entry.supervisionType;
-                editForm.elements['edit-supervisor-select'].value = entry.supervisorName || '';
-                editForm.elements['edit-client-present'].value = entry.clientPresent;
-                editForm.elements['edit-client-name'].value = entry.clientName || '';
-                editForm.elements['edit-notes'].value = entry.notes || '';
-                toggleFieldVisibility(editActivityTypeSelect, editUnrestrictedWrapper, 'Unrestricted');
-                toggleEditUnrestrictedActivityVisibility();
-                editModal.classList.remove('hidden');
-                setTimeout(() => { editModal.classList.remove('opacity-0'); editModal.querySelector('div').classList.remove('scale-95'); }, 10);
+                const entryId = e.target.dataset.id; if (!entryId) return; const entry = allEntries.find(item => item.id === entryId); if (!entry) return;
+                if (e.target.classList.contains('edit-btn')) openEditModal(entry); else if (e.target.classList.contains('copy-btn')) copyEntryToForm(entry);
             };
             const copyEntryToForm = (entry) => {
-                trackerForm.elements.date.value = entry.date;
-                trackerForm.elements['start-time'].value = entry.startTime;
-                trackerForm.elements['end-time'].value = entry.endTime;
-                trackerForm.elements.setting.value = entry.setting || 'School';
-                trackerForm.elements['activity-type'].value = entry.activityType;
-                trackerForm.elements['unrestricted-explanation'].value = entry.unrestrictedExplanation || '';
-                trackerForm.elements['unrestricted-type-select'].value = entry.unrestrictedActivityType || '';
-                trackerForm.elements['supervision-type'].value = entry.supervisionType;
-                trackerForm.elements['supervisor-select'].value = entry.supervisorName || '';
-                trackerForm.elements['client-present'].value = entry.clientPresent;
-                trackerForm.elements['client-name'].value = entry.clientName || '';
-                trackerForm.elements.notes.value = entry.notes || '';
-                toggleFieldVisibility(activityTypeSelect, unrestrictedWrapper, 'Unrestricted');
-                toggleUnrestrictedActivityVisibility();
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                trackerForm.elements.date.value = entry.date; trackerForm.elements['start-time'].value = entry.startTime; trackerForm.elements['end-time'].value = entry.endTime;
+                trackerForm.elements.setting.value = entry.setting || 'School'; trackerForm.elements['activity-type'].value = entry.activityType;
+                trackerForm.elements['unrestricted-explanation'].value = entry.unrestrictedExplanation || ''; trackerForm.elements['unrestricted-type-select'].value = entry.unrestrictedActivityType || '';
+                trackerForm.elements['supervision-type'].value = entry.supervisionType; trackerForm.elements['supervisor-select'].value = entry.supervisorName || '';
+                trackerForm.elements['client-present'].value = entry.clientPresent; trackerForm.elements['client-name'].value = entry.clientName || ''; trackerForm.elements.notes.value = entry.notes || '';
+                toggleFieldVisibility(activityTypeSelect, unrestrictedWrapper, 'Unrestricted'); toggleUnrestrictedActivityVisibility(); window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+            const openEditModal = (entry) => {
+                editForm.elements['edit-id'].value = entry.id; editForm.elements['edit-date'].value = entry.date; editForm.elements['edit-start-time'].value = entry.startTime; editForm.elements['edit-end-time'].value = entry.endTime;
+                editForm.elements['edit-setting'].value = entry.setting || 'School'; editForm.elements['edit-activity-type'].value = entry.activityType;
+                editForm.elements['edit-unrestricted-explanation'].value = entry.unrestrictedExplanation || ''; editForm.elements['edit-unrestricted-type-select'].value = entry.unrestrictedActivityType || '';
+                editForm.elements['edit-supervision-type'].value = entry.supervisionType; editForm.elements['edit-supervisor-select'].value = entry.supervisorName || '';
+                editForm.elements['edit-client-present'].value = entry.clientPresent; editForm.elements['edit-client-name'].value = entry.clientName || ''; editForm.elements['edit-notes'].value = entry.notes || '';
+
+                toggleFieldVisibility(editActivityTypeSelect, editUnrestrictedWrapper, 'Unrestricted'); toggleEditUnrestrictedActivityVisibility();
+                editModal.classList.remove('hidden'); setTimeout(() => { editModal.classList.remove('opacity-0'); editModal.querySelector('div').classList.remove('scale-95'); }, 10);
+            };
+            const closeEditModal = () => { editModal.classList.add('opacity-0'); editModal.querySelector('div').classList.add('scale-95'); setTimeout(() => editModal.classList.add('hidden'), 300); };
+
+            const saveProfile = async (e) => {
+                e.preventDefault(); const saveBtn = profileForm.querySelector('button[type="submit"]'); saveBtn.textContent = 'Saving...'; saveBtn.disabled = true;
+                const name = document.getElementById('trainee-name').value; const rbtNumber = document.getElementById('rbt-number').value;
+                profileData.name = name; profileData.rbtNumber = rbtNumber;
+                if (userId === 'guest') { saveProfileToLocalStorage(); saveBtn.textContent = 'Saved!'; }
+                else { try { await setDoc(doc(db, `artifacts/${appId}/users/${userId}/profile/data`), { name, rbtNumber }, { merge: true }); saveBtn.textContent = 'Saved!'; } catch (error) { saveBtn.textContent = 'Error!'; } }
+                setTimeout(() => { saveBtn.textContent = 'Save Profile'; saveBtn.disabled = false; }, 2000);
             };
 
-
-            // Event Listeners
-            loginBtn.addEventListener('click', handleGoogleLogin);
-            guestLoginBtn.addEventListener('click', handleGuestLogin);
-            logoutBtn.addEventListener('click', handleLogout);
+            // Listeners
+            loginBtn.addEventListener('click', handleGoogleLogin); guestLoginBtn.addEventListener('click', handleGuestLogin); logoutBtn.addEventListener('click', handleLogout);
             viewBtns.forEach(btn => btn.addEventListener('click', (e) => switchView(e.target.dataset.view)));
-            monthSelector.addEventListener('change', updateMonthlyView);
-            yearSelector.addEventListener('change', updateYearlyView);
-            trackerForm.addEventListener('submit', handleAddEntry);
-            logTableBody.addEventListener('click', handleTableClick);
-            yearlyLogTableBody.addEventListener('click', handleTableClick);
-            allTimeLogTableBody.addEventListener('click', handleTableClick);
-            editForm.addEventListener('submit', handleUpdateEntry);
-            deleteBtn.addEventListener('click', handleDeleteEntry);
-            cancelEditBtn.addEventListener('click', closeEditModal);
-            settingsBtn.addEventListener('click', openSettings);
-            closeSettingsBtn.addEventListener('click', closeSettings);
-            profileForm.addEventListener('submit', saveProfile);
-            supervisorForm.addEventListener('submit', addSupervisor);
+            monthSelector.addEventListener('change', updateMonthlyView); yearSelector.addEventListener('change', updateYearlyView);
+            trackerForm.addEventListener('submit', handleAddEntry); logTableBody.addEventListener('click', handleTableClick);
+            yearlyLogTableBody.addEventListener('click', handleTableClick); allTimeLogTableBody.addEventListener('click', handleTableClick);
+            editForm.addEventListener('submit', handleUpdateEntry); deleteBtn.addEventListener('click', handleDeleteEntry); cancelEditBtn.addEventListener('click', closeEditModal);
+            settingsBtn.addEventListener('click', openSettings); closeSettingsBtn.addEventListener('click', closeSettings);
+            profileForm.addEventListener('submit', saveProfile); supervisorForm.addEventListener('submit', addSupervisor);
             supervisorsList.addEventListener('click', (e) => { if (e.target.classList.contains('remove-supervisor-btn')) removeSupervisor(e.target.dataset.name); });
             // aiGenerateBtn.addEventListener('click', generateNoteWithAI);
-
             activityTypeSelect.addEventListener('change', () => { toggleFieldVisibility(activityTypeSelect, unrestrictedWrapper, 'Unrestricted'); toggleUnrestrictedActivityVisibility(); });
             supervisionTypeSelect.addEventListener('change', () => { toggleUnrestrictedActivityVisibility(); });
             editActivityTypeSelect.addEventListener('change', () => { toggleFieldVisibility(editActivityTypeSelect, editUnrestrictedWrapper, 'Unrestricted'); toggleEditUnrestrictedActivityVisibility(); });
             editSupervisionTypeSelect.addEventListener('change', () => { toggleEditUnrestrictedActivityVisibility(); });
-
-            generateMfvfBtn.addEventListener('click', generateMfvfPdf);
-            mfvfCancel.addEventListener('click', () => { mfvfModal.classList.add('opacity-0'); setTimeout(() => mfvfModal.classList.add('hidden'), 300) });
-            mfvfGenerateConfirm.addEventListener('click', confirmGenerateMfvf);
-            exportMonthlyCsvBtn.addEventListener('click', () => {
-                const selectedMonth = monthSelector.value; const [year, month] = selectedMonth.split('-');
-                const entries = allEntries.filter(e => { const d = dayjs(e.date); return d.year() == year && (d.month() + 1) == month; });
-                const summary = calculateSummaryData(entries);
-                exportToCsv(entries, summary, `Monthly_Log_${dayjs(selectedMonth).format('MMM_YYYY')}.csv`);
-            });
+            generateMfvfBtn.addEventListener('click', generateMfvfPdf); mfvfCancel.addEventListener('click', () => { mfvfModal.classList.add('opacity-0'); setTimeout(() => mfvfModal.classList.add('hidden'), 300) }); mfvfGenerateConfirm.addEventListener('click', confirmGenerateMfvf);
+            exportMonthlyCsvBtn.addEventListener('click', () => { const selectedMonth = monthSelector.value; const [year, month] = selectedMonth.split('-'); const entries = allEntries.filter(e => { const d = dayjs(e.date); return d.year() == year && (d.month() + 1) == month; }); const summary = calculateSummaryData(entries); exportToCsv(entries, summary, `Monthly_Log_${dayjs(selectedMonth).format('MMM_YYYY')}.csv`); });
             exportYearlyPdfBtn.addEventListener('click', () => { const year = yearSelector.value; const entries = allEntries.filter(e => dayjs(e.date).year() == year); generatePdf(`Yearly Report ${year}`, entries, 'landscape'); });
             exportYearlyCsvBtn.addEventListener('click', () => { const year = yearSelector.value; const entries = allEntries.filter(e => dayjs(e.date).year() == year); const summary = calculateSummaryData(entries); exportToCsv(entries, summary, `Yearly_Log_${year}.csv`); });
             exportAllTimePdfBtn.addEventListener('click', () => generatePdf('Full Fieldwork History', allEntries, 'landscape'));
             exportAllTimeCsvBtn.addEventListener('click', () => { const summary = calculateSummaryData(allEntries); exportToCsv(allEntries, summary, 'Full_Fieldwork_History.csv'); });
-            pdfCloseBtn.addEventListener('click', closePdfPreview);
-            pdfDownloadBtn.addEventListener('click', downloadPdf);
+            pdfCloseBtn.addEventListener('click', closePdfPreview); pdfDownloadBtn.addEventListener('click', downloadPdf);
 
             onAuthStateChanged(auth, user => {
                 if (unsubscribeEntries) unsubscribeEntries();
