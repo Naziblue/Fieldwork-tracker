@@ -1,7 +1,0 @@
-# Netlify Configuration
-# https://docs.netlify.com/configure-builds/file-based-configuration/
-
-[[headers]]
-  for = "/*"
-  [headers.values]
-    Cross-Origin-Opener-Policy = "same-origin-allow-popups"

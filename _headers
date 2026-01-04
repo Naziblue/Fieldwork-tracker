@@ -1,5 +1,0 @@
-# Netlify Headers for Firebase Auth compatibility
-
-/*
-  Cross-Origin-Opener-Policy: same-origin-allow-popups
-  Cross-Origin-Embedder-Policy: credentialless

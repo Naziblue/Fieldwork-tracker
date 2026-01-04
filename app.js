@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, setDoc, getDoc, query, where, getDocs, collectionGroup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // --- Config & State ---
@@ -192,8 +192,7 @@ const handleGoogleLogin = async () => {
     loginErrorMessage.classList.add('hidden');
     const provider = new GoogleAuthProvider();
     try {
-        // Use redirect for cross-origin compatibility
-        await signInWithRedirect(auth, provider);
+        await signInWithPopup(auth, provider);
     } catch (error) {
         console.error("Google sign-in error", error);
         loginErrorMessage.classList.remove('hidden');
@@ -502,14 +501,14 @@ const calculateSummaryData = (entries) => {
 
 // --- Rendering ---
 const createStatCard = (title, value, subtext, iconClass, colorClass) => `
-    <div class="glass-card p-6 rounded-2xl flex items-center justify-between hover-scale">
+    <div class="glass-card p-4 rounded-xl flex items-center justify-between">
         <div>
-            <p class="text-xs font-semibold text-text-muted uppercase tracking-wider">${title}</p>
-            <p class="text-3xl font-bold text-text mt-2">${value}</p>
-            ${subtext ? `<p class="text-sm text-text-muted mt-2">${subtext}</p>` : ''}
+            <p class="text-xs font-medium text-text-muted uppercase tracking-wider">${title}</p>
+            <p class="text-2xl font-bold text-text mt-1">${value}</p>
+            ${subtext ? `<p class="text-xs text-text-muted mt-1">${subtext}</p>` : ''}
         </div>
-        <div class="w-14 h-14 rounded-xl ${colorClass} bg-opacity-15 flex items-center justify-center shadow-lg">
-            <i class="${iconClass} text-2xl"></i>
+        <div class="w-10 h-10 rounded-lg ${colorClass} bg-opacity-10 flex items-center justify-center">
+            <i class="${iconClass} text-xl"></i>
         </div>
     </div>
 `;
@@ -537,18 +536,7 @@ const createSummaryHTML = (data, allTimeTotal) => {
 const renderTable = (entries, tableBodyElement) => {
     tableBodyElement.innerHTML = '';
     if (entries.length === 0) {
-        tableBodyElement.innerHTML = `
-            <tr>
-                <td colspan="9" class="py-8">
-                    <div class="empty-state">
-                        <div class="empty-state-icon">
-                            <i class="ph ph-calendar-blank"></i>
-                        </div>
-                        <p class="empty-state-title">No Activities Yet</p>
-                        <p class="empty-state-description">Start logging your fieldwork hours using the + button below.</p>
-                    </div>
-                </td>
-            </tr>`;
+        tableBodyElement.innerHTML = `<tr><td colspan="9" class="text-center py-12 text-text-muted">No activities logged for this period.</td></tr>`;
         return;
     }
     const sortedEntries = [...entries].sort((a, b) => new Date(b.date) - new Date(a.date)); // Descending
@@ -1210,6 +1198,10 @@ const setupSupervisorListeners = () => {
 };
 
 // --- Initialization ---
+
+
+// --- Initialization ---
+// --- Initialization ---
 function init() {
     console.log("App.js: Initializing application...");
 
@@ -1219,17 +1211,6 @@ function init() {
     const app = initializeApp(firebaseConfig);
     db = getFirestore(app);
     auth = getAuth(app);
-
-    // Handle redirect result from Google sign-in
-    getRedirectResult(auth).then((result) => {
-        if (result && result.user) {
-            console.log('App.js: Redirect sign-in successful:', result.user.email);
-        }
-    }).catch((error) => {
-        if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
-            console.error('Redirect sign-in error:', error);
-        }
-    });
 
     // Event Listeners
     if (loginBtn) loginBtn.addEventListener('click', handleGoogleLogin);
@@ -1421,10 +1402,6 @@ function init() {
             if (appContainer) appContainer.classList.add('hidden');
             if (roleSelectionView) roleSelectionView.classList.add('hidden');
             if (loginView) loginView.classList.remove('hidden');
-
-            // Cleanup snapshots
-            if (unsubscribeProfile) { unsubscribeProfile(); unsubscribeProfile = null; }
-            if (unsubscribeEntries) { unsubscribeEntries(); unsubscribeEntries = null; }
         }
     });
 

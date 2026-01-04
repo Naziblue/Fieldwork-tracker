@@ -44,7 +44,7 @@
 
     <script src="tailwind-config.js?v=5"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="style.css?v=8">
+    <link rel="stylesheet" href="style.css?v=7">
     <script src="theme.js?v=4"></script>
 </head>
 
@@ -155,28 +155,22 @@
                         Analytics
                     </div>
                     <button
-                        class="view-btn w-full flex items-center gap-3 px-3 py-3 rounded-xl text-text-muted hover:text-text hover:bg-surface-hover transition-all group"
+                        class="view-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-muted hover:text-text hover:bg-surface-hover transition-all group"
                         data-view="monthly">
-                        <div class="icon-accent">
-                            <i class="ph ph-calendar-blank text-lg"></i>
-                        </div>
-                        <span class="font-medium">Monthly Overview</span>
+                        <i class="ph ph-calendar-blank text-lg group-hover:text-primary transition-colors"></i>
+                        <span>Monthly Overview</span>
                     </button>
                     <button
-                        class="view-btn w-full flex items-center gap-3 px-3 py-3 rounded-xl text-text-muted hover:text-text hover:bg-surface-hover transition-all group"
+                        class="view-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-muted hover:text-text hover:bg-surface-hover transition-all group"
                         data-view="yearly">
-                        <div class="icon-accent" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">
-                            <i class="ph ph-calendar text-lg"></i>
-                        </div>
-                        <span class="font-medium">Yearly Report</span>
+                        <i class="ph ph-calendar text-lg group-hover:text-secondary transition-colors"></i>
+                        <span>Yearly Report</span>
                     </button>
                     <button
-                        class="view-btn w-full flex items-center gap-3 px-3 py-3 rounded-xl text-text-muted hover:text-text hover:bg-surface-hover transition-all group"
+                        class="view-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-muted hover:text-text hover:bg-surface-hover transition-all group"
                         data-view="all-time">
-                        <div class="icon-accent" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6;">
-                            <i class="ph ph-chart-line-up text-lg"></i>
-                        </div>
-                        <span class="font-medium">All Time Stats</span>
+                        <i class="ph ph-chart-line-up text-lg group-hover:text-accent transition-colors"></i>
+                        <span>All Time Stats</span>
                     </button>
                 </div>
 
@@ -185,12 +179,10 @@
                     <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2 px-3 mt-2">
                         Management</div>
                     <button
-                        class="view-btn w-full flex items-center gap-3 px-3 py-3 rounded-xl text-text-muted hover:text-text hover:bg-surface-hover transition-all group"
+                        class="view-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-muted hover:text-text hover:bg-surface-hover transition-all group"
                         data-view="supervisor-dashboard">
-                        <div class="icon-accent" style="background: rgba(20, 184, 166, 0.1); color: #14b8a6;">
-                            <i class="ph ph-users-three text-lg"></i>
-                        </div>
-                        <span class="font-medium">My Trainees</span>
+                        <i class="ph ph-users-three text-lg group-hover:text-primary transition-colors"></i>
+                        <span>My Trainees</span>
                     </button>
                 </div>
 
@@ -816,7 +808,7 @@
     <!-- We are removing the old edit modal and using the slide-over for both add and edit -->
     <div id="edit-modal" class="hidden"></div>
 
-    <script type="module" src="app.js?v=9"></script>
+    <script type="module" src="app.js?v=3"></script>
 </body>
 
 </html>
