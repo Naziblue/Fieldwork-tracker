@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Initialize Database Structure</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-900 text-white min-h-screen flex items-center justify-center">
+
+    <div class="max-w-md w-full bg-slate-800 p-8 rounded-2xl border border-white/10 shadow-2xl">
+        <div class="text-center mb-6">
+            <h1 class="text-2xl font-bold mb-2">Initialize Collections</h1>
+            <p class="text-slate-400 text-sm">Create empty placeholders for your requested schema.</p>
+        </div>
+
+        <button id="init-btn"
+            class="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg transition-colors mb-4">
+            Initialize All Collections
+        </button>
+
+        <div id="log"
+            class="text-xs font-mono text-slate-500 h-64 overflow-y-auto bg-black/30 p-3 rounded-lg border border-white/5">
+            Ready to initialize...
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyAl4i1nP24SOvAt1ifbGD0SZo2u_l4MnB8",
+            authDomain: "fieldwork-tracker-ae8f7.firebaseapp.com",
+            projectId: "fieldwork-tracker-ae8f7",
+            storageBucket: "fieldwork-tracker-ae8f7.firebasestorage.app",
+            messagingSenderId: "4649951899",
+            appId: "1:4649951899:web:28278ddb278baf67b39c3e"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const logEl = document.getElementById('log');
+
+        function log(msg, color = 'text-slate-400') {
+            const div = document.createElement('div');
+            div.textContent = `> ${msg}`;
+            div.className = color;
+            logEl.appendChild(div);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        const collections = [
+            { name: 'admin', desc: 'Global admin configurations' },
+            { name: 'adminLogs', desc: 'System event logs' },
+            { name: 'blocks', desc: 'Content blocks (future)' },
+            { name: 'history', desc: 'User activity history' },
+            { name: 'invitations', desc: 'Pending user invites' },
+            { name: 'metrics', desc: 'System-wide analytics' },
+            { name: 'notebooks', desc: 'User notebooks/notes' },
+            { name: 'pages', desc: 'Dynamic page content' },
+            { name: 'settings', desc: 'Application settings' },
+            { name: 'workspaces', desc: 'Team workspaces' }
+        ];
+
+        document.getElementById('init-btn').addEventListener('click', async () => {
+            log('Starting initialization...', 'text-blue-400');
+
+            for (const col of collections) {
+                try {
+                    // Create a schema document instead of a dummy one
+                    await setDoc(doc(db, col.name, '_schema'), {
+                        _description: col.desc,
+                        _initializedAt: new Date().toISOString(),
+                        _locked: true
+                    });
+                    log(`✓ Created collection: ${col.name}`, 'text-green-400');
+                } catch (e) {
+                    log(`Error creating ${col.name}: ${e.message}`, 'text-red-400');
+                    if (e.message.includes('permission')) {
+                        log('  (You need to update Firestore Rules to allow writing to these collections!)', 'text-yellow-500');
+                    }
+                }
+            }
+
+            log('DONE! Refresh your Firebase Console.', 'text-white font-bold');
+        });
+    </script>
+</body>
+
+</html>

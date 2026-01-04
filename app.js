@@ -19,7 +19,6 @@ if (!firebaseConfig) {
     };
 }
 
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'fieldwork-tracker-default';
 const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
 dayjs.extend(window.dayjs_plugin_customParseFormat);
@@ -36,87 +35,118 @@ let currentPdfDoc = null;
 let currentPdfFilename = "report.pdf";
 
 // --- DOM Elements ---
-console.log("App.js: Initializing DOM elements...");
-const loginView = document.getElementById('login-view');
-console.log("App.js: loginView found:", !!loginView);
-const loginErrorMessage = document.getElementById('login-error-message');
-const appContainer = document.getElementById('app-container');
-const loginBtn = document.getElementById('login-btn');
-const guestLoginBtn = document.getElementById('guest-login-btn');
-console.log("App.js: guestLoginBtn found:", !!guestLoginBtn);
-const logoutBtn = document.getElementById('logout-btn');
-const userDisplay = document.getElementById('user-display');
-const viewBtns = document.querySelectorAll('.view-btn');
-const views = document.querySelectorAll('.view-container');
-const monthSelector = document.getElementById('month-selector');
-const prevMonthBtn = document.getElementById('prev-month-btn');
-const nextMonthBtn = document.getElementById('next-month-btn');
-const yearSelector = document.getElementById('year-selector');
-const monthlySummaryGrid = document.getElementById('monthly-summary-grid');
-const yearlySummaryGrid = document.getElementById('yearly-summary-grid');
-const allTimeSummaryGrid = document.getElementById('all-time-summary-grid');
-const logTableBody = document.getElementById('log-table-body');
-const yearlyLogTableBody = document.getElementById('yearly-log-table-body');
-const allTimeLogTableBody = document.getElementById('all-time-log-table-body');
+let loginView, loginErrorMessage, appContainer, loginBtn, guestLoginBtn, logoutBtn, userDisplay,
+    viewBtns, views, monthSelector, prevMonthBtn, nextMonthBtn, yearSelector, monthlySummaryGrid,
+    yearlySummaryGrid, allTimeSummaryGrid, logTableBody, yearlyLogTableBody, allTimeLogTableBody;
 
 // Slide-over Form Elements
-const fabAddEntry = document.getElementById('fab-add-entry');
-const slideOverPanel = document.getElementById('slide-over-panel');
-const slideOverBackdrop = document.getElementById('slide-over-backdrop');
-const slideOverContent = document.getElementById('slide-over-content');
-const closeSlideOverBtn = document.getElementById('close-slide-over-btn');
-const slideOverTitle = document.getElementById('slide-over-title');
-const trackerForm = document.getElementById('tracker-form');
-const saveEntryBtn = document.getElementById('save-entry-btn');
-const deleteEntryBtn = document.getElementById('delete-entry-btn');
+let fabAddEntry, slideOverPanel, slideOverBackdrop, slideOverContent, closeSlideOverBtn,
+    slideOverTitle, trackerForm, saveEntryBtn, deleteEntryBtn;
 
 // Form Inputs
-const activityTypeRadios = document.getElementsByName('activity-type-radio');
-const activityTypeSelect = document.getElementById('activity-type'); // Hidden select for compatibility
-const unrestrictedSection = document.getElementById('unrestricted-section');
-const unrestrictedTypeSelect = document.getElementById('unrestricted-type-select');
-const supervisorSelect = document.getElementById('supervisor-select');
+let activityTypeRadios, activityTypeSelect, unrestrictedSection, unrestrictedTypeSelect, supervisorSelect;
 
 // Settings
-const settingsPanel = document.getElementById('settings-panel');
-const settingsBackdrop = document.getElementById('settings-backdrop');
-const settingsContent = document.getElementById('settings-content');
-const settingsBtn = document.getElementById('settings-btn');
-const closeSettingsBtn = document.getElementById('close-settings-btn');
-const profileForm = document.getElementById('profile-form');
-const supervisorForm = document.getElementById('supervisor-form');
-const supervisorsList = document.getElementById('supervisors-list');
+let settingsPanel, settingsBackdrop, settingsContent, settingsBtn, closeSettingsBtn,
+    profileForm, supervisorForm, supervisorsList;
 
 // Exports
-const generateMfvfBtn = document.getElementById('generate-mfvf-btn');
-const exportMonthlyCsvBtn = document.getElementById('export-monthly-csv-btn');
-const exportYearlyPdfBtn = document.getElementById('export-yearly-pdf-btn');
-const exportYearlyCsvBtn = document.getElementById('export-yearly-csv-btn');
-const exportAllTimePdfBtn = document.getElementById('export-all-time-pdf-btn');
-const exportAllTimeCsvBtn = document.getElementById('export-all-time-csv-btn');
-const mfvfModal = document.getElementById('mfvf-modal');
-const mfvfSupervisorSelect = document.getElementById('mfvf-supervisor-select');
-const mfvfGenerateConfirm = document.getElementById('mfvf-generate-confirm');
-const mfvfCancel = document.getElementById('mfvf-cancel');
+let generateMfvfBtn, exportMonthlyCsvBtn, exportYearlyPdfBtn, exportYearlyCsvBtn,
+    exportAllTimePdfBtn, exportAllTimeCsvBtn, mfvfModal, mfvfSupervisorSelect,
+    mfvfGenerateConfirm, mfvfCancel;
 
 // PDF Preview
-const pdfPreviewModal = document.getElementById('pdf-preview-modal');
-const pdfIframe = document.getElementById('pdf-iframe');
-const pdfDownloadBtn = document.getElementById('pdf-download-btn');
-const pdfCloseBtn = document.getElementById('pdf-close-btn');
+let pdfPreviewModal, pdfIframe, pdfDownloadBtn, pdfCloseBtn;
 
-const chartContexts = {
-    total: document.getElementById('totalHoursChart').getContext('2d'),
-    restricted: document.getElementById('restrictedHoursChart').getContext('2d'),
-    unrestricted: document.getElementById('unrestrictedHoursChart').getContext('2d')
-};
+let chartContexts = {};
+let tableHeaders = {};
 
-const tableHeaders = {
-    monthly: document.getElementById('monthly-table-header'),
-    yearly: document.getElementById('yearly-table-header'),
-    allTime: document.getElementById('all-time-table-header'),
-    review: document.getElementById('review-table-header')
-};
+function initDOMElements() {
+    console.log("App.js: Initializing DOM elements...");
+    try {
+        loginView = document.getElementById('login-view');
+        loginErrorMessage = document.getElementById('login-error-message');
+        appContainer = document.getElementById('app-container');
+        loginBtn = document.getElementById('login-btn');
+        guestLoginBtn = document.getElementById('guest-login-btn');
+        logoutBtn = document.getElementById('logout-btn');
+        userDisplay = document.getElementById('user-display');
+        viewBtns = document.querySelectorAll('.view-btn');
+        views = document.querySelectorAll('.view-container');
+        monthSelector = document.getElementById('month-selector');
+        prevMonthBtn = document.getElementById('prev-month-btn');
+        nextMonthBtn = document.getElementById('next-month-btn');
+        yearSelector = document.getElementById('year-selector');
+        monthlySummaryGrid = document.getElementById('monthly-summary-grid');
+        yearlySummaryGrid = document.getElementById('yearly-summary-grid');
+        allTimeSummaryGrid = document.getElementById('all-time-summary-grid');
+        logTableBody = document.getElementById('log-table-body');
+        yearlyLogTableBody = document.getElementById('yearly-log-table-body');
+        allTimeLogTableBody = document.getElementById('all-time-log-table-body');
+
+        fabAddEntry = document.getElementById('fab-add-entry');
+        slideOverPanel = document.getElementById('slide-over-panel');
+        slideOverBackdrop = document.getElementById('slide-over-backdrop');
+        slideOverContent = document.getElementById('slide-over-content');
+        closeSlideOverBtn = document.getElementById('close-slide-over-btn');
+        slideOverTitle = document.getElementById('slide-over-title');
+        trackerForm = document.getElementById('tracker-form');
+        saveEntryBtn = document.getElementById('save-entry-btn');
+        deleteEntryBtn = document.getElementById('delete-entry-btn');
+
+        activityTypeRadios = document.getElementsByName('activity-type-radio');
+        activityTypeSelect = document.getElementById('activity-type');
+        unrestrictedSection = document.getElementById('unrestricted-section');
+        unrestrictedTypeSelect = document.getElementById('unrestricted-type-select');
+        supervisorSelect = document.getElementById('supervisor-select');
+
+        settingsPanel = document.getElementById('settings-panel');
+        settingsBackdrop = document.getElementById('settings-backdrop');
+        settingsContent = document.getElementById('settings-content');
+        settingsBtn = document.getElementById('settings-btn');
+        closeSettingsBtn = document.getElementById('close-settings-btn');
+        profileForm = document.getElementById('profile-form');
+        supervisorForm = document.getElementById('supervisor-form');
+        supervisorsList = document.getElementById('supervisors-list');
+
+        generateMfvfBtn = document.getElementById('generate-mfvf-btn');
+        exportMonthlyCsvBtn = document.getElementById('export-monthly-csv-btn');
+        exportYearlyPdfBtn = document.getElementById('export-yearly-pdf-btn');
+        exportYearlyCsvBtn = document.getElementById('export-yearly-csv-btn');
+        exportAllTimePdfBtn = document.getElementById('export-all-time-pdf-btn');
+        exportAllTimeCsvBtn = document.getElementById('export-all-time-csv-btn');
+        mfvfModal = document.getElementById('mfvf-modal');
+        mfvfSupervisorSelect = document.getElementById('mfvf-supervisor-select');
+        mfvfGenerateConfirm = document.getElementById('mfvf-generate-confirm');
+        mfvfCancel = document.getElementById('mfvf-cancel');
+
+        pdfPreviewModal = document.getElementById('pdf-preview-modal');
+        pdfIframe = document.getElementById('pdf-iframe');
+        pdfDownloadBtn = document.getElementById('pdf-download-btn');
+        pdfCloseBtn = document.getElementById('pdf-close-btn');
+
+        const totalHoursEl = document.getElementById('totalHoursChart');
+        const restrictedHoursEl = document.getElementById('restrictedHoursChart');
+        const unrestrictedHoursEl = document.getElementById('unrestrictedHoursChart');
+
+        chartContexts = {
+            total: totalHoursEl ? totalHoursEl.getContext('2d') : null,
+            restricted: restrictedHoursEl ? restrictedHoursEl.getContext('2d') : null,
+            unrestricted: unrestrictedHoursEl ? unrestrictedHoursEl.getContext('2d') : null
+        };
+
+        tableHeaders = {
+            monthly: document.getElementById('monthly-table-header'),
+            yearly: document.getElementById('yearly-table-header'),
+            allTime: document.getElementById('all-time-table-header'),
+            review: document.getElementById('review-table-header')
+        };
+
+        console.log("App.js: DOM elements initialized successfully");
+    } catch (e) {
+        console.error("App.js: Error initializing DOM elements:", e);
+    }
+}
 
 // Role Selection & Navigation
 const roleSelectionView = document.getElementById('role-selection-view');
@@ -138,21 +168,24 @@ const reviewTableBody = document.getElementById('review-table-body');
 const signMonthBtn = document.getElementById('sign-month-btn');
 const addTraineeBtn = document.getElementById('add-trainee-btn');
 
-const tableHeaderHTML = `
-    <th class="px-4 py-3 font-medium text-text-muted">Date</th>
-    <th class="px-4 py-3 font-medium text-text-muted">Time</th>
-    <th class="px-4 py-3 font-medium text-text-muted">Hrs</th>
-    <th class="px-4 py-3 font-medium text-text-muted">Setting</th>
-    <th class="px-4 py-3 font-medium text-text-muted">Type</th>
-    <th class="px-4 py-3 font-medium text-text-muted">Supervision</th>
-    <th class="px-4 py-3 font-medium text-text-muted">Supervisor</th>
-    <th class="px-4 py-3 font-medium text-text-muted hidden md:table-cell">Notes</th>
-    <th class="px-4 py-3 font-medium text-text-muted text-right">Actions</th>
-`;
-tableHeaders.monthly.innerHTML = tableHeaderHTML;
-tableHeaders.yearly.innerHTML = tableHeaderHTML;
-tableHeaders.allTime.innerHTML = tableHeaderHTML;
-tableHeaders.review.innerHTML = tableHeaderHTML;
+// This will be called inside init()
+function setupTableHeaders() {
+    const tableHeaderHTML = `
+        <th class="px-4 py-3 font-medium text-text-muted">Date</th>
+        <th class="px-4 py-3 font-medium text-text-muted">Time</th>
+        <th class="px-4 py-3 font-medium text-text-muted">Hrs</th>
+        <th class="px-4 py-3 font-medium text-text-muted">Setting</th>
+        <th class="px-4 py-3 font-medium text-text-muted">Type</th>
+        <th class="px-4 py-3 font-medium text-text-muted">Supervision</th>
+        <th class="px-4 py-3 font-medium text-text-muted">Supervisor</th>
+        <th class="px-4 py-3 font-medium text-text-muted hidden md:table-cell">Notes</th>
+        <th class="px-4 py-3 font-medium text-text-muted text-right">Actions</th>
+    `;
+    if (tableHeaders.monthly) tableHeaders.monthly.innerHTML = tableHeaderHTML;
+    if (tableHeaders.yearly) tableHeaders.yearly.innerHTML = tableHeaderHTML;
+    if (tableHeaders.allTime) tableHeaders.allTime.innerHTML = tableHeaderHTML;
+    if (tableHeaders.review) tableHeaders.review.innerHTML = tableHeaderHTML;
+}
 
 // --- Authentication ---
 const handleGoogleLogin = async () => {
@@ -342,7 +375,7 @@ const addOrUpdateSupervisor = async (e) => {
                 saveProfileToLocalStorage();
                 return true;
             } else {
-                const profileRef = doc(db, `artifacts/${appId}/users/${userId}/profile/data`);
+                const profileRef = doc(db, `users/${userId}`);
                 try {
                     const supervisorEmails = profileData.supervisors.map(s => s.email).filter(e => e);
                     await setDoc(profileRef, {
@@ -387,7 +420,7 @@ const removeSupervisor = async (name) => {
         saveProfileToLocalStorage();
         renderSupervisors();
     } else {
-        const profileRef = doc(db, `artifacts/${appId}/users/${userId}/profile/data`);
+        const profileRef = doc(db, `users/${userId}`);
         await setDoc(profileRef, { supervisors: profileData.supervisors }, { merge: true });
     }
 };
@@ -624,22 +657,25 @@ const renderAllTimeCharts = (entries) => {
         elements: { point: { radius: 0, hitRadius: 10, hoverRadius: 4 } }
     });
 
-    const createChart = (ctx, label, data, color, goal) => new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: label,
-                data: data,
-                borderColor: color,
-                backgroundColor: color + '20', // Hex alpha
-                fill: true,
-                tension: 0.4,
-                borderWidth: 2
-            }]
-        },
-        options: commonOptions(goal)
-    });
+    const createChart = (ctx, label, data, color, goal) => {
+        if (!ctx) return null;
+        return new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: label,
+                    data: data,
+                    borderColor: color,
+                    backgroundColor: color + '20', // Hex alpha
+                    fill: true,
+                    tension: 0.4,
+                    borderWidth: 2
+                }]
+            },
+            options: commonOptions(goal)
+        });
+    };
 
     chartInstances.total = createChart(chartContexts.total, 'Total', dataTotal, '#3b82f6', totalGoal);
     chartInstances.restricted = createChart(chartContexts.restricted, 'Restricted', dataRestricted, '#ec4899', restrictedGoal);
@@ -674,7 +710,7 @@ const handleSaveEntry = async () => {
             }
         } else {
             try {
-                const docRef = doc(db, `artifacts/${appId}/users/${userId}/fieldwork_entries`, entryId);
+                const docRef = doc(db, `users/${userId}/entries`, entryId);
                 await updateDoc(docRef, entryData);
             } catch (error) { console.error("Error updating doc:", error); }
         }
@@ -687,7 +723,7 @@ const handleSaveEntry = async () => {
         } else {
             entryData.userId = userId;
             try {
-                const entriesRef = collection(db, `artifacts/${appId}/users/${userId}/fieldwork_entries`);
+                const entriesRef = collection(db, `users/${userId}/entries`);
                 await addDoc(entriesRef, entryData);
             } catch (error) { console.error("Error adding document:", error); }
         }
@@ -705,7 +741,7 @@ const handleDeleteEntry = async () => {
         switchView(document.querySelector('.view-btn.bg-white\\/10').dataset.view);
     } else {
         try {
-            await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/fieldwork_entries`, entryId));
+            await deleteDoc(doc(db, `users/${userId}/entries`, entryId));
         } catch (error) { console.error("Error deleting doc:", error); }
     }
     closeSlideOver();
@@ -790,7 +826,7 @@ const saveProfile = async (e) => {
         const activeView = document.querySelector('.view-btn.bg-white\\/10')?.dataset.view || 'monthly';
         switchView(activeView);
     } else {
-        const profileRef = doc(db, `artifacts/${appId}/users/${userId}/profile/data`);
+        const profileRef = doc(db, `users/${userId}`);
         try {
             const email = auth.currentUser.email;
             await setDoc(profileRef, { name, rbtNumber, fieldworkType, email }, { merge: true });
@@ -899,163 +935,68 @@ const exportToCsv = (entries, summaryData, filename) => {
     link.click();
 };
 
-// --- Initialization ---
-// document.addEventListener('DOMContentLoaded', () => {
-const app = initializeApp(firebaseConfig);
-db = getFirestore(app);
-auth = getAuth(app);
-
-// Event Listeners
-loginBtn.addEventListener('click', handleGoogleLogin);
-guestLoginBtn.addEventListener('click', handleGuestLogin);
-logoutBtn.addEventListener('click', handleLogout);
-
-viewBtns.forEach(btn => btn.addEventListener('click', (e) => {
-    // Handle click on icon or span inside button
-    const target = e.target.closest('.view-btn');
-    if (target) switchView(target.dataset.view);
-}));
-
-monthSelector.value = dayjs().format('YYYY-MM');
-monthSelector.addEventListener('change', updateMonthlyView);
-prevMonthBtn.addEventListener('click', () => {
-    monthSelector.stepUp(-1);
-    updateMonthlyView();
-});
-nextMonthBtn.addEventListener('click', () => {
-    monthSelector.stepUp(1);
-    updateMonthlyView();
-});
-
-yearSelector.value = dayjs().year();
-yearSelector.addEventListener('change', updateYearlyView);
-
-// Slide-over
-fabAddEntry.addEventListener('click', () => openSlideOver('add'));
-closeSlideOverBtn.addEventListener('click', closeSlideOver);
-slideOverBackdrop.addEventListener('click', closeSlideOver);
-saveEntryBtn.addEventListener('click', handleSaveEntry);
-deleteEntryBtn.addEventListener('click', handleDeleteEntry);
-
-Array.from(activityTypeRadios).forEach(radio => radio.addEventListener('change', handleActivityTypeChange));
-
-// Settings
-settingsBtn.addEventListener('click', openSettingsPanel);
-closeSettingsBtn.addEventListener('click', closeSettingsPanel);
-settingsBackdrop.addEventListener('click', closeSettingsPanel);
-profileForm.addEventListener('submit', saveProfile);
-supervisorForm.addEventListener('submit', addOrUpdateSupervisor);
-supervisorsList.addEventListener('click', (e) => {
-    const removeBtn = e.target.closest('.remove-supervisor-btn');
-    if (removeBtn) {
-        removeSupervisor(removeBtn.dataset.name);
-        return;
-    }
-
-    const editBtn = e.target.closest('.edit-supervisor-btn');
-    if (editBtn) {
-        handleEditSupervisor(editBtn.dataset.name);
-    }
-});
-
-// Table Actions
-logTableBody.addEventListener('click', handleTableClick);
-yearlyLogTableBody.addEventListener('click', handleTableClick);
-allTimeLogTableBody.addEventListener('click', handleTableClick);
-
-// Exports
-exportMonthlyCsvBtn.addEventListener('click', () => {
-    const selectedMonth = monthSelector.value;
-    const [year, month] = selectedMonth.split('-');
-    const entries = allEntries.filter(e => {
-        const d = dayjs(e.date);
-        return d.year() == year && (d.month() + 1) == month;
-    });
-    exportToCsv(entries, calculateSummaryData(entries), `fieldwork_${selectedMonth}.csv`);
-});
-
-generateMfvfBtn.addEventListener('click', () => {
-    const selectedMonth = monthSelector.value;
-    if (!selectedMonth) return;
-    mfvfModal.classList.remove('hidden');
-});
-
-mfvfCancel.addEventListener('click', () => mfvfModal.classList.add('hidden'));
-
-mfvfGenerateConfirm.addEventListener('click', async () => {
-    const supervisorName = mfvfSupervisorSelect.value;
-    if (!supervisorName) return;
-
-    const selectedMonth = monthSelector.value;
-    const [year, month] = selectedMonth.split('-');
-    const entries = allEntries.filter(e => {
-        const d = dayjs(e.date);
-        return d.year() == year && (d.month() + 1) == month;
-    });
-
-    const supervisor = profileData.supervisors.find(s => s.name === supervisorName);
-
-    // Check signature status
-    let isSigned = false;
-    if (userId !== 'guest') {
-        const verificationRef = doc(db, `artifacts/${appId}/users/${userId}/verifications/${selectedMonth}`);
-        const verifSnap = await getDoc(verificationRef);
-        isSigned = verifSnap.exists() && verifSnap.data().status === 'signed';
-    }
-
-    generateMfvfPdf(entries, supervisor, selectedMonth, isSigned);
-    mfvfModal.classList.add('hidden');
-});
-
-// PDF Preview Actions
-pdfDownloadBtn.addEventListener('click', () => {
-    if (currentPdfDoc) {
-        currentPdfDoc.save(currentPdfFilename);
-    }
-});
-
-pdfCloseBtn.addEventListener('click', () => {
-    pdfPreviewModal.classList.add('hidden');
-    pdfIframe.src = '';
-});
-
-// ... (Other export listeners similar to before)
-
-// Role Selection
+// --- Role-based UI Functions ---
+// --- Role-based UI Functions ---
 const handleRoleSelection = async (role) => {
     if (!userId) return;
-    const profileRef = doc(db, `artifacts/${appId}/users/${userId}/profile/data`);
+    const profileRef = doc(db, `users/${userId}`);
+    const user = auth.currentUser;
+
     try {
-        await setDoc(profileRef, { role }, { merge: true });
-        roleSelectionView.classList.add('hidden');
-        appContainer.classList.remove('hidden');
+        // Create professional user profile
+        const profileData = {
+            // Core Identity
+            role: role,
+            email: user.email,
+            name: user.displayName || 'New User',
+            photoURL: user.photoURL || null,
+
+            // Business Logic (Free vs VIP)
+            planType: 'free',       // Default to Free entry level
+            isVip: false,           // Boolean for easy checks
+            status: 'active',       // active, suspended, pending
+
+            // Timestamps
+            registeredAt: new Date().toISOString(),
+            lastLoginAt: new Date().toISOString(),
+
+            // Metadata
+            version: '1.0'
+        };
+
+        await setDoc(profileRef, profileData, { merge: true });
+
+        if (roleSelectionView) roleSelectionView.classList.add('hidden');
+        if (appContainer) appContainer.classList.remove('hidden');
     } catch (error) {
-        console.error("Error saving role:", error);
+        console.error("Error saving role and profile:", error);
     }
 };
 
-selectTraineeBtn.addEventListener('click', () => handleRoleSelection('trainee'));
-selectSupervisorBtn.addEventListener('click', () => handleRoleSelection('supervisor'));
-
 const setupUIByRole = (role) => {
+    const traineeNav = document.getElementById('trainee-nav');
+    const supervisorNav = document.getElementById('supervisor-nav');
+    const fabAddEntry = document.getElementById('fab-add-entry');
+
     if (role === 'supervisor') {
-        traineeNav.classList.add('hidden');
-        supervisorNav.classList.remove('hidden');
-        fabAddEntry.classList.add('hidden');
+        if (traineeNav) traineeNav.classList.add('hidden');
+        if (supervisorNav) supervisorNav.classList.remove('hidden');
+        if (fabAddEntry) fabAddEntry.classList.add('hidden');
         switchView('supervisor-dashboard');
     } else {
-        traineeNav.classList.remove('hidden');
-        supervisorNav.classList.add('hidden');
-        fabAddEntry.classList.remove('hidden');
+        if (traineeNav) traineeNav.classList.remove('hidden');
+        if (supervisorNav) supervisorNav.classList.add('hidden');
+        if (fabAddEntry) fabAddEntry.classList.remove('hidden');
         switchView('monthly');
     }
 };
 
 const setupTraineeListeners = () => {
     if (unsubscribeEntries) unsubscribeEntries();
-    const entriesRef = collection(db, `artifacts/${appId}/users/${userId}/fieldwork_entries`);
+    const entriesRef = collection(db, `users/${userId}/entries`);
     unsubscribeEntries = onSnapshot(entriesRef, (snapshot) => {
         allEntries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        console.log(`[DEBUG] Loaded ${allEntries.length} entries. First entry:`, allEntries[0]);
         const activeView = document.querySelector('.view-btn.bg-white\\/10')?.dataset.view || 'monthly';
         if (activeView !== 'supervisor-dashboard') switchView(activeView);
     });
@@ -1066,22 +1007,20 @@ let myTrainees = [];
 let selectedTraineeId = null;
 
 const updateSupervisorDashboard = async () => {
-    if (!userId || profileData.role !== 'supervisor') return;
+    const traineesList = document.getElementById('trainees-list');
+    if (!userId || profileData.role !== 'supervisor' || !traineesList) return;
 
     const userEmail = auth.currentUser.email;
     traineesList.innerHTML = '<div class="p-4 text-center text-text-muted"><i class="ph ph-circle-notch animate-spin"></i> Loading...</div>';
 
     try {
-        // Query for 'data' documents in 'profile' subcollections
-        // where 'supervisorEmails' array-contains userEmail
-        const q = query(collectionGroup(db, 'data'), where('supervisorEmails', 'array-contains', userEmail));
+        const q = query(collection(db, 'users'), where('supervisorEmails', 'array-contains', userEmail));
         const querySnapshot = await getDocs(q);
 
         myTrainees = querySnapshot.docs.map(docSnap => {
             const data = docSnap.data();
-            // docSnap.ref.parent is 'profile', parent of 'profile' is the user document
-            const traineeId = docSnap.ref.parent.parent.id;
-            return { id: traineeId, ...data };
+            // In the new schema, the document itself is the user profile, so ID is doc.id
+            return { id: docSnap.id, ...data };
         });
 
         renderTraineesList();
@@ -1092,27 +1031,30 @@ const updateSupervisorDashboard = async () => {
 };
 
 const renderTraineesList = () => {
+    const traineesList = document.getElementById('trainees-list');
+    if (!traineesList) return;
+
     if (myTrainees.length === 0) {
         traineesList.innerHTML = `
-                <div class="p-4 rounded-xl bg-white/5 border border-white/5 text-center py-10">
-                    <i class="ph ph-users text-3xl text-text-muted mb-2"></i>
-                    <p class="text-sm text-text-muted">No trainees linked yet.</p>
-                </div>`;
+            <div class="p-4 rounded-xl bg-white/5 border border-white/5 text-center py-10">
+                <i class="ph ph-users text-3xl text-text-muted mb-2"></i>
+                <p class="text-sm text-text-muted">No trainees linked yet.</p>
+            </div>`;
         return;
     }
 
     traineesList.innerHTML = myTrainees.map(trainee => `
-            <button class="trainee-item w-full p-4 rounded-xl bg-white/5 border border-white/5 hover:border-primary/50 hover:bg-primary/5 transition-all text-left flex items-center gap-3 group" data-id="${trainee.id}">
-                <div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-                    <i class="ph-fill ph-user"></i>
-                </div>
-                <div class="flex-1 min-w-0">
-                    <p class="text-sm font-bold text-white truncate">${trainee.name || 'Unknown Trainee'}</p>
-                    <p class="text-xs text-text-muted truncate">${trainee.email}</p>
-                </div>
-                <i class="ph ph-caret-right text-text-muted"></i>
-            </button>
-        `).join('');
+        <button class="trainee-item w-full p-4 rounded-xl bg-white/5 border border-white/5 hover:border-primary/50 hover:bg-primary/5 transition-all text-left flex items-center gap-3 group" data-id="${trainee.id}">
+            <div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                <i class="ph-fill ph-user"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-bold text-white truncate">${trainee.name || 'Unknown Trainee'}</p>
+                <p class="text-xs text-text-muted truncate">${trainee.email}</p>
+            </div>
+            <i class="ph ph-caret-right text-text-muted"></i>
+        </button>
+    `).join('');
 
     document.querySelectorAll('.trainee-item').forEach(btn => {
         btn.addEventListener('click', () => selectTrainee(btn.dataset.id));
@@ -1120,18 +1062,21 @@ const renderTraineesList = () => {
 };
 
 const selectTrainee = async (traineeId) => {
+    const traineeReviewPlaceholder = document.getElementById('trainee-review-placeholder');
+    const traineeReviewContent = document.getElementById('trainee-review-content');
+    const reviewTraineeName = document.getElementById('review-trainee-name');
+    const reviewTraineeEmail = document.getElementById('review-trainee-email');
+
     selectedTraineeId = traineeId;
     const trainee = myTrainees.find(t => t.id === traineeId);
     if (!trainee) return;
 
-    traineeReviewPlaceholder.classList.add('hidden');
-    traineeReviewContent.classList.remove('hidden');
+    if (traineeReviewPlaceholder) traineeReviewPlaceholder.classList.add('hidden');
+    if (traineeReviewContent) traineeReviewContent.classList.remove('hidden');
+    if (reviewTraineeName) reviewTraineeName.textContent = trainee.name || 'Unknown Trainee';
+    if (reviewTraineeEmail) reviewTraineeEmail.textContent = trainee.email;
 
-    reviewTraineeName.textContent = trainee.name || 'Unknown Trainee';
-    reviewTraineeEmail.textContent = trainee.email;
-
-    // Fetch trainee entries
-    const entriesRef = collection(db, `artifacts/${appId}/users/${traineeId}/fieldwork_entries`);
+    const entriesRef = collection(db, `users/${traineeId}/entries`);
     const snapshot = await getDocs(entriesRef);
     const entries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
@@ -1139,7 +1084,13 @@ const selectTrainee = async (traineeId) => {
 };
 
 const renderTraineeReview = async (entries) => {
-    // Populate month selector
+    const reviewMonthSelector = document.getElementById('review-month-selector');
+    const reviewStatsGrid = document.getElementById('review-stats-grid');
+    const reviewTableBody = document.getElementById('review-table-body');
+    const signMonthBtn = document.getElementById('sign-month-btn');
+
+    if (!reviewMonthSelector) return;
+
     const months = [...new Set(entries.map(e => dayjs(e.date).format('YYYY-MM')))].sort().reverse();
     reviewMonthSelector.innerHTML = months.map(m => `<option value="${m}">${dayjs(m).format('MMMM YYYY')}</option>`).join('');
 
@@ -1153,32 +1104,36 @@ const renderTraineeReview = async (entries) => {
             return d.year() == year && (d.month() + 1) == month;
         });
 
-        // Check signature status
-        const verificationRef = doc(db, `artifacts/${appId}/users/${selectedTraineeId}/verifications/${selectedMonth}`);
+        const verificationRef = doc(db, `users/${selectedTraineeId}/verifications/${selectedMonth}`);
         const verifSnap = await getDoc(verificationRef);
         const isSigned = verifSnap.exists() && verifSnap.data().status === 'signed';
 
-        if (isSigned) {
-            signMonthBtn.innerHTML = '<i class="ph-fill ph-check-circle"></i> Digitally Signed';
-            signMonthBtn.classList.add('bg-green-500');
-            signMonthBtn.classList.remove('bg-primary');
-            signMonthBtn.disabled = true;
-        } else {
-            signMonthBtn.innerHTML = '<i class="ph-fill ph-pencil-line"></i> Digitally Sign Month';
-            signMonthBtn.classList.add('bg-primary');
-            signMonthBtn.classList.remove('bg-green-500');
-            signMonthBtn.disabled = false;
+        if (signMonthBtn) {
+            if (isSigned) {
+                signMonthBtn.innerHTML = '<i class="ph-fill ph-check-circle"></i> Digitally Signed';
+                signMonthBtn.classList.add('bg-green-500');
+                signMonthBtn.classList.remove('bg-primary');
+                signMonthBtn.disabled = true;
+            } else {
+                signMonthBtn.innerHTML = '<i class="ph-fill ph-pencil-line"></i> Digitally Sign Month';
+                signMonthBtn.classList.add('bg-primary');
+                signMonthBtn.classList.remove('bg-green-500');
+                signMonthBtn.disabled = false;
+            }
         }
 
         const data = calculateSummaryData(filtered);
-        reviewStatsGrid.innerHTML = `
+        if (reviewStatsGrid) {
+            reviewStatsGrid.innerHTML = `
                 ${createStatCard('Total', data.total.toFixed(2), null, 'ph ph-clock', 'bg-blue-500 text-blue-400')}
                 ${createStatCard('Restricted', data.restricted.toFixed(2), null, 'ph ph-hand-heart', 'bg-pink-500 text-pink-400')}
                 ${createStatCard('Unrestricted', data.unrestricted.toFixed(2), null, 'ph ph-brain', 'bg-purple-500 text-purple-400')}
                 ${createStatCard('Supervised', data.supervised.toFixed(2), `${data.percentage.toFixed(1)}%`, 'ph ph-users-three', 'bg-teal-500 text-teal-400')}
             `;
+        }
 
-        reviewTableBody.innerHTML = filtered.map(entry => `
+        if (reviewTableBody) {
+            reviewTableBody.innerHTML = filtered.map(entry => `
                 <tr>
                     <td class="px-4 py-3 text-white">${dayjs(entry.date).format('MMM D')}</td>
                     <td class="px-4 py-3 text-text-muted text-xs">${entry.startTime} - ${entry.endTime}</td>
@@ -1195,6 +1150,7 @@ const renderTraineeReview = async (entries) => {
                     <td class="px-4 py-3 text-text-muted text-xs">${entry.supervisorName || '-'}</td>
                 </tr>
             `).join('');
+        }
     };
 
     reviewMonthSelector.onchange = updateReviewTable;
@@ -1203,80 +1159,258 @@ const renderTraineeReview = async (entries) => {
 
 const setupSupervisorListeners = () => {
     updateSupervisorDashboard();
-};
 
-addTraineeBtn.addEventListener('click', () => {
-    alert("Trainees must add your email in their Settings > Profile to link with you.");
-    updateSupervisorDashboard();
-});
+    const addTraineeBtn = document.getElementById('add-trainee-btn');
+    const signMonthBtn = document.getElementById('sign-month-btn');
 
-signMonthBtn.addEventListener('click', async () => {
-    if (!selectedTraineeId || !reviewMonthSelector.value) return;
-
-    const month = reviewMonthSelector.value;
-    const supervisorId = userId;
-    const supervisorName = profileData.name;
-
-    const verificationRef = doc(db, `artifacts/${appId}/users/${selectedTraineeId}/verifications/${month}`);
-    try {
-        await setDoc(verificationRef, {
-            status: 'signed',
-            signedAt: new Date().toISOString(),
-            supervisorId,
-            supervisorName,
-            month
-        }, { merge: true });
-        alert("Month digitally signed!");
-        selectTrainee(selectedTraineeId);
-    } catch (error) {
-        console.error("Error signing month:", error);
+    if (addTraineeBtn) {
+        addTraineeBtn.addEventListener('click', () => {
+            alert("Trainees must add your email in their Settings > Profile to link with you.");
+            updateSupervisorDashboard();
+        });
     }
-});
 
-// Auth State
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        userId = user.uid;
-        loginView.classList.add('hidden');
-        userDisplay.textContent = user.displayName || user.email;
+    if (signMonthBtn) {
+        signMonthBtn.addEventListener('click', async () => {
+            const reviewMonthSelector = document.getElementById('review-month-selector');
+            if (!selectedTraineeId || !reviewMonthSelector || !reviewMonthSelector.value) return;
 
-        if (unsubscribeProfile) unsubscribeProfile();
-        const profileRef = doc(db, `artifacts/${appId}/users/${userId}/profile/data`);
-        unsubscribeProfile = onSnapshot(profileRef, (docSnap) => {
-            if (docSnap.exists()) {
-                profileData = docSnap.data();
+            const month = reviewMonthSelector.value;
+            const supervisorId = userId;
+            const supervisorName = profileData.name;
 
-                if (!profileData.role) {
-                    appContainer.classList.add('hidden');
-                    roleSelectionView.classList.remove('hidden');
-                } else {
-                    roleSelectionView.classList.add('hidden');
-                    appContainer.classList.remove('hidden');
-                    setupUIByRole(profileData.role);
-
-                    if (profileData.role === 'trainee') {
-                        setupTraineeListeners();
-                    } else {
-                        setupSupervisorListeners();
-                    }
-                }
-
-                document.getElementById('trainee-name').value = profileData.name || '';
-                document.getElementById('rbt-number').value = profileData.rbtNumber || '';
-                document.getElementById('fieldwork-type').value = profileData.fieldworkType || 'Supervised';
-                userRoleDisplay.textContent = profileData.role === 'supervisor' ? 'Supervisor' : 'Trainee';
-                renderSupervisors();
-            } else {
-                appContainer.classList.add('hidden');
-                roleSelectionView.classList.remove('hidden');
+            const verificationRef = doc(db, `users/${selectedTraineeId}/verifications/${month}`);
+            try {
+                await setDoc(verificationRef, {
+                    status: 'signed',
+                    signedAt: new Date().toISOString(),
+                    supervisorId,
+                    supervisorName,
+                    month
+                }, { merge: true });
+                alert("Month digitally signed!");
+                selectTrainee(selectedTraineeId);
+            } catch (error) {
+                console.error("Error signing month:", error);
             }
         });
-    } else if (userId !== 'guest') {
-        appContainer.classList.add('hidden');
-        roleSelectionView.classList.add('hidden');
-        loginView.classList.remove('hidden');
     }
-});
-// Initial View
-// switchView('monthly'); // Handled by auth state
-// });
+};
+
+// --- Initialization ---
+
+
+// --- Initialization ---
+// --- Initialization ---
+function init() {
+    console.log("App.js: Initializing application...");
+
+    initDOMElements();
+    setupTableHeaders();
+
+    const app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    auth = getAuth(app);
+
+    // Event Listeners
+    if (loginBtn) loginBtn.addEventListener('click', handleGoogleLogin);
+    if (guestLoginBtn) guestLoginBtn.addEventListener('click', handleGuestLogin);
+    if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
+
+    if (viewBtns) {
+        viewBtns.forEach(btn => btn.addEventListener('click', (e) => {
+            const target = e.target.closest('.view-btn');
+            if (target) switchView(target.dataset.view);
+        }));
+    }
+
+    if (monthSelector) {
+        monthSelector.value = dayjs().format('YYYY-MM');
+        monthSelector.addEventListener('change', updateMonthlyView);
+    }
+
+    if (prevMonthBtn) prevMonthBtn.addEventListener('click', () => {
+        monthSelector.stepUp(-1);
+        updateMonthlyView();
+    });
+
+    if (nextMonthBtn) nextMonthBtn.addEventListener('click', () => {
+        monthSelector.stepUp(1);
+        updateMonthlyView();
+    });
+
+    if (yearSelector) {
+        yearSelector.value = dayjs().year();
+        yearSelector.addEventListener('change', updateYearlyView);
+    }
+
+    // Slide-over
+    if (fabAddEntry) fabAddEntry.addEventListener('click', () => openSlideOver('add'));
+    if (closeSlideOverBtn) closeSlideOverBtn.addEventListener('click', closeSlideOver);
+    if (slideOverBackdrop) slideOverBackdrop.addEventListener('click', closeSlideOver);
+    if (saveEntryBtn) saveEntryBtn.addEventListener('click', handleSaveEntry);
+    if (deleteEntryBtn) deleteEntryBtn.addEventListener('click', handleDeleteEntry);
+
+    if (activityTypeRadios) {
+        Array.from(activityTypeRadios).forEach(radio => radio.addEventListener('change', handleActivityTypeChange));
+    }
+
+    // Settings
+    if (settingsBtn) settingsBtn.addEventListener('click', openSettingsPanel);
+    if (closeSettingsBtn) closeSettingsBtn.addEventListener('click', closeSettingsPanel);
+    if (settingsBackdrop) settingsBackdrop.addEventListener('click', closeSettingsPanel);
+    if (profileForm) profileForm.addEventListener('submit', saveProfile);
+    if (supervisorForm) supervisorForm.addEventListener('submit', addOrUpdateSupervisor);
+
+    if (supervisorsList) {
+        supervisorsList.addEventListener('click', (e) => {
+            const removeBtn = e.target.closest('.remove-supervisor-btn');
+            if (removeBtn) removeSupervisor(removeBtn.dataset.name);
+            const editBtn = e.target.closest('.edit-supervisor-btn');
+            if (editBtn) handleEditSupervisor(editBtn.dataset.name);
+        });
+    }
+
+    // Exports & PDF
+    if (generateMfvfBtn) generateMfvfBtn.addEventListener('click', () => {
+        if (profileData.supervisors && profileData.supervisors.length > 0) {
+            mfvfModal.classList.remove('hidden');
+        } else {
+            alert("Please add at least one supervisor in Settings first.");
+            openSettingsPanel();
+        }
+    });
+
+    if (exportMonthlyCsvBtn) exportMonthlyCsvBtn.addEventListener('click', () => {
+        const selectedMonth = monthSelector.value;
+        const [year, month] = selectedMonth.split('-');
+        const monthData = allEntries.filter(e => {
+            const d = dayjs(e.date);
+            return d.year() == year && (d.month() + 1) == month;
+        });
+        exportToCsv(monthData, calculateSummaryData(monthData), `Fieldwork_${selectedMonth}.csv`);
+    });
+
+    if (exportYearlyPdfBtn) exportYearlyPdfBtn.addEventListener('click', () => alert("Yearly PDF coming soon!"));
+    if (exportYearlyCsvBtn) exportYearlyCsvBtn.addEventListener('click', () => {
+        const year = yearSelector.value;
+        const yearData = allEntries.filter(e => dayjs(e.date).year() == year);
+        exportToCsv(yearData, calculateSummaryData(yearData), `Fieldwork_${year}.csv`);
+    });
+
+    if (exportAllTimePdfBtn) exportAllTimePdfBtn.addEventListener('click', () => alert("Career PDF coming soon!"));
+    if (exportAllTimeCsvBtn) exportAllTimeCsvBtn.addEventListener('click', () => {
+        exportToCsv(allEntries, calculateSummaryData(allEntries), `Fieldwork_AllTime.csv`);
+    });
+
+    if (mfvfCancel) mfvfCancel.addEventListener('click', () => mfvfModal.classList.add('hidden'));
+
+    if (mfvfGenerateConfirm) mfvfGenerateConfirm.addEventListener('click', async () => {
+        const selectedMonth = monthSelector.value;
+        const supName = mfvfSupervisorSelect.value;
+        const supervisor = profileData.supervisors.find(s => s.name === supName);
+
+        if (!supervisor) return alert("Please select a supervisor");
+
+        const [year, month] = selectedMonth.split('-');
+        const entries = allEntries.filter(e => {
+            const d = dayjs(e.date);
+            return d.year() == year && (d.month() + 1) == month;
+        });
+
+        let isSigned = false;
+        if (userId !== 'guest') {
+            const verificationRef = doc(db, `users/${userId}/verifications/${selectedMonth}`);
+            const verifSnap = await getDoc(verificationRef);
+            isSigned = verifSnap.exists() && verifSnap.data().status === 'signed';
+        }
+
+        generateMfvfPdf(entries, supervisor, selectedMonth, isSigned);
+        mfvfModal.classList.add('hidden');
+    });
+
+    if (pdfDownloadBtn) {
+        pdfDownloadBtn.addEventListener('click', () => {
+            if (currentPdfDoc) currentPdfDoc.save(currentPdfFilename);
+        });
+    }
+
+    if (pdfCloseBtn) {
+        pdfCloseBtn.addEventListener('click', () => {
+            pdfPreviewModal.classList.add('hidden');
+            pdfIframe.src = '';
+        });
+    }
+
+    if (logTableBody) logTableBody.addEventListener('click', handleTableClick);
+    if (yearlyLogTableBody) yearlyLogTableBody.addEventListener('click', handleTableClick);
+    if (allTimeLogTableBody) allTimeLogTableBody.addEventListener('click', handleTableClick);
+
+    // Role Selection
+    if (selectTraineeBtn) selectTraineeBtn.addEventListener('click', () => handleRoleSelection('trainee'));
+    if (selectSupervisorBtn) selectSupervisorBtn.addEventListener('click', () => handleRoleSelection('supervisor'));
+
+    // Auth State
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            userId = user.uid;
+            if (loginView) loginView.classList.add('hidden');
+            if (userDisplay) userDisplay.textContent = user.displayName || user.email;
+
+            // Show admin link only for authorized admin
+            const adminNavSection = document.getElementById('admin-nav-section');
+            if (adminNavSection && user.email === 'nana.behesht@gmail.com') {
+                adminNavSection.classList.remove('hidden');
+            }
+
+            if (unsubscribeProfile) unsubscribeProfile();
+            const profileRef = doc(db, `users/${userId}`);
+            unsubscribeProfile = onSnapshot(profileRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    profileData = docSnap.data();
+                    console.log("[DEBUG] Profile Loaded. Role:", profileData.role);
+                    if (!profileData.role) {
+                        if (appContainer) appContainer.classList.add('hidden');
+                        if (roleSelectionView) roleSelectionView.classList.remove('hidden');
+                    } else {
+                        if (roleSelectionView) roleSelectionView.classList.add('hidden');
+                        if (appContainer) appContainer.classList.remove('hidden');
+                        setupUIByRole(profileData.role);
+                        if (profileData.role === 'trainee' || profileData.role === 'admin') setupTraineeListeners();
+                        else setupSupervisorListeners();
+                    }
+                    if (document.getElementById('trainee-name')) document.getElementById('trainee-name').value = profileData.name || '';
+                    if (document.getElementById('rbt-number')) document.getElementById('rbt-number').value = profileData.rbtNumber || '';
+                    if (document.getElementById('fieldwork-type')) document.getElementById('fieldwork-type').value = profileData.fieldworkType || 'Supervised';
+                    if (userRoleDisplay) userRoleDisplay.textContent = profileData.role === 'supervisor' ? 'Supervisor' : 'Trainee';
+                    renderSupervisors();
+                } else {
+                    if (appContainer) appContainer.classList.add('hidden');
+                    if (roleSelectionView) roleSelectionView.classList.remove('hidden');
+                }
+            }, (error) => {
+                console.error("App.js: Firestore permission error:", error.message);
+                // Handle permission denied - show role selection to create profile
+                if (error.code === 'permission-denied') {
+                    console.log("App.js: Permission denied, showing role selection for new profile setup");
+                    if (appContainer) appContainer.classList.add('hidden');
+                    if (roleSelectionView) roleSelectionView.classList.remove('hidden');
+                }
+            });
+
+        } else if (userId !== 'guest') {
+            if (appContainer) appContainer.classList.add('hidden');
+            if (roleSelectionView) roleSelectionView.classList.add('hidden');
+            if (loginView) loginView.classList.remove('hidden');
+        }
+    });
+
+    console.log("App.js: Initialization complete");
+}
+
+// Start the app
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}

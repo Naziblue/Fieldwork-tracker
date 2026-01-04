@@ -65,6 +65,28 @@ body {
     animation: fadeIn 0.4s ease-out forwards;
 }
 
+/* Admin Specific */
+.admin-terminal {
+    background: #020617;
+    font-family: 'Fira Code', 'Courier New', monospace;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.admin-log-line {
+    border-left: 2px solid transparent;
+    padding-left: 8px;
+    margin-bottom: 2px;
+}
+
+.admin-log-line:hover {
+    background: rgba(255, 255, 255, 0.03);
+    border-left-color: #6366f1;
+}
+
+.admin-section {
+    transition: all 0.3s ease-in-out;
+}
+
 .delay-100 {
     animation-delay: 0.1s;
 }

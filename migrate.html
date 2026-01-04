@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Migrate to New Database</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-900 text-white min-h-screen flex items-center justify-center">
+
+    <div class="max-w-md w-full bg-slate-800 p-8 rounded-2xl border border-white/10 shadow-2xl">
+        <div class="text-center mb-8">
+            <div
+                class="w-16 h-16 bg-purple-500/10 text-purple-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="ph ph-lightning text-3xl"></i>
+            </div>
+            <h1 class="text-2xl font-bold mb-2">Migrate Your Data</h1>
+            <p class="text-slate-400">Move your history to the new Professional Database.</p>
+        </div>
+
+        <div id="auth-section" class="space-y-4">
+            <button id="login-btn"
+                class="w-full py-3 px-4 bg-white text-slate-900 font-medium rounded-lg hover:bg-slate-100 transition-colors flex items-center justify-center gap-2">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5">
+                Sign in to Start
+            </button>
+        </div>
+
+        <div id="migrate-section" class="hidden space-y-6">
+            <div class="bg-slate-900/50 p-4 rounded-xl border border-white/5">
+                <p class="text-sm font-medium text-white" id="user-email">...</p>
+                <div id="found-stats" class="text-xs text-slate-400 mt-1">Checking for old data...</div>
+            </div>
+
+            <div id="status-log"
+                class="text-xs font-mono text-slate-500 h-32 overflow-y-auto bg-black/30 p-3 rounded-lg border border-white/5">
+                Waiting...
+            </div>
+
+            <button id="start-migrate-btn" disabled
+                class="w-full py-3 px-4 bg-slate-700 text-white/50 font-medium rounded-lg transition-colors flex items-center justify-center gap-2 cursor-not-allowed">
+                <i class="ph ph-arrow-right text-lg"></i>
+                Start Migration
+            </button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAl4i1nP24SOvAt1ifbGD0SZo2u_l4MnB8",
+            authDomain: "fieldwork-tracker-ae8f7.firebaseapp.com",
+            projectId: "fieldwork-tracker-ae8f7",
+            storageBucket: "fieldwork-tracker-ae8f7.firebasestorage.app",
+            messagingSenderId: "4649951899",
+            appId: "1:4649951899:web:28278ddb278baf67b39c3e"
+        };
+        const appId = 'fieldwork-tracker-default';
+
+        // Initialize
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Elements
+        const authSection = document.getElementById('auth-section');
+        const migrateSection = document.getElementById('migrate-section');
+        const loginBtn = document.getElementById('login-btn');
+        const startMigrateBtn = document.getElementById('start-migrate-btn');
+        const userEmailInfo = document.getElementById('user-email');
+        const statusLog = document.getElementById('status-log');
+        const foundStats = document.getElementById('found-stats');
+
+        let oldData = { profile: null, entries: [], verifications: [] };
+
+        function log(msg, color = 'text-slate-500') {
+            const line = document.createElement('div');
+            line.textContent = `> ${msg}`;
+            line.className = color;
+            statusLog.appendChild(line);
+            statusLog.scrollTop = statusLog.scrollHeight;
+        }
+
+        // Auth Logic
+        loginBtn.addEventListener('click', async () => {
+            const provider = new GoogleAuthProvider();
+            try {
+                await signInWithPopup(auth, provider);
+            } catch (e) {
+                log(`Error: ${e.message}`, 'text-red-400');
+            }
+        });
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                authSection.classList.add('hidden');
+                migrateSection.classList.remove('hidden');
+                userEmailInfo.textContent = user.email;
+
+                await checkForOldData(user.uid);
+            }
+        });
+
+        async function checkForOldData(userId) {
+            log('Scanning legacy database...');
+
+            // 1. Check Profile
+            const oldProfileRef = doc(db, `artifacts/${appId}/users/${userId}/profile/data`);
+            const oldProfileSnap = await getDoc(oldProfileRef);
+
+            if (oldProfileSnap.exists()) {
+                oldData.profile = oldProfileSnap.data();
+                log('✓ Found legacy profile', 'text-green-400');
+            } else {
+                log('! No legacy profile found', 'text-yellow-500');
+            }
+
+            // 2. Check Entries
+            const oldEntriesRef = collection(db, `artifacts/${appId}/users/${userId}/fieldwork_entries`);
+            const oldEntriesSnap = await getDocs(oldEntriesRef);
+            if (!oldEntriesSnap.empty) {
+                oldData.entries = oldEntriesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                log(`✓ Found ${oldData.entries.length} legacy entries`, 'text-green-400');
+            }
+
+            // 3. Check Verifications (Basic scan)
+            // We'll scan a few months back just in case
+            const months = ['2023-01', '2023-02', '2023-03', '2023-04', '2023-05', '2023-06',
+                '2023-07', '2023-08', '2023-09', '2023-10', '2023-11', '2023-12',
+                '2024-01', '2024-02', '2024-03', '2024-04', '2024-05', '2024-06',
+                '2024-07', '2024-08', '2024-09', '2024-10', '2024-11', '2024-12',
+                '2025-01', '2025-02', '2025-03', '2025-04'];
+
+            for (const m of months) {
+                const vRef = doc(db, `artifacts/${appId}/users/${userId}/verifications/${m}`);
+                const vSnap = await getDoc(vRef);
+                if (vSnap.exists()) {
+                    oldData.verifications.push({ id: m, ...vSnap.data() });
+                }
+            }
+            if (oldData.verifications.length > 0) {
+                log(`✓ Found ${oldData.verifications.length} verified months`, 'text-green-400');
+            }
+
+            // Enable Button
+            if (oldData.profile || oldData.entries.length > 0) {
+                foundStats.textContent = `Ready to move: Profile + ${oldData.entries.length} entries`;
+                startMigrateBtn.disabled = false;
+                startMigrateBtn.classList.remove('bg-slate-700', 'text-white/50', 'cursor-not-allowed');
+                startMigrateBtn.classList.add('bg-purple-600', 'text-white', 'hover:bg-purple-500');
+            } else {
+                foundStats.textContent = "No legacy data found to migrate.";
+            }
+        }
+
+        startMigrateBtn.addEventListener('click', async () => {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            startMigrateBtn.disabled = true;
+            startMigrateBtn.classList.add('opacity-50');
+            log('Starting migration...', 'text-blue-400');
+
+            try {
+                // 1. Write Profile to New Location
+                if (oldData.profile) {
+                    const newProfileRef = doc(db, `users/${user.uid}`);
+
+                    // Add new professional fields
+                    const newProfileData = {
+                        ...oldData.profile,
+                        planType: 'free',
+                        status: 'active',
+                        migratedAt: new Date().toISOString(),
+                        isVip: false
+                    };
+
+                    await setDoc(newProfileRef, newProfileData, { merge: true });
+                    log('✓ Profile migrated to users/', 'text-green-400');
+                }
+
+                // 2. Write Entries to New Location
+                if (oldData.entries.length > 0) {
+                    let count = 0;
+                    for (const entry of oldData.entries) {
+                        const newEntryRef = doc(db, `users/${user.uid}/entries`, entry.id);
+                        await setDoc(newEntryRef, entry);
+                        count++;
+                        if (count % 5 === 0) log(`...migrated ${count} entries`);
+                    }
+                    log('✓ All entries migrated', 'text-green-400');
+                }
+
+                // 3. Write Verifications
+                if (oldData.verifications.length > 0) {
+                    for (const verif of oldData.verifications) {
+                        const newVerifRef = doc(db, `users/${user.uid}/verifications`, verif.id);
+                        await setDoc(newVerifRef, verif);
+                    }
+                    log('✓ Verifications migrated', 'text-green-400');
+                }
+
+                log('SUCCESS: Migration Complete! 🎉', 'text-purple-400 font-bold');
+
+                setTimeout(() => {
+                    window.location.href = 'app.html?v=3';
+                }, 2000);
+
+            } catch (error) {
+                console.error(error);
+                log(`ERROR: ${error.message}`, 'text-red-400 font-bold');
+                if (error.code === 'permission-denied') {
+                    log('! UPDATE FIREBASE RULES FIRST !', 'text-red-400');
+                }
+                startMigrateBtn.disabled = false;
+                startMigrateBtn.classList.remove('opacity-50');
+            }
+        });
+    </script>
+</body>
+
+</html>

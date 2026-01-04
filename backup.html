@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Safe Data Backup</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-900 text-white min-h-screen flex items-center justify-center">
+
+    <div class="max-w-md w-full bg-slate-800 p-8 rounded-2xl border border-white/10 shadow-2xl">
+        <div class="text-center mb-8">
+            <div
+                class="w-16 h-16 bg-blue-500/10 text-blue-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="ph ph-database text-3xl"></i>
+            </div>
+            <h1 class="text-2xl font-bold mb-2">Secure Data Backup</h1>
+            <p class="text-slate-400">Sign in to securely export your data before system updates.</p>
+        </div>
+
+        <div id="auth-section" class="space-y-4">
+            <button id="login-btn"
+                class="w-full py-3 px-4 bg-white text-slate-900 font-medium rounded-lg hover:bg-slate-100 transition-colors flex items-center justify-center gap-2">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5">
+                Sign in with Google
+            </button>
+        </div>
+
+        <div id="backup-section" class="hidden space-y-6">
+            <div class="bg-slate-900/50 p-4 rounded-xl border border-white/5">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="w-8 h-8 rounded-full bg-green-500/10 text-green-400 flex items-center justify-center">
+                        <i class="ph-fill ph-user-check"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-white" id="user-email">...</p>
+                        <p class="text-xs text-slate-500">Authenticated</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <div id="status-log"
+                    class="text-xs font-mono text-slate-500 h-24 overflow-y-auto bg-black/30 p-3 rounded-lg border border-white/5">
+                    Waiting to start...
+                </div>
+            </div>
+
+            <button id="start-backup-btn"
+                class="w-full py-3 px-4 bg-teal-600 text-white font-medium rounded-lg hover:bg-teal-500 transition-colors flex items-center justify-center gap-2">
+                <i class="ph ph-download-simple text-lg"></i>
+                Download Full Backup (.json)
+            </button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAl4i1nP24SOvAt1ifbGD0SZo2u_l4MnB8",
+            authDomain: "fieldwork-tracker-ae8f7.firebaseapp.com",
+            projectId: "fieldwork-tracker-ae8f7",
+            storageBucket: "fieldwork-tracker-ae8f7.firebasestorage.app",
+            messagingSenderId: "4649951899",
+            appId: "1:4649951899:web:28278ddb278baf67b39c3e"
+        };
+        const appId = 'fieldwork-tracker-default';
+
+        // Initialize
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Elements
+        const authSection = document.getElementById('auth-section');
+        const backupSection = document.getElementById('backup-section');
+        const loginBtn = document.getElementById('login-btn');
+        const startBackupBtn = document.getElementById('start-backup-btn');
+        const userEmailInfo = document.getElementById('user-email');
+        const statusLog = document.getElementById('status-log');
+
+        function log(msg) {
+            const line = document.createElement('div');
+            line.textContent = `> ${msg}`;
+            statusLog.appendChild(line);
+            statusLog.scrollTop = statusLog.scrollHeight;
+        }
+
+        // Auth Logic
+        loginBtn.addEventListener('click', async () => {
+            const provider = new GoogleAuthProvider();
+            try {
+                await signInWithPopup(auth, provider);
+            } catch (e) {
+                log(`Error: ${e.message}`);
+            }
+        });
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                authSection.classList.add('hidden');
+                backupSection.classList.remove('hidden');
+                userEmailInfo.textContent = user.email;
+                log(`Ready to backup data for: ${user.email}`);
+            }
+        });
+
+        // Backup Logic
+        startBackupBtn.addEventListener('click', async () => {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            startBackupBtn.disabled = true;
+            startBackupBtn.classList.add('opacity-50');
+            log('Starting backup process...');
+
+            try {
+                const backupData = {
+                    metadata: {
+                        timestamp: new Date().toISOString(),
+                        userId: user.uid,
+                        email: user.email
+                    },
+                    profile: null,
+                    entries: [],
+                    verifications: []
+                };
+
+                // 1. Fetch Profile
+                log('Fetching profile data...');
+                const profileRef = doc(db, `artifacts/${appId}/users/${user.uid}/profile/data`);
+                const profileSnap = await getDoc(profileRef);
+                if (profileSnap.exists()) {
+                    backupData.profile = profileSnap.data();
+                    log('✓ Profile retrieved');
+                } else {
+                    log('! No profile found');
+                }
+
+                // 2. Fetch Entries
+                log('Fetching fieldwork entries...');
+                const entriesRef = collection(db, `artifacts/${appId}/users/${user.uid}/fieldwork_entries`);
+                const entriesSnap = await getDocs(entriesRef);
+                backupData.entries = entriesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                log(`✓ Retrieved ${backupData.entries.length} entries`);
+
+                // 3. Fetch Verifications
+                log('Fetching verifictions...');
+                // Note: Verifications are typically by month, we can try to fetch a wider range or just known ones.
+                // Since we don't have a subcollection for all verifications easily listed without a parent doc sometimes, 
+                // effectively `verifications` is a collection.
+                const verifRef = collection(db, `artifacts/${appId}/users/${user.uid}/verifications`);
+                const verifSnap = await getDocs(verifRef);
+                backupData.verifications = verifSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                log(`✓ Retrieved ${backupData.verifications.length} verifications`);
+
+                // 4. Create Download
+                log('Generating backup file...');
+                const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `backup_${user.email.split('@')[0]}_${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                log('✓ Backup downloaded successfully!');
+                startBackupBtn.textContent = 'Backup Complete';
+                startBackupBtn.classList.replace('bg-teal-600', 'bg-green-600');
+
+            } catch (error) {
+                console.error(error);
+                log(`ERROR: ${error.message}`);
+                startBackupBtn.disabled = false;
+                startBackupBtn.classList.remove('opacity-50');
+            }
+        });
+    </script>
+</body>
+
+</html>

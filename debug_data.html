@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Debug Data</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-900 text-white min-h-screen flex flex-col items-center justify-center p-8">
+
+    <div class="max-w-2xl w-full bg-slate-800 p-8 rounded-2xl border border-white/10 shadow-2xl">
+        <h1 class="text-2xl font-bold mb-4 text-purple-400">Database Debugger</h1>
+
+        <button id="scan-btn" class="mb-6 px-6 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white font-bold">
+            Scan My Data
+        </button>
+
+        <div id="output"
+            class="bg-black/50 p-4 rounded-lg font-mono text-xs text-slate-300 h-96 overflow-y-auto whitespace-pre-wrap">
+            Waiting to scan...
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAl4i1nP24SOvAt1ifbGD0SZo2u_l4MnB8",
+            authDomain: "fieldwork-tracker-ae8f7.firebaseapp.com",
+            projectId: "fieldwork-tracker-ae8f7",
+            storageBucket: "fieldwork-tracker-ae8f7.firebasestorage.app",
+            messagingSenderId: "4649951899",
+            appId: "1:4649951899:web:28278ddb278baf67b39c3e"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const output = document.getElementById('output');
+
+        function log(msg) {
+            output.textContent += msg + '\n';
+            output.scrollTop = output.scrollHeight;
+        }
+
+        document.getElementById('scan-btn').addEventListener('click', async () => {
+            output.textContent = '';
+            log('Login required to scan...');
+
+            try {
+                const provider = new GoogleAuthProvider();
+                const result = await signInWithPopup(auth, provider);
+                const user = result.user;
+                log(`Logged in as: ${user.email} (${user.uid})`);
+                log('-----------------------------------');
+
+                log(`Scanning path: users/${user.uid}/entries ...`);
+                const colRef = collection(db, `users/${user.uid}/entries`);
+                const snap = await getDocs(colRef);
+
+                log(`Found ${snap.size} entries.`);
+                log('-----------------------------------');
+
+                if (snap.empty) {
+                    log('WARNING: Collection appears empty. Check permissions or migration status.');
+                } else {
+                    // Log first entry FULL structure
+                    const firstData = snap.docs[0].data();
+                    log('--- DATA STRUCTURE INSPECTION ---');
+                    log(JSON.stringify(firstData, null, 2));
+                    log('-----------------------------------');
+
+                    snap.docs.slice(0, 30).forEach(d => {
+                        const data = d.data();
+                        log(`[${data.date}] ${data.fieldworkType} - ${data.totalHours}hrs`);
+                    });
+                }
+
+            } catch (e) {
+                log(`ERROR: ${e.message}`);
+                if (e.message.includes('permission')) {
+                    log('>>> YOUR SECURITY RULES ARE BLOCKING ACCESS. <<<');
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

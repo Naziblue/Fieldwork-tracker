@@ -96,7 +96,6 @@
             </div>
         </div>
     </div>
-    </div>
 
     <!-- Role Selection View (Hidden by default) -->
     <div id="role-selection-view"
@@ -185,6 +184,19 @@
                         <span>My Trainees</span>
                     </button>
                 </div>
+
+
+                <!-- Admin Navigation -->
+                <div id="admin-nav-section" class="space-y-1 hidden">
+                    <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2 px-3 mt-4">
+                        Administrator</div>
+                    <button onclick="location.href='admin.html'"
+                        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-indigo-400 hover:text-white hover:bg-indigo-500/10 transition-all group">
+                        <i class="ph ph-shield-check text-lg group-hover:scale-110 transition-transform"></i>
+                        <span>Admin Portal</span>
+                    </button>
+                </div>
+
             </nav>
 
             <div class="p-4 border-t border-white/5 bg-slate-900/50">
@@ -782,7 +794,7 @@
     <!-- We are removing the old edit modal and using the slide-over for both add and edit -->
     <div id="edit-modal" class="hidden"></div>
 
-    <script type="module" src="app.js"></script>
+    <script type="module" src="app.js?v=2"></script>
 </body>
 
 </html>
