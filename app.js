@@ -1209,10 +1209,6 @@ const handleGoogleLogin = async () => {
     };
 
     // --- Initialization ---
-
-
-    // --- Initialization ---
-    // --- Initialization ---
     function init() {
         console.log("App.js: Initializing application...");
 
@@ -1424,6 +1420,10 @@ const handleGoogleLogin = async () => {
                 if (appContainer) appContainer.classList.add('hidden');
                 if (roleSelectionView) roleSelectionView.classList.add('hidden');
                 if (loginView) loginView.classList.remove('hidden');
+
+                // Cleanup snapshots
+                if (unsubscribeProfile) { unsubscribeProfile(); unsubscribeProfile = null; }
+                if (unsubscribeEntries) { unsubscribeEntries(); unsubscribeEntries = null; }
             }
         });
 
