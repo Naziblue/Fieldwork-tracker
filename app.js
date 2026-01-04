@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, setDoc, getDoc, query, where, getDocs, collectionGroup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // --- Config & State ---
@@ -192,13 +192,32 @@ const handleGoogleLogin = async () => {
     loginErrorMessage.classList.add('hidden');
     const provider = new GoogleAuthProvider();
     try {
-        await signInWithPopup(auth, provider);
+        // Use redirect for cross-origin compatibility
+        await signInWithRedirect(auth, provider);
     } catch (error) {
         console.error("Google sign-in error", error);
         loginErrorMessage.classList.remove('hidden');
         loginErrorMessage.querySelector('span').textContent = `Login failed: ${error.message}`;
     }
 };
+
+// Handle redirect result - called after auth is fully ready
+auth.authStateReady().then(async () => {
+    try {
+        const result = await getRedirectResult(auth);
+        if (result && result.user) {
+            console.log('App.js: Redirect sign-in successful:', result.user.email);
+        }
+    } catch (error) {
+        if (error.code !== 'auth/popup-closed-by-user') {
+            console.error('Redirect sign-in error:', error);
+            if (loginErrorMessage) {
+                loginErrorMessage.classList.remove('hidden');
+                loginErrorMessage.querySelector('span').textContent = `Login failed: ${error.message}`;
+            }
+        }
+    }
+});
 
 // --- UI Logic: Slide-over ---
 const openSlideOver = (mode = 'add', entry = null) => {
