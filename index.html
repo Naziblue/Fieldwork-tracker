@@ -1,1683 +1,204 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fieldwork Tracking</title>
+    <title>FieldworkPro - Master Your Hours</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.10/dayjs.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.10/plugin/customParseFormat.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <script>
-        // Custom color palette configuration for Tailwind CSS
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        background: '#6B7280', // Pastel Gray
-                        text: '#E4E4E4',       // Light Gray
-                        accent1: '#A8DADC',    // Light Cyan
-                        accent2: '#FFC1CC',    // Soft Pink
-                        'pastel-blue': '#ADD8E6', // Added new pastel blue
-                        button: '#B39CD0',     // Lavender
-                        'button-hover': '#a188c0' // darker lavender
-                    }
-                }
-            }
-        }
-    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="tailwind-config.js"></script>
+    <link rel="stylesheet" href="style.css">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
+        /* Landing specific overrides */
+        .hero-glow {
+            background: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.15) 0%, rgba(15, 23, 42, 0) 50%);
         }
 
-        .percentage-red {
-            background-color: #ef4444 !important;
-            color: white !important;
-        }
-
-        .percentage-yellow {
-            background-color: #f59e0b !important;
-            color: black !important;
-        }
-
-        .percentage-green {
-            background-color: #22c55e !important;
-            color: black !important;
-        }
-
-        .modal,
-        .settings-panel {
-            transition: opacity 0.3s ease, transform 0.3s ease-in-out;
-        }
-
-        /* Updated nav button styles */
-        .view-btn {
-            background-color: transparent;
-            color: #B39CD0;
-            border: 1px solid #B39CD0;
-            transition: all 0.2s ease;
-        }
-
-        .view-btn:hover,
-        .view-btn-active {
-            background-color: #B39CD0;
-            color: white;
-        }
-
-        /* Overrides for new theme */
-        .bg-gray-800 {
-            background-color: #4B5563;
-        }
-
-        /* gray-600 */
-        .bg-gray-700 {
-            background-color: #525c6b;
-        }
-
-        /* Lighter than 600 */
-        .text-text {
-            color: #FFFFFF;
-        }
-
-        /* White text for contrast */
-        .text-gray-300 {
-            color: #E5E7EB;
-        }
-
-        .text-gray-400 {
-            color: #D1D5DB;
-        }
-
-        .border-gray-600 {
-            border-color: #525c6b;
-        }
-
-        .bg-gray-600 {
-            background-color: #4B5563;
-        }
-
-        .hover\:bg-gray-600:hover {
-            background-color: #525c6b;
-        }
-
-        .hover\:bg-gray-700:hover {
-            background-color: #374151;
-        }
-
-        /* New fashionable styles */
-        .section-header {
-            color: #A8DADC;
-            /* accent1 */
-            border-bottom: 1px solid #525c6b;
-            /* gray-700 */
-            padding-bottom: 0.5rem;
-            /* pb-2 */
-        }
-
-        .summary-box {
-            background-color: transparent;
-            border: 1px solid #525c6b;
-            /* gray-700 */
-            border-radius: 0.75rem;
-            /* rounded-lg */
-            padding: 1rem;
-            /* p-4 */
-        }
-
-        /* Loading spinner for AI */
-        .spinner {
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top: 3px solid #fff;
-            width: 16px;
-            height: 16px;
-            animation: spin 1s linear infinite;
-            display: inline-block;
-            margin-right: 8px;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
+        .text-gradient {
+            background: linear-gradient(to right, #818cf8, #c084fc, #2dd4bf);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
     </style>
 </head>
 
-<body class="bg-background text-text antialiased">
+<body class="bg-background text-text antialiased overflow-x-hidden">
 
-    <!-- Login View -->
-    <div id="login-view" class="flex flex-col items-center justify-center min-h-screen p-4">
-        <div class="text-center max-w-md">
-            <h1 class="text-4xl font-bold text-pastel-blue mb-2">Fieldwork Tracking</h1>
-            <p class="text-gray-300 mb-8">Please sign in to access your fieldwork log.</p>
-            <div class="flex flex-col gap-4">
-                <button id="login-btn"
-                    class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center mx-auto w-full transition-colors">
-                    Sign in with Google
-                </button>
-                <button id="guest-login-btn"
-                    class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center mx-auto w-full transition-colors">
-                    Sign in as Guest (Local Only)
-                </button>
+    <!-- Navbar -->
+    <nav class="fixed w-full z-50 top-0 start-0 border-b border-white/5 bg-slate-900/80 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between p-4">
+            <a href="#" class="flex items-center space-x-3 rtl:space-x-reverse">
+                <div
+                    class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-glow">
+                    <i class="ph-bold ph-chart-polar text-white"></i>
+                </div>
+                <span class="self-center text-xl font-bold whitespace-nowrap tracking-tight">Fieldwork<span
+                        class="text-primary">Pro</span></span>
+            </a>
+            <div class="flex md:order-2 space-x-3 md:space-x-0 rtl:space-x-reverse">
+                <a href="app.html"
+                    class="text-white bg-primary hover:bg-primary-hover font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-all shadow-lg hover:shadow-primary/25">
+                    Launch App
+                </a>
             </div>
-            <p class="text-xs text-gray-400 mt-4">Guest login data is only saved in this browser. Clear your browser
-                data and it will be lost. Sign in with Google to save your data permanently.</p>
-            <div id="login-error-message" class="mt-4 text-red-400 text-sm bg-red-900/50 p-3 rounded-lg hidden"></div>
+            <div class="items-center justify-between hidden w-full md:flex md:w-auto md:order-1">
+                <ul
+                    class="flex flex-col p-4 md:p-0 mt-4 font-medium border border-gray-100 rounded-lg md:space-x-8 rtl:space-x-reverse md:flex-row md:mt-0 md:border-0">
+                    <li><a href="#features"
+                            class="block py-2 px-3 text-text-muted hover:text-white transition-colors">Features</a></li>
+                    <li><a href="#how-it-works"
+                            class="block py-2 px-3 text-text-muted hover:text-white transition-colors">How it Works</a>
+                    </li>
+                    <li><a href="#pricing"
+                            class="block py-2 px-3 text-text-muted hover:text-white transition-colors">Pricing</a></li>
+                </ul>
+            </div>
         </div>
-    </div>
+    </nav>
 
-    <!-- Main App Container (hidden by default) -->
-    <div id="app-container" class="container mx-auto p-4 md:p-8 hidden">
-        <header class="text-center mb-6 relative">
-            <h1 class="text-3xl md:text-4xl font-bold text-pastel-blue">Fieldwork Tracking</h1>
-            <div class="absolute top-0 right-0 flex items-center gap-4">
-                <div id="user-display" class="text-sm text-gray-300 hidden md:block"></div>
-                <button id="logout-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 rounded-lg text-sm"
-                    title="Logout">
-                    Log Out
-                </button>
-                <button id="settings-btn"
-                    class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-2 rounded-lg text-sm" title="Settings">
-                    Settings
-                </button>
+    <!-- Hero Section -->
+    <section class="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
+        <div class="absolute inset-0 hero-glow pointer-events-none"></div>
+        <div class="px-4 mx-auto max-w-7xl text-center relative z-10">
+            <div
+                class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-sm text-primary mb-8 animate-fade-in">
+                <span class="relative flex h-2 w-2">
+                    <span
+                        class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                </span>
+                v2.0 is now live
             </div>
-        </header>
-
-        <!-- View Navigation -->
-        <nav class="flex justify-center gap-2 mb-8">
-            <button class="view-btn px-4 py-2 rounded-lg font-medium" data-view="monthly">Monthly View</button>
-            <button class="view-btn px-4 py-2 rounded-lg font-medium" data-view="yearly">Yearly View</button>
-            <button class="view-btn px-4 py-2 rounded-lg font-medium" data-view="all-time">All Time View</button>
-        </nav>
-
-        <!-- VIEWS CONTAINER -->
-        <main>
-            <!-- MONTHLY VIEW -->
-            <div id="monthly-view" class="view-container hidden">
-                <section class="mb-8 p-6 bg-gray-600 rounded-2xl shadow-lg">
-                    <div class="flex flex-wrap justify-between items-center mb-4">
-                        <h2 class="text-2xl font-semibold section-header mb-4">Monthly Summary</h2>
-                        <div class="flex items-center gap-2 mt-4 sm:mt-0">
-                            <label for="month-selector" class="text-sm font-medium text-gray-300">Select Month:</label>
-                            <input type="month" id="month-selector"
-                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg p-2 focus:ring-accent1 focus:border-accent1">
-                        </div>
-                    </div>
-                    <div id="monthly-summary-grid"
-                        class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 text-center"></div>
-                </section>
-                <section class="mb-8 p-6 bg-gray-600 rounded-2xl shadow-lg">
-                    <h2 class="text-2xl font-semibold section-header mb-4">Log New Activity</h2>
-                    <form id="tracker-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
-                        <!-- Inputs -->
-                        <div><label class="block mb-2 text-sm font-medium text-gray-300">Date</label><input type="date"
-                                id="date"
-                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1"
-                                required></div>
-                        <div><label class="block mb-2 text-sm font-medium text-gray-300">Start Time</label><input
-                                type="time" id="start-time"
-                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1"
-                                required></div>
-                        <div><label class="block mb-2 text-sm font-medium text-gray-300">End Time</label><input
-                                type="time" id="end-time"
-                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1"
-                                required></div>
-                        <div><label class="block mb-2 text-sm font-medium text-gray-300">Setting</label><select
-                                id="setting"
-                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1">
-                                <option>School</option>
-                                <option>Home</option>
-                                <option>Clinic</option>
-                                <option>Community</option>
-                            </select></div>
-                        <div><label class="block mb-2 text-sm font-medium text-gray-300">Activity Type</label><select
-                                id="activity-type"
-                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1">
-                                <option>Restricted</option>
-                                <option>Unrestricted</option>
-                            </select></div>
-                        <div><label class="block mb-2 text-sm font-medium text-gray-300">Supervision Type</label><select
-                                id="supervision-type"
-                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1">
-                                <option>No Supervision</option>
-                                <option>1:1 Meeting (with Supervisor)</option>
-                                <option>Group Supervision</option>
-                                <option>Observation with Client (by Supervisor)</option>
-                            </select></div>
-
-                        <div id="supervisor-name-wrapper"><label
-                                class="block mb-2 text-sm font-medium text-gray-300">Overseeing
-                                Supervisor</label><select id="supervisor-select"
-                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1"
-                                required>
-                                <option value="">Select a supervisor...</option>
-                            </select></div>
-                        <div><label class="block mb-2 text-sm font-medium text-gray-300">Client Present?</label><select
-                                id="client-present"
-                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1">
-                                <option>No</option>
-                                <option>Yes</option>
-                            </select></div>
-                        <div id="client-name-wrapper"><label class="block mb-2 text-sm font-medium text-gray-300">Client
-                                Name / Student ID</label><input type="text" id="client-name"
-                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1"
-                                placeholder="e.g., Student A" required></div>
-
-                        <!-- Conditional Unrestricted Activity Type -->
-                        <div id="unrestricted-type-wrapper" class="hidden md:col-span-2">
-                            <label class="block mb-2 text-sm font-medium text-gray-300">Unrestricted Activity</label>
-                            <select id="unrestricted-type-select"
-                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1">
-                                <option value="">Select Activity...</option>
-                                <option>Observation</option>
-                                <option>Training</option>
-                                <option>Assessments</option>
-                                <option>Graphing/Analysis</option>
-                                <option>Research</option>
-                                <option>Writing Programs/Reports</option>
-                            </select>
-                        </div>
-
-                        <div id="unrestricted-wrapper" class="hidden md:col-span-2 lg:col-span-4">
-                            <label class="block mb-2 text-sm font-medium text-gray-300">Unrestricted Explanation</label>
-                            <textarea id="unrestricted-explanation" rows="2"
-                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1"
-                                placeholder="e.g., Parent training, data analysis..."></textarea>
-                        </div>
-
-                        <div class="md:col-span-2 lg:col-span-4 relative">
-                            <div class="flex justify-between items-center mb-2">
-                                <label class="text-sm font-medium text-gray-300">Additional Notes (Required)</label>
-                                <!-- AI Button Removed -->
-                            </div>
-                            <textarea id="notes" rows="2"
-                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1"
-                                placeholder="Explain the direct care and ABA strategies used..." required></textarea>
-                        </div>
-                        <div class="md:col-span-2 lg:col-span-4">
-                            <button type="submit"
-                                class="w-full text-white bg-button hover:bg-button-hover font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors">Add
-                                Entry</button>
-                        </div>
-                    </form>
-                </section>
-                <section class="mb-8 p-6 bg-gray-600 rounded-2xl shadow-lg">
-                    <h2 class="text-2xl font-semibold section-header mb-4">Monthly Exports</h2>
-                    <div class="flex flex-col md:flex-row gap-4">
-                        <button id="generate-mfvf-btn"
-                            class="flex-1 w-full text-white bg-button hover:bg-button-hover font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors">Generate
-                            M-FVF (PDF)</button>
-                        <button id="export-monthly-csv-btn"
-                            class="flex-1 w-full text-white bg-purple-600 hover:bg-purple-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors">Export
-                            to Excel (.csv)</button>
-                    </div>
-                </section>
-                <section class="p-6 bg-gray-600 rounded-2xl shadow-lg overflow-x-auto">
-                    <h2 class="text-2xl font-semibold section-header mb-4">Monthly Log</h2>
-                    <table class="w-full text-sm text-left text-gray-300">
-                        <thead class="text-xs text-gray-400 uppercase bg-gray-700">
-                            <tr id="monthly-table-header"></tr>
-                        </thead>
-                        <tbody id="log-table-body"></tbody>
-                    </table>
-                </section>
+            <h1
+                class="mb-6 text-5xl font-extrabold tracking-tight leading-none text-white md:text-7xl lg:text-8xl animate-fade-in delay-100">
+                Track Hours.<br>
+                <span class="text-gradient">Get Certified.</span>
+            </h1>
+            <p
+                class="mb-10 text-lg font-normal text-gray-400 lg:text-xl sm:px-16 lg:px-48 max-w-4xl mx-auto animate-fade-in delay-200">
+                The most advanced fieldwork tracker for aspiring BCBAs. Log restricted and unrestricted hours with
+                precision, generate M-FVF forms in one click, and visualize your path to certification.
+            </p>
+            <div
+                class="flex flex-col space-y-4 sm:flex-row sm:justify-center sm:space-y-0 sm:space-x-4 animate-fade-in delay-300">
+                <a href="app.html"
+                    class="inline-flex justify-center items-center py-4 px-8 text-base font-semibold text-center text-white rounded-xl bg-primary hover:bg-primary-hover focus:ring-4 focus:ring-primary/30 transition-all shadow-glow hover:-translate-y-1">
+                    Start Tracking Free
+                    <i class="ph-bold ph-arrow-right ml-2"></i>
+                </a>
+                <a href="#features"
+                    class="inline-flex justify-center items-center py-4 px-8 text-base font-medium text-center text-white rounded-xl border border-white/10 hover:bg-white/5 focus:ring-4 focus:ring-gray-700 transition-all">
+                    View Features
+                </a>
             </div>
 
-            <!-- YEARLY VIEW -->
-            <div id="yearly-view" class="view-container hidden">
-                <section class="mb-8 p-6 bg-gray-600 rounded-2xl shadow-lg">
-                    <div class="flex flex-wrap justify-between items-center mb-4">
-                        <h2 class="text-2xl font-semibold section-header mb-4">Yearly Summary</h2>
-                        <div class="flex items-center gap-2 mt-4 sm:mt-0">
-                            <label for="year-selector" class="text-sm font-medium text-gray-300">Select Year:</label>
-                            <input type="number" id="year-selector"
-                                class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg p-2 w-28 focus:ring-accent1 focus:border-accent1">
-                        </div>
-                    </div>
-                    <div id="yearly-summary-grid"
-                        class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-center"></div>
-                </section>
-                <section class="mb-8 p-6 bg-gray-600 rounded-2xl shadow-lg">
-                    <h2 class="text-2xl font-semibold section-header mb-4">Yearly Export</h2>
-                    <div class="flex flex-col md:flex-row gap-4">
-                        <button id="export-yearly-pdf-btn"
-                            class="flex-1 w-full text-white bg-teal-600 hover:bg-teal-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors">Export
-                            Yearly Report (PDF)</button>
-                        <button id="export-yearly-csv-btn"
-                            class="flex-1 w-full text-white bg-purple-600 hover:bg-purple-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors">Export
-                            to Excel (.csv)</button>
-                    </div>
-                </section>
-                <section class="p-6 bg-gray-600 rounded-2xl shadow-lg overflow-x-auto">
-                    <h2 class="text-2xl font-semibold section-header mb-4">Yearly Log</h2>
-                    <table class="w-full text-sm text-left text-gray-300">
-                        <thead class="text-xs text-gray-400 uppercase bg-gray-700">
-                            <tr id="yearly-table-header"></tr>
-                        </thead>
-                        <tbody id="yearly-log-table-body"></tbody>
-                    </table>
-                </section>
-            </div>
-
-            <!-- ALL TIME VIEW -->
-            <div id="all-time-view" class="view-container hidden">
-                <section class="mb-8 p-6 bg-gray-600 rounded-2xl shadow-lg">
-                    <h2 class="text-2xl font-semibold section-header mb-4">All Time Summary</h2>
-                    <div id="all-time-summary-grid"
-                        class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-center"></div>
-                </section>
-                <section class="mb-8 p-6 bg-gray-600 rounded-2xl shadow-lg">
-                    <h2 class="text-2xl font-semibold section-header mb-4">All Time Export</h2>
-                    <div class="flex flex-col md:flex-row gap-4">
-                        <button id="export-all-time-pdf-btn"
-                            class="flex-1 w-full text-white bg-teal-600 hover:bg-teal-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors">Export
-                            Full History (PDF)</button>
-                        <button id="export-all-time-csv-btn"
-                            class="flex-1 w-full text-white bg-purple-600 hover:bg-purple-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors">Export
-                            to Excel (.csv)</button>
-                    </div>
-                </section>
-                <section class="p-6 bg-gray-600 rounded-2xl shadow-lg overflow-x-auto">
-                    <h2 class="text-2xl font-semibold section-header mb-4">Cumulative Progress</h2>
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div class="bg-gray-700 p-4 rounded-lg">
-                            <h3 class="text-lg font-medium text-text mb-2 text-center">Total Hours (Goal: 1500)</h3>
-                            <canvas id="totalHoursChart"></canvas>
-                        </div>
-                        <div class="bg-gray-700 p-4 rounded-lg">
-                            <h3 class="text-lg font-medium text-text mb-2 text-center">Unrestricted Hours (Goal: 900)
-                            </h3>
-                            <canvas id="unrestrictedHoursChart"></canvas>
-                        </div>
-                        <div class="bg-gray-700 p-4 rounded-lg">
-                            <h3 class="text-lg font-medium text-text mb-2 text-center">Restricted Hours (Goal: 600)</h3>
-                            <canvas id="restrictedHoursChart"></canvas>
-                        </div>
-                    </div>
-                </section>
-                <section class="mt-8 p-6 bg-gray-600 rounded-2xl shadow-lg overflow-x-auto">
-                    <h2 class="text-2xl font-semibold section-header mb-4">Complete Log</h2>
-                    <table class="w-full text-sm text-left text-gray-300">
-                        <thead class="text-xs text-gray-400 uppercase bg-gray-700">
-                            <tr id="all-time-table-header"></tr>
-                        </thead>
-                        <tbody id="all-time-log-table-body"></tbody>
-                    </table>
-                </section>
-            </div>
-        </main>
-    </div>
-
-    <!-- Edit Modal -->
-    <div id="edit-modal"
-        class="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center p-4 z-50 hidden opacity-0 overflow-y-auto">
-        <div
-            class="bg-gray-700 rounded-2xl shadow-xl w-full max-w-2xl p-6 transform transition-transform duration-300 scale-95 my-auto">
-            <h2 class="text-2xl font-semibold text-text mb-6">Edit Activity</h2>
-            <form id="edit-form">
-                <input type="hidden" id="edit-id">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div><label for="edit-date" class="block mb-2 text-sm">Date</label><input type="date" id="edit-date"
-                            class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1"></div>
-                    <div><label for="edit-start-time" class="block mb-2 text-sm">Start Time</label><input type="time"
-                            id="edit-start-time" class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1">
-                    </div>
-                    <div><label for="edit-end-time" class="block mb-2 text-sm">End Time</label><input type="time"
-                            id="edit-end-time" class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1">
-                    </div>
-                    <div>
-                        <label for="edit-setting" class="block mb-2 text-sm font-medium text-gray-300">Setting</label>
-                        <select id="edit-setting"
-                            class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1">
-                            <option>School</option>
-                            <option>Home</option>
-                            <option>Clinic</option>
-                            <option>Community</option>
-                        </select>
-                    </div>
-                    <div><label for="edit-activity-type" class="block mb-2 text-sm">Activity Type</label><select
-                            id="edit-activity-type"
-                            class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1">
-                            <option>Restricted</option>
-                            <option>Unrestricted</option>
-                        </select></div>
-                    <div><label for="edit-supervision-type" class="block mb-2 text-sm">Supervision Type</label><select
-                            id="edit-supervision-type"
-                            class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1">
-                            <option>No Supervision</option>
-                            <option>1:1 Meeting (with Supervisor)</option>
-                            <option>Group Supervision</option>
-                            <option>Observation with Client (by Supervisor)</option>
-                        </select></div>
-                    <div id="edit-supervisor-name-wrapper"><label for="edit-supervisor-select"
-                            class="block mb-2 text-sm">Overseeing Supervisor</label><select id="edit-supervisor-select"
-                            class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1" required></select>
-                    </div>
-                    <div><label for="edit-client-present" class="block mb-2 text-sm">Client Present?</label><select
-                            id="edit-client-present"
-                            class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1">
-                            <option>No</option>
-                            <option>Yes</option>
-                        </select></div>
-                    <div id="edit-client-name-wrapper"><label for="edit-client-name" class="block mb-2 text-sm">Client
-                            Name / Student ID</label><input type="text" id="edit-client-name"
-                            class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1" required></div>
-
-                    <!-- Conditional Unrestricted Activity Type -->
-                    <div id="edit-unrestricted-type-wrapper" class="hidden md:col-span-2">
-                        <label for="edit-unrestricted-type-select"
-                            class="block mb-2 text-sm font-medium text-gray-300">Unrestricted Activity</label>
-                        <select id="edit-unrestricted-type-select"
-                            class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1">
-                            <option value="">Select Activity...</option>
-                            <option>Observation</option>
-                            <option>Training</option>
-                            <option>Assessments</option>
-                            <option>Graphing/Analysis</option>
-                            <option>Research</option>
-                            <option>Writing Programs/Reports</option>
-                        </select>
-                    </div>
-
-                    <div id="edit-unrestricted-wrapper" class="hidden md:col-span-2"><label
-                            for="edit-unrestricted-explanation" class="block mb-2 text-sm">Unrestricted
-                            Explanation</label><textarea id="edit-unrestricted-explanation" rows="2"
-                            class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1"></textarea></div>
-                    <div class="md:col-span-2"><label for="edit-notes" class="block mb-2 text-sm">Additional Notes
-                            (Required)</label><textarea id="edit-notes" rows="3"
-                            class="bg-gray-500 border-gray-500 text-text rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1" required></textarea>
+            <!-- Dashboard Preview -->
+            <div class="mt-20 relative mx-auto max-w-5xl animate-fade-in delay-300">
+                <div class="absolute -inset-1 bg-gradient-to-r from-primary to-accent rounded-2xl blur opacity-20">
+                </div>
+                <div class="relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-slate-900">
+                    <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2670&auto=format&fit=crop"
+                        alt="App Dashboard"
+                        class="w-full h-auto opacity-90 hover:opacity-100 transition-opacity duration-700">
+                    <div
+                        class="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent opacity-60">
                     </div>
                 </div>
-                <div class="mt-6 flex flex-col sm:flex-row gap-3">
-                    <button type="submit"
-                        class="w-full text-white bg-button hover:bg-button-hover rounded-lg text-sm px-5 py-2.5 transition-colors">Save
-                        Changes</button>
-                    <button type="button" id="delete-button"
-                        class="w-full text-white bg-red-600 hover:bg-red-700 rounded-lg text-sm px-5 py-2.5 transition-colors">Delete</button>
-                    <button type="button" id="cancel-edit"
-                        class="w-full text-gray-300 bg-gray-500 hover:bg-gray-600 rounded-lg text-sm px-5 py-2.5 transition-colors">Cancel</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Grid -->
+    <section id="features" class="py-24 bg-slate-900/50">
+        <div class="px-4 mx-auto max-w-7xl">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold tracking-tight text-white sm:text-4xl">Everything you need to verify</h2>
+                <p class="mt-4 text-lg text-gray-400">Built specifically for the BACB fieldwork requirements.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="glass-card p-8 rounded-2xl">
+                    <div
+                        class="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center mb-6 text-blue-400">
+                        <i class="ph-fill ph-chart-pie-slice text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Smart Analytics</h3>
+                    <p class="text-gray-400">Automatically calculates your Restricted vs. Unrestricted ratio. Know
+                        exactly how many hours you have left.</p>
                 </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Settings Panel -->
-    <div id="settings-panel"
-        class="fixed top-0 right-0 h-full w-full max-w-md bg-gray-700 shadow-lg p-6 transform translate-x-full z-50 overflow-y-auto settings-panel">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-semibold text-text">Settings</h2>
-            <button id="close-settings-btn" class="text-gray-400 hover:text-text text-3xl">&times;</button>
-        </div>
-        <form id="profile-form">
-            <div class="mb-4">
-                <label for="trainee-name" class="block mb-2 text-sm font-medium text-gray-300">Your Name</label>
-                <input type="text" id="trainee-name"
-                    class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1"
-                    placeholder="e.g., Jane Doe">
-            </div>
-            <div class="mb-6">
-                <label for="rbt-number" class="block mb-2 text-sm font-medium text-gray-300">RBT Number / BACB
-                    ID</label>
-                <input type="text" id="rbt-number"
-                    class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1"
-                    placeholder="e.g., RBT-123456">
-            </div>
-            <button type="submit"
-                class="w-full text-white bg-button hover:bg-button-hover font-medium rounded-lg text-sm px-5 py-2.5 mb-6 transition-colors">Save
-                Profile</button>
-        </form>
-        <hr class="border-gray-500 my-6">
-        <div>
-            <h3 class="text-xl font-semibold text-text mb-4">Manage Supervisors</h3>
-            <form id="supervisor-form" class="grid grid-cols-1 gap-4 mb-4">
-                <div>
-                    <label for="supervisor-name-input" class="block mb-2 text-sm font-medium text-gray-300">Supervisor
-                        Name</label>
-                    <input type="text" id="supervisor-name-input"
-                        class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1" required>
+                <!-- Feature 2 -->
+                <div class="glass-card p-8 rounded-2xl">
+                    <div
+                        class="w-12 h-12 rounded-lg bg-purple-500/10 flex items-center justify-center mb-6 text-purple-400">
+                        <i class="ph-fill ph-file-pdf text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">One-Click M-FVF</h3>
+                    <p class="text-gray-400">Generate your Monthly Fieldwork Verification Forms instantly. No more
+                        manual math errors.</p>
                 </div>
-                <div>
-                    <label for="supervisor-cert-input"
-                        class="block mb-2 text-sm font-medium text-gray-300">Certification #</label>
-                    <input type="text" id="supervisor-cert-input"
-                        class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1" required>
+                <!-- Feature 3 -->
+                <div class="glass-card p-8 rounded-2xl">
+                    <div
+                        class="w-12 h-12 rounded-lg bg-teal-500/10 flex items-center justify-center mb-6 text-teal-400">
+                        <i class="ph-fill ph-users-three text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Supervisor Management</h3>
+                    <p class="text-gray-400">Track hours across multiple supervisors. Manage certifications and contact
+                        details easily.</p>
                 </div>
-                <button type="submit"
-                    class="w-full text-white bg-purple-600 hover:bg-purple-700 font-medium rounded-lg text-sm px-5 py-2.5 transition-colors">Add
-                    Supervisor</button>
-            </form>
-            <div id="supervisors-list"></div>
-        </div>
-    </div>
-
-    <!-- MFVF Supervisor Selection Modal -->
-    <div id="mfvf-modal"
-        class="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center p-4 z-50 hidden opacity-0">
-        <div
-            class="bg-gray-700 rounded-2xl shadow-xl w-full max-w-sm p-6 transform transition-transform duration-300 scale-95">
-            <h2 class="text-2xl font-semibold text-text mb-4">Generate M-FVF</h2>
-            <p class="text-gray-300 mb-4 text-sm">Please select the supervisor for whom you are generating this monthly
-                form.</p>
-            <div>
-                <label for="mfvf-supervisor-select" class="block mb-2 text-sm font-medium">Supervisor</label>
-                <select id="mfvf-supervisor-select"
-                    class="bg-gray-500 border border-gray-500 text-text text-sm rounded-lg w-full p-2.5 focus:ring-accent1 focus:border-accent1"></select>
-            </div>
-            <div class="mt-6 flex gap-3">
-                <button id="mfvf-generate-confirm"
-                    class="w-full text-white bg-button hover:bg-button-hover rounded-lg text-sm px-5 py-2.5 transition-colors">Generate</button>
-                <button id="mfvf-cancel"
-                    class="w-full text-gray-300 bg-gray-500 hover:bg-gray-600 rounded-lg text-sm px-5 py-2.5 transition-colors">Cancel</button>
             </div>
         </div>
-    </div>
+    </section>
 
-    <!-- PDF Preview Modal -->
-    <div id="pdf-preview-modal" class="fixed inset-0 bg-black bg-opacity-70 flex flex-col p-4 z-50 hidden opacity-0">
-        <div class="bg-gray-700 rounded-lg p-4 flex-shrink-0 flex items-center justify-between">
-            <h2 class="text-xl font-semibold text-text">PDF Preview</h2>
-            <div class="flex gap-4">
-                <button id="pdf-download-btn"
-                    class="w-full text-white bg-button hover:bg-button-hover rounded-lg text-sm px-5 py-2.5 transition-colors">Download</button>
-                <button id="pdf-close-btn"
-                    class="w-full text-gray-300 bg-gray-500 hover:bg-gray-600 rounded-lg text-sm px-5 py-2.5 transition-colors">Close</button>
+    <!-- Social Proof -->
+    <section class="py-20 border-y border-white/5">
+        <div class="px-4 mx-auto max-w-7xl text-center">
+            <p class="text-sm font-semibold text-gray-500 uppercase tracking-widest mb-8">Trusted by RBTs at top
+                organizations</p>
+            <div
+                class="flex flex-wrap justify-center gap-12 opacity-50 grayscale hover:grayscale-0 transition-all duration-500">
+                <!-- Mock Logos -->
+                <div class="flex items-center gap-2 text-xl font-bold text-white"><i
+                        class="ph-fill ph-infinity text-3xl"></i> ABA Corp</div>
+                <div class="flex items-center gap-2 text-xl font-bold text-white"><i
+                        class="ph-fill ph-brain text-3xl"></i> NeuroCare</div>
+                <div class="flex items-center gap-2 text-xl font-bold text-white"><i
+                        class="ph-fill ph-heartbeat text-3xl"></i> HealthFirst</div>
+                <div class="flex items-center gap-2 text-xl font-bold text-white"><i
+                        class="ph-fill ph-student text-3xl"></i> EduTherapy</div>
             </div>
         </div>
-        <iframe id="pdf-iframe" class="w-full h-full bg-white rounded-b-lg flex-grow"></iframe>
-    </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-24 relative overflow-hidden">
+        <div class="absolute inset-0 bg-primary/5"></div>
+        <div class="px-4 mx-auto max-w-4xl text-center relative z-10">
+            <h2 class="text-4xl font-bold tracking-tight text-white mb-6">Ready to certify with confidence?</h2>
+            <p class="text-xl text-gray-400 mb-10">Join thousands of trainees who have ditched their spreadsheets.</p>
+            <a href="app.html"
+                class="inline-flex justify-center items-center py-4 px-10 text-lg font-bold text-white rounded-xl bg-gradient-to-r from-primary to-accent hover:shadow-glow transition-all transform hover:scale-105">
+                Get Started for Free
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 border-t border-white/5 py-12">
+        <div class="px-4 mx-auto max-w-7xl flex flex-col md:flex-row justify-between items-center">
+            <div class="flex items-center gap-2 mb-4 md:mb-0">
+                <i class="ph-bold ph-chart-polar text-primary text-2xl"></i>
+                <span class="text-lg font-bold text-white">Fieldwork<span class="text-primary">Pro</span></span>
+            </div>
+            <div class="text-gray-500 text-sm">
+                &copy; 2025 FieldworkPro. All rights reserved.
+            </div>
+        </div>
+    </footer>
 
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // --- Config & State ---
-        let firebaseConfig;
-        // Check if __firebase_config is defined before trying to parse it
-        if (typeof __firebase_config !== 'undefined') {
-            try {
-                firebaseConfig = JSON.parse(__firebase_config);
-            } catch (e) {
-                console.error("Error parsing firebase config:", e);
-            }
-        } 
-        
-        // Fallback if config is missing or invalid
-        if (!firebaseConfig) {
-            firebaseConfig = {
-                apiKey: "AIzaSyAl4i1nP24SOvAt1ifbGD0SZo2u_l4MnB8",
-                authDomain: "fieldwork-tracker-ae8f7.firebaseapp.com",
-                projectId: "fieldwork-tracker-ae8f7",
-                storageBucket: "fieldwork-tracker-ae8f7.firebasestorage.app",
-                messagingSenderId: "4649951899",
-                appId: "1:4649951899:web:28278ddb278baf67b39c3e"
-            };
-        }
-
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'fieldwork-tracker-default';
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-        dayjs.extend(window.dayjs_plugin_customParseFormat);
-        const { jsPDF } = window.jspdf;
-
-        let db, auth;
-        let userId = null; // Can be Firebase UID or 'guest'
-        let allEntries = [];
-        let profileData = { name: '', rbtNumber: '', supervisors: [] };
-        let unsubscribeEntries = null;
-        let unsubscribeProfile = null;
-        let chartInstances = {};
-        let currentPdfDoc = null;
-        let currentPdfFilename = "report.pdf";
-
-        // --- DOM Elements ---
-        const loginView = document.getElementById('login-view');
-        const loginErrorMessage = document.getElementById('login-error-message');
-        const appContainer = document.getElementById('app-container');
-        const loginBtn = document.getElementById('login-btn');
-        const guestLoginBtn = document.getElementById('guest-login-btn');
-        const logoutBtn = document.getElementById('logout-btn');
-        const userDisplay = document.getElementById('user-display');
-        const viewBtns = document.querySelectorAll('.view-btn');
-        const views = document.querySelectorAll('.view-container');
-        const monthSelector = document.getElementById('month-selector');
-        const yearSelector = document.getElementById('year-selector');
-        const monthlySummaryGrid = document.getElementById('monthly-summary-grid');
-        const yearlySummaryGrid = document.getElementById('yearly-summary-grid');
-        const allTimeSummaryGrid = document.getElementById('all-time-summary-grid');
-        const logTableBody = document.getElementById('log-table-body');
-        const yearlyLogTableBody = document.getElementById('yearly-log-table-body');
-        const allTimeLogTableBody = document.getElementById('all-time-log-table-body');
-        const trackerForm = document.getElementById('tracker-form');
-        const activityTypeSelect = document.getElementById('activity-type');
-        const unrestrictedWrapper = document.getElementById('unrestricted-wrapper');
-        const supervisionTypeSelect = document.getElementById('supervision-type');
-        const supervisorNameWrapper = document.getElementById('supervisor-name-wrapper');
-        const supervisorSelect = document.getElementById('supervisor-select');
-        const clientPresentSelect = document.getElementById('client-present');
-        const clientNameWrapper = document.getElementById('client-name-wrapper');
-        const settingSelect = document.getElementById('setting');
-        const unrestrictedTypeWrapper = document.getElementById('unrestricted-type-wrapper');
-        const unrestrictedTypeSelect = document.getElementById('unrestricted-type-select');
-
-        const editModal = document.getElementById('edit-modal');
-        const editForm = document.getElementById('edit-form');
-        const cancelEditBtn = document.getElementById('cancel-edit');
-        const deleteBtn = document.getElementById('delete-button');
-        const editActivityTypeSelect = document.getElementById('edit-activity-type');
-        const editUnrestrictedWrapper = document.getElementById('edit-unrestricted-wrapper');
-        const editSupervisionTypeSelect = document.getElementById('edit-supervision-type');
-        const editSupervisorNameWrapper = document.getElementById('edit-supervisor-name-wrapper');
-        const editSupervisorSelect = document.getElementById('edit-supervisor-select');
-        const editClientPresentSelect = document.getElementById('edit-client-present');
-        const editClientNameWrapper = document.getElementById('edit-client-name-wrapper');
-        const editSettingSelect = document.getElementById('edit-setting');
-        const editUnrestrictedTypeWrapper = document.getElementById('edit-unrestricted-type-wrapper');
-        const editUnrestrictedTypeSelect = document.getElementById('edit-unrestricted-type-select');
-
-        const settingsPanel = document.getElementById('settings-panel');
-        const settingsBtn = document.getElementById('settings-btn');
-        const closeSettingsBtn = document.getElementById('close-settings-btn');
-        const profileForm = document.getElementById('profile-form');
-        const supervisorForm = document.getElementById('supervisor-form');
-        const supervisorsList = document.getElementById('supervisors-list');
-        const generateMfvfBtn = document.getElementById('generate-mfvf-btn');
-        const exportMonthlyCsvBtn = document.getElementById('export-monthly-csv-btn');
-        const exportYearlyPdfBtn = document.getElementById('export-yearly-pdf-btn');
-        const exportYearlyCsvBtn = document.getElementById('export-yearly-csv-btn');
-        const exportAllTimePdfBtn = document.getElementById('export-all-time-pdf-btn');
-        const exportAllTimeCsvBtn = document.getElementById('export-all-time-csv-btn');
-        const mfvfModal = document.getElementById('mfvf-modal');
-        const mfvfSupervisorSelect = document.getElementById('mfvf-supervisor-select');
-        const mfvfGenerateConfirm = document.getElementById('mfvf-generate-confirm');
-        const mfvfCancel = document.getElementById('mfvf-cancel');
-
-        const pdfPreviewModal = document.getElementById('pdf-preview-modal');
-        const pdfIframe = document.getElementById('pdf-iframe');
-        const pdfDownloadBtn = document.getElementById('pdf-download-btn');
-        const pdfCloseBtn = document.getElementById('pdf-close-btn');
-
-        // Note: AI variables removed
-
-        const chartContexts = {
-            total: document.getElementById('totalHoursChart').getContext('2d'),
-            restricted: document.getElementById('restrictedHoursChart').getContext('2d'),
-            unrestricted: document.getElementById('unrestrictedHoursChart').getContext('2d')
-        };
-        const tableHeaders = {
-            monthly: document.getElementById('monthly-table-header'),
-            yearly: document.getElementById('yearly-table-header'),
-            allTime: document.getElementById('all-time-table-header')
-        };
-        const tableHeaderHTML = `
-            <th class="px-4 py-3">Date</th>
-            <th class="px-4 py-3">Start</th>
-            <th class="px-4 py-3">End</th>
-            <th class="px-4 py-3">Hours</th>
-            <th class="px-4 py-3">Setting</th>
-            <th class="px-4 py-3">Type</th>
-            <th class="px-4 py-3">Supervision</th>
-            <th class="px-4 py-3">Supervisor</th>
-            <th class="px-4 py-3">Client</th>
-            <th class="px-4 py-3 hidden md:table-cell">Notes</th>
-            <th class="px-4 py-3 text-right">Actions</th>
-        `;
-        tableHeaders.monthly.innerHTML = tableHeaderHTML;
-        tableHeaders.yearly.innerHTML = tableHeaderHTML;
-        tableHeaders.allTime.innerHTML = tableHeaderHTML;
-
-        // --- Authentication ---
-        const handleGoogleLogin = async () => {
-            loginErrorMessage.classList.add('hidden');
-            const provider = new GoogleAuthProvider();
-            try {
-                await signInWithPopup(auth, provider);
-                // Auth state listener will handle UI update
-            } catch (error) {
-                console.error("Google sign-in error", error.code, error.message);
-                if (error.code === 'auth/unauthorized-domain') {
-                    loginErrorMessage.innerHTML = `<strong>Login Failed:</strong> This website's address is not authorized for login. <br>Please go to your Firebase project -> Authentication -> Settings -> Authorized domains, and add the domain where this app is running.`;
-                } else if (error.code === 'auth/popup-blocked') {
-                    loginErrorMessage.innerHTML = `<strong>Popup Blocked:</strong> Please allow popups for this site to sign in with Google.`;
-                } else {
-                    loginErrorMessage.textContent = `An error occurred during login: ${error.message}`;
-                }
-                loginErrorMessage.classList.remove('hidden');
-            }
-        };
-
-        // --- Render, Add, Remove Supervisors ---
-        const renderSupervisors = () => {
-            supervisorsList.innerHTML = '';
-            const supervisorDropdowns = [supervisorSelect, editSupervisorSelect, mfvfSupervisorSelect];
-            supervisorDropdowns.forEach(sel => sel.innerHTML = '<option value="">Select a supervisor...</option>');
-
-            if (profileData.supervisors) {
-                profileData.supervisors.forEach(s => {
-                    const div = document.createElement('div');
-                    div.className = 'flex justify-between items-center bg-gray-500 p-2 rounded-lg mb-2';
-                    div.innerHTML = `<span>${s.name} (${s.cert})</span><button class="remove-supervisor-btn text-red-500 font-bold hover:text-red-300" data-name="${s.name}">&times;</button>`;
-                    supervisorsList.appendChild(div);
-
-                    supervisorDropdowns.forEach(sel => sel.add(new Option(`${s.name}`, s.name)));
-                });
-            }
-        };
-
-        const addSupervisor = async (e) => {
-            e.preventDefault();
-            const addBtn = supervisorForm.querySelector('button[type="submit"]');
-            const originalText = addBtn.textContent;
-            addBtn.textContent = 'Adding...';
-            addBtn.disabled = true;
-
-            const name = document.getElementById('supervisor-name-input').value;
-            const cert = document.getElementById('supervisor-cert-input').value;
-
-            if (!profileData.supervisors) profileData.supervisors = [];
-
-            if (name && cert && !profileData.supervisors.find(s => s.name === name)) {
-                profileData.supervisors.push({ name, cert });
-
-                if (userId === 'guest') {
-                    saveProfileToLocalStorage();
-                    renderSupervisors(); // Manual refresh for local
-                    addBtn.textContent = 'Added!';
-                    supervisorForm.reset();
-                } else {
-                    const profileRef = doc(db, `artifacts/${appId}/users/${userId}/profile/data`);
-                    try {
-                        await setDoc(profileRef, { supervisors: profileData.supervisors }, { merge: true });
-                        addBtn.textContent = 'Added!';
-                        supervisorForm.reset();
-                    } catch (error) {
-                        console.error("Error adding supervisor:", error);
-                        addBtn.textContent = 'Error!';
-                        profileData.supervisors.pop(); // Revert optimistic update
-                    }
-                }
-            } else {
-                addBtn.textContent = 'Invalid or Exists';
-            }
-
-            setTimeout(() => {
-                addBtn.textContent = originalText;
-                addBtn.disabled = false;
-            }, 2000);
-        };
-
-        const removeSupervisor = async (name) => {
-            profileData.supervisors = profileData.supervisors.filter(s => s.name !== name);
-            if (userId === 'guest') {
-                saveProfileToLocalStorage();
-                renderSupervisors(); // Manual refresh for local
-            } else {
-                const profileRef = doc(db, `artifacts/${appId}/users/${userId}/profile/data`);
-                await setDoc(profileRef, { supervisors: profileData.supervisors }, { merge: true });
-                // No manual render needed, onSnapshot will fire
-            }
-        };
-
-        // --- Local Storage Functions (for Guest Mode) ---
-        const loadDataFromLocalStorage = () => {
-            allEntries = JSON.parse(localStorage.getItem('fieldwork_entries')) || [];
-            profileData = JSON.parse(localStorage.getItem('fieldwork_profile')) || { name: 'Guest User', rbtNumber: '', supervisors: [] };
-
-            document.getElementById('trainee-name').value = profileData.name;
-            document.getElementById('rbt-number').value = profileData.rbtNumber;
-            renderSupervisors();
-        };
-
-        const saveEntriesToLocalStorage = () => {
-            localStorage.setItem('fieldwork_entries', JSON.stringify(allEntries));
-        };
-
-        const saveProfileToLocalStorage = () => {
-            localStorage.setItem('fieldwork_profile', JSON.stringify(profileData));
-        };
-
-        // --- Core App Logic ---
-        const switchView = (viewId) => {
-            views.forEach(view => view.classList.add('hidden'));
-            document.getElementById(`${viewId}-view`).classList.remove('hidden');
-
-            viewBtns.forEach(btn => {
-                btn.classList.toggle('view-btn-active', btn.dataset.view === viewId);
-                btn.classList.toggle('view-btn', btn.dataset.view !== viewId);
-            });
-
-            switch (viewId) {
-                case 'monthly': updateMonthlyView(); break;
-                case 'yearly': updateYearlyView(); break;
-                case 'all-time': updateAllTimeView(); break;
-            }
-        };
-
-        const calculateHours = (start, end) => {
-            if (!start || !end) return 0;
-            const startTime = dayjs(`1970-01-01T${start}`);
-            let endTime = dayjs(`1970-01-01T${end}`);
-            if (endTime.isBefore(startTime)) endTime = endTime.add(1, 'day');
-            return endTime.diff(startTime, 'hour', true);
-        };
-
-        const calculateSummaryData = (entries) => {
-            let total = 0, supervised = 0, restricted = 0, unrestricted = 0, contacts = 0;
-            entries.forEach(entry => {
-                const hours = calculateHours(entry.startTime, entry.endTime);
-                total += hours;
-                if (entry.activityType === 'Restricted') restricted += hours;
-                else unrestricted += hours;
-                if (entry.supervisionType !== 'No Supervision') {
-                    supervised += hours;
-                    contacts++;
-                }
-            });
-            const percentage = total > 0 ? (supervised / total) * 100 : 0;
-            return { restricted, unrestricted, total, supervised, percentage, contacts };
-        };
-
-        const toggleFieldVisibility = (select, wrapper, conditionValue) => {
-            const conditionMet = Array.isArray(conditionValue) ? conditionValue.includes(select.value) : select.value === conditionValue;
-            if (conditionMet) wrapper.classList.remove('hidden');
-            else {
-                wrapper.classList.add('hidden');
-                const input = wrapper.querySelector('input, textarea, select');
-                if (input) input.value = '';
-            }
-        };
-
-        const toggleUnrestrictedActivityVisibility = () => {
-            if (activityTypeSelect.value === 'Unrestricted') {
-                unrestrictedTypeWrapper.classList.remove('hidden');
-            } else {
-                unrestrictedTypeWrapper.classList.add('hidden');
-                unrestrictedTypeSelect.value = '';
-            }
-        };
-
-        const toggleEditUnrestrictedActivityVisibility = () => {
-            if (editActivityTypeSelect.value === 'Unrestricted') {
-                editUnrestrictedTypeWrapper.classList.remove('hidden');
-            } else {
-                editUnrestrictedTypeWrapper.classList.add('hidden');
-                editUnrestrictedTypeSelect.value = '';
-            }
-        };
-
-        // --- Rendering ---
-        // CHANGED: Added allTimeTotal parameter to correctly calculate Hours Remaining in any view
-        const createSummaryHTML = (data, allTimeTotal) => `
-            <div class="summary-box"><h3 class="text-sm font-medium text-gray-300">Restricted Hours</h3><p class="text-2xl font-bold text-accent2">${data.restricted.toFixed(2)}</p></div>
-            <div class="summary-box"><h3 class="text-sm font-medium text-gray-300">Unrestricted Hours</h3><p class="text-2xl font-bold text-purple-400">${data.unrestricted.toFixed(2)}</p></div>
-            <div class="summary-box"><h3 class="text-sm font-medium text-gray-300">Total Hours</h3><p class="text-2xl font-bold text-text">${data.total.toFixed(2)}</p></div>
-            <div class="summary-box"><h3 class="text-sm font-medium text-gray-300">Supervised Hours</h3><p class="text-2xl font-bold text-accent1">${data.supervised.toFixed(2)}</p></div>
-            <div class="summary-box"><h3 class="text-sm font-medium text-gray-300">Supervisor Contacts</h3><p class="text-2xl font-bold text-text">${data.contacts}</p></div>
-            <div class="summary-box"><h3 class="text-sm font-medium text-gray-300">Supervision %</h3><p class="text-2xl font-bold text-black rounded-md px-2 ${data.percentage < 5 ? 'percentage-red' : data.percentage < 10 ? 'percentage-yellow' : 'percentage-green'}">${data.percentage.toFixed(2)}%</p></div>
-            <div class="summary-box"><h3 class="text-sm font-medium text-gray-300">Hours Remaining</h3><p class="text-2xl font-bold text-text">${Math.max(0, 1500 - allTimeTotal).toFixed(2)}</p></div>
-        `;
-
-        const renderTable = (entries, tableBodyElement) => {
-            tableBodyElement.innerHTML = '';
-            if (entries.length === 0) {
-                tableBodyElement.innerHTML = `<tr><td colspan="11" class="text-center py-8 text-gray-400">No activities logged for this period.</td></tr>`;
-                return;
-            }
-            const sortedEntries = [...entries].sort((a, b) => new Date(a.date) - new Date(b.date)); // Sort by date ascending
-            sortedEntries.forEach(entry => {
-                const totalHours = calculateHours(entry.startTime, entry.endTime);
-                const row = document.createElement('tr');
-                row.className = 'bg-gray-600 border-b border-gray-700 hover:bg-gray-500 transition-colors';
-
-                let notesDisplay = entry.notes || '';
-                if (entry.unrestrictedActivityType) {
-                    notesDisplay = `[${entry.unrestrictedActivityType}] ${entry.unrestrictedExplanation || notesDisplay}`;
-                } else if (entry.unrestrictedExplanation) {
-                    notesDisplay = entry.unrestrictedExplanation;
-                }
-
-                row.innerHTML = `
-                    <td class="px-4 py-3">${dayjs(entry.date).format('MM/DD/YYYY')}</td>
-                    <td class="px-4 py-3">${dayjs('1970-01-01T' + entry.startTime).format('h:mm A')}</td>
-                    <td class="px-4 py-3">${dayjs('1970-01-01T' + entry.endTime).format('h:mm A')}</td>
-                    <td class="px-4 py-3">${totalHours.toFixed(2)}</td>
-                    <td class="px-4 py-3">${entry.setting || 'N/A'}</td>
-                    <td class="px-4 py-3"><span class="px-2 py-1 font-semibold leading-tight ${entry.activityType === 'Unrestricted' ? 'text-purple-200 bg-purple-900/60' : 'text-accent2 bg-pink-900/50'} rounded-full text-xs">${entry.activityType}</span></td>
-                    <td class="px-4 py-3">${entry.supervisionType}</td>
-                    <td class="px-4 py-3">${entry.supervisorName || 'N/A'}</td>
-                    <td class="px-4 py-3">${entry.clientName || 'N/A'}</td>
-                    <td class="px-4 py-3 text-gray-300 hidden md:table-cell max-w-xs truncate" title="${notesDisplay}">${notesDisplay}</td>
-                    <td class="px-4 py-3 text-right">
-                        <button class="edit-btn font-medium text-accent1 hover:underline mr-3" data-id="${entry.id}">Edit</button>
-                        <button class="copy-btn font-medium text-amber-400 hover:underline" data-id="${entry.id}">Copy</button>
-                    </td>
-                `;
-                tableBodyElement.appendChild(row);
-            });
-        };
-
-        const updateMonthlyView = () => {
-            const selectedMonth = monthSelector.value;
-            if (!selectedMonth) return;
-            const [year, month] = selectedMonth.split('-');
-            const monthlyEntries = allEntries.filter(e => {
-                const d = dayjs(e.date);
-                return d.year() == year && (d.month() + 1) == month;
-            });
-            
-            // Calculate all-time total for the Hours Remaining card
-            const allTimeTotal = calculateSummaryData(allEntries).total;
-            
-            monthlySummaryGrid.innerHTML = createSummaryHTML(calculateSummaryData(monthlyEntries), allTimeTotal);
-            renderTable(monthlyEntries, logTableBody);
-        };
-
-        const updateYearlyView = () => {
-            const selectedYear = yearSelector.value;
-            if (!selectedYear) return;
-            const yearlyEntries = allEntries.filter(e => dayjs(e.date).year() == selectedYear);
-            
-            // Calculate all-time total for the Hours Remaining card
-            const allTimeTotal = calculateSummaryData(allEntries).total;
-            
-            yearlySummaryGrid.innerHTML = createSummaryHTML(calculateSummaryData(yearlyEntries), allTimeTotal);
-            renderTable(yearlyEntries, yearlyLogTableBody);
-        };
-
-        const updateAllTimeView = () => {
-            const summary = calculateSummaryData(allEntries);
-            // For All Time view, the current data total IS the all time total
-            allTimeSummaryGrid.innerHTML = createSummaryHTML(summary, summary.total);
-            renderTable(allEntries, allTimeLogTableBody);
-            renderAllTimeCharts(allEntries);
-        };
-
-        // --- Chart Rendering ---
-        const renderAllTimeCharts = (entries) => {
-            Object.values(chartInstances).forEach(chart => chart.destroy());
-
-            if (entries.length === 0) return;
-
-            const sortedEntries = [...entries].sort((a, b) => new Date(a.date) - new Date(b.date));
-            const startDate = dayjs(sortedEntries[0].date).startOf('month');
-            const today = dayjs().startOf('month');
-
-            let monthSpan = today.diff(startDate, 'month') + 1;
-            monthSpan = Math.max(1, monthSpan); // Ensure at least 1 month
-
-            const totalMonths = Math.min(monthSpan, 36); // Cap at 36 months
-
-            const labels = [];
-            for (let i = 0; i < totalMonths; i++) {
-                labels.push(startDate.add(i, 'month').format('MMM YYYY'));
-            }
-
-            let dataTotal = new Array(totalMonths).fill(0);
-            let dataRestricted = new Array(totalMonths).fill(0);
-            let dataUnrestricted = new Array(totalMonths).fill(0);
-
-            entries.forEach(entry => {
-                const entryDate = dayjs(entry.date);
-                const monthIndex = entryDate.diff(startDate, 'month');
-
-                if (monthIndex < 0 || monthIndex >= totalMonths) return;
-
-                const hours = calculateHours(entry.startTime, entry.endTime);
-                dataTotal[monthIndex] += hours;
-                if (entry.activityType === 'Restricted') {
-                    dataRestricted[monthIndex] += hours;
-                } else {
-                    dataUnrestricted[monthIndex] += hours;
-                }
-            });
-
-            // Create cumulative data
-            for (let i = 1; i < totalMonths; i++) {
-                dataTotal[i] += dataTotal[i - 1];
-                dataRestricted[i] += dataRestricted[i - 1];
-                dataUnrestricted[i] += dataUnrestricted[i - 1];
-            }
-
-            const chartConfig = (label, data, goal, color) => ({
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: label,
-                        data: data,
-                        borderColor: color,
-                        backgroundColor: `${color}1A`, // 0.1 alpha
-                        fill: true,
-                        tension: 0.1
-                    }]
-                },
-                options: {
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            suggestedMax: goal,
-                            ticks: { color: '#9ca3af' }
-                        },
-                        x: {
-                            ticks: { color: '#9ca3af' }
-                        }
-                    },
-                    plugins: {
-                        legend: { display: false }
-                    }
-                }
-            });
-
-            chartInstances.total = new Chart(chartContexts.total, chartConfig('Total Hours', dataTotal, 1500, '#A8DADC'));
-            chartInstances.restricted = new Chart(chartContexts.restricted, chartConfig('Restricted Hours', dataRestricted, 600, '#FFC1CC'));
-            chartInstances.unrestricted = new Chart(chartContexts.unrestricted, chartConfig('Unrestricted Hours', dataUnrestricted, 900, '#c084fc')); // Purple-400
-        };
-
-        // --- Data Handling (Firebase & Local) ---
-
-        const handleAddEntry = async (e) => {
-            e.preventDefault();
-            const newEntry = {
-                date: trackerForm.elements.date.value,
-                startTime: trackerForm.elements['start-time'].value,
-                endTime: trackerForm.elements['end-time'].value,
-                setting: trackerForm.elements.setting.value,
-                activityType: trackerForm.elements['activity-type'].value,
-                unrestrictedExplanation: trackerForm.elements['unrestricted-explanation'].value,
-                unrestrictedActivityType: trackerForm.elements['unrestricted-type-select'].value,
-                supervisionType: trackerForm.elements['supervision-type'].value,
-                supervisorName: trackerForm.elements['supervisor-select'].value,
-                clientPresent: trackerForm.elements['client-present'].value,
-                clientName: trackerForm.elements['client-name'].value,
-                notes: trackerForm.elements.notes.value,
-            };
-
-            if (userId === 'guest') {
-                newEntry.id = crypto.randomUUID();
-                allEntries.push(newEntry);
-                saveEntriesToLocalStorage();
-                switchView(document.querySelector('.view-btn-active').dataset.view);
-            } else {
-                newEntry.userId = userId;
-                try {
-                    const entriesRef = collection(db, `artifacts/${appId}/users/${userId}/fieldwork_entries`);
-                    await addDoc(entriesRef, newEntry);
-                } catch (error) { console.error("Error adding document:", error); }
-            }
-
-            trackerForm.reset();
-            // Reset all conditional fields
-            toggleFieldVisibility(activityTypeSelect, unrestrictedWrapper, 'Unrestricted');
-            toggleUnrestrictedActivityVisibility();
-            trackerForm.elements.date.value = dayjs().format('YYYY-MM-DD');
-        };
-
-        const handleTableClick = (e) => {
-            const entryId = e.target.dataset.id;
-            if (!entryId) return;
-            const entry = allEntries.find(item => item.id === entryId);
-            if (!entry) return;
-            if (e.target.classList.contains('edit-btn')) openEditModal(entry);
-            else if (e.target.classList.contains('copy-btn')) copyEntryToForm(entry);
-        };
-
-        const copyEntryToForm = (entry) => {
-            trackerForm.elements.date.value = entry.date;
-            trackerForm.elements['start-time'].value = entry.startTime;
-            trackerForm.elements['end-time'].value = entry.endTime;
-            trackerForm.elements.setting.value = entry.setting || 'School';
-            trackerForm.elements['activity-type'].value = entry.activityType;
-            trackerForm.elements['supervision-type'].value = entry.supervisionType;
-            trackerForm.elements['supervisor-select'].value = entry.supervisorName || '';
-            trackerForm.elements['client-present'].value = entry.clientPresent;
-            trackerForm.elements['client-name'].value = entry.clientName || '';
-            trackerForm.elements.notes.value = entry.notes || '';
-            
-            // Handle unrestricted fields
-            if (entry.activityType === 'Unrestricted') {
-                trackerForm.elements['unrestricted-type-select'].value = entry.unrestrictedActivityType || '';
-                trackerForm.elements['unrestricted-explanation'].value = entry.unrestrictedExplanation || '';
-            }
-
-            // Trigger change events to update UI visibility
-            trackerForm.elements['activity-type'].dispatchEvent(new Event('change'));
-            
-            // Scroll to top to see the form
-            document.querySelector('#monthly-view').scrollIntoView({ behavior: 'smooth' });
-        };
-
-        const handleGuestLogin = () => {
-            loginErrorMessage.classList.add('hidden');
-            // This is a local-only login, no Firebase
-            userId = 'guest';
-            loginView.classList.add('hidden');
-            appContainer.classList.remove('hidden');
-            userDisplay.textContent = 'Guest (Temporary)';
-            loadDataFromLocalStorage();
-            switchView('monthly');
-        };
-
-        const handleLogout = async () => {
-            if (userId === 'guest') {
-                // Handle local guest logout
-                userId = null;
-                appContainer.classList.add('hidden');
-                loginView.classList.remove('hidden');
-                allEntries = [];
-                profileData = { name: '', rbtNumber: '', supervisors: [] };
-                updateMonthlyView();
-                updateYearlyView();
-                updateAllTimeView();
-            } else {
-                try {
-                    await signOut(auth);
-                    // Auth state listener handles UI updates
-                } catch (error) {
-                    console.error("Sign-out error", error);
-                }
-            }
-        };
-
-        const openEditModal = (entry) => {
-            editForm.elements['edit-id'].value = entry.id;
-            editForm.elements['edit-date'].value = entry.date;
-            editForm.elements['edit-start-time'].value = entry.startTime;
-            editForm.elements['edit-end-time'].value = entry.endTime;
-            editForm.elements['edit-setting'].value = entry.setting || 'School';
-            editForm.elements['edit-activity-type'].value = entry.activityType;
-            editForm.elements['edit-unrestricted-explanation'].value = entry.unrestrictedExplanation || '';
-            editForm.elements['edit-unrestricted-type-select'].value = entry.unrestrictedActivityType || '';
-            editForm.elements['edit-supervision-type'].value = entry.supervisionType;
-            editForm.elements['edit-supervisor-select'].value = entry.supervisorName || '';
-            editForm.elements['edit-client-present'].value = entry.clientPresent;
-            editForm.elements['edit-client-name'].value = entry.clientName || '';
-            editForm.elements['edit-notes'].value = entry.notes || '';
-
-            // Trigger all conditional visibilities
-            toggleFieldVisibility(editActivityTypeSelect, editUnrestrictedWrapper, 'Unrestricted');
-            
-            // CHANGED: We no longer toggle this based on "Client Present" value.
-            // We ensure it is always visible so you can add a name for unrestricted hours.
-            editClientNameWrapper.classList.remove('hidden'); 
-            
-            toggleEditUnrestrictedActivityVisibility();
-
-            editModal.classList.remove('hidden');
-            setTimeout(() => {
-                editModal.classList.remove('opacity-0');
-                editModal.querySelector('div').classList.remove('scale-95');
-            }, 10);
-        };
-
-        const closeEditModal = () => {
-            editModal.classList.add('opacity-0');
-            editModal.querySelector('div').classList.add('scale-95');
-            setTimeout(() => editModal.classList.add('hidden'), 300);
-        };
-
-        const handleUpdateEntry = async (e) => {
-            e.preventDefault();
-            const entryId = editForm.elements['edit-id'].value;
-            const updatedEntryData = {
-                date: editForm.elements['edit-date'].value,
-                startTime: editForm.elements['edit-start-time'].value,
-                endTime: editForm.elements['edit-end-time'].value,
-                setting: editForm.elements['edit-setting'].value,
-                activityType: editForm.elements['edit-activity-type'].value,
-                unrestrictedExplanation: editForm.elements['edit-unrestricted-explanation'].value,
-                unrestrictedActivityType: editForm.elements['edit-unrestricted-type-select'].value,
-                supervisionType: editForm.elements['edit-supervision-type'].value,
-                supervisorName: editForm.elements['edit-supervisor-select'].value,
-                clientPresent: editForm.elements['edit-client-present'].value,
-                clientName: editForm.elements['edit-client-name'].value,
-                notes: editForm.elements['edit-notes'].value,
-            };
-
-            if (userId === 'guest') {
-                const index = allEntries.findIndex(e => e.id === entryId);
-                if (index > -1) {
-                    allEntries[index] = { ...allEntries[index], ...updatedEntryData };
-                    saveEntriesToLocalStorage();
-                    switchView(document.querySelector('.view-btn-active').dataset.view); // Refresh current view
-                }
-            } else {
-                try {
-                    const docRef = doc(db, `artifacts/${appId}/users/${userId}/fieldwork_entries`, entryId);
-                    await updateDoc(docRef, updatedEntryData);
-                } catch (error) { console.error("Error updating doc:", error); }
-            }
-            closeEditModal();
-        };
-
-        const handleDeleteEntry = async () => {
-            const entryId = editForm.elements['edit-id'].value;
-            if (!confirm("Are you sure you want to permanently delete this entry?")) return;
-
-            if (userId === 'guest') {
-                allEntries = allEntries.filter(e => e.id !== entryId);
-                saveEntriesToLocalStorage();
-                switchView(document.querySelector('.view-btn-active').dataset.view); // Refresh current view
-            } else {
-                try {
-                    await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/fieldwork_entries`, entryId));
-                } catch (error) { console.error("Error deleting doc:", error); }
-            }
-            closeEditModal();
-        };
-
-        // --- Settings Panel Logic ---
-        const openSettings = () => settingsPanel.classList.remove('translate-x-full');
-        const closeSettings = () => settingsPanel.classList.add('translate-x-full');
-
-        const saveProfile = async (e) => {
-            e.preventDefault();
-            const saveBtn = profileForm.querySelector('button[type="submit"]');
-            const originalText = saveBtn.textContent;
-            saveBtn.textContent = 'Saving...';
-            saveBtn.disabled = true;
-
-            const name = document.getElementById('trainee-name').value;
-            const rbtNumber = document.getElementById('rbt-number').value;
-
-            profileData.name = name;
-            profileData.rbtNumber = rbtNumber;
-
-            if (userId === 'guest') {
-                saveProfileToLocalStorage();
-                saveBtn.textContent = 'Saved!';
-            } else {
-                const profileRef = doc(db, `artifacts/${appId}/users/${userId}/profile/data`);
-                try {
-                    await setDoc(profileRef, { name, rbtNumber }, { merge: true });
-                    saveBtn.textContent = 'Saved!';
-                } catch (error) {
-                    console.error("Error saving profile:", error);
-                    saveBtn.textContent = 'Error!';
-                }
-            }
-
-            setTimeout(() => {
-                saveBtn.textContent = originalText;
-                saveBtn.disabled = false;
-            }, 2000);
-        };
-
-        // --- PDF Preview Modal ---
-        const showPdfPreview = (doc, filename) => {
-            currentPdfDoc = doc;
-            currentPdfFilename = filename;
-            const dataUri = doc.output('datauristring');
-            pdfIframe.src = dataUri;
-            pdfPreviewModal.classList.remove('hidden');
-            setTimeout(() => pdfPreviewModal.classList.remove('opacity-0'), 10);
-        };
-
-        const closePdfPreview = () => {
-            pdfPreviewModal.classList.add('opacity-0');
-            setTimeout(() => {
-                pdfPreviewModal.classList.add('hidden');
-                pdfIframe.src = ''; // Clear iframe content
-                currentPdfDoc = null;
-                currentPdfFilename = '';
-            }, 300);
-        };
-
-        const downloadPdf = () => {
-            if (currentPdfDoc) {
-                currentPdfDoc.save(currentPdfFilename);
-            }
-        };
-
-        // --- CSV / PDF Generation ---
-        const exportToCsv = (entries, summaryData, filename) => {
-            const headers = [
-                "Date", "Start Time", "End Time", "Hours", "Setting", "Activity Type",
-                "Supervision Type", "Unrestricted Activity", "Supervisor", "Client", "Notes"
-            ];
-            let csvContent = headers.join(",") + "\n";
-
-            const sortedEntries = [...entries].sort((a, b) => new Date(a.date) - new Date(b.date));
-
-            sortedEntries.forEach(entry => {
-                const hours = calculateHours(entry.startTime, entry.endTime).toFixed(2);
-                const startTime = dayjs('1970-01-01T' + entry.startTime).format('h:mm A');
-                const endTime = dayjs('1970-01-01T' + entry.endTime).format('h:mm A');
-
-                let notes = entry.notes || '';
-                if (entry.unrestrictedActivityType) {
-                    notes = `[${entry.unrestrictedActivityType}] ${entry.unrestrictedExplanation || notes}`;
-                } else if (entry.unrestrictedExplanation) {
-                    notes = entry.unrestrictedExplanation;
-                }
-
-                const row = [
-                    entry.date,
-                    startTime,
-                    endTime,
-                    hours,
-                    entry.setting || '',
-                    entry.activityType,
-                    entry.supervisionType,
-                    entry.unrestrictedActivityType || '',
-                    entry.supervisorName || '',
-                    entry.clientName || '',
-                    `"${notes.replace(/"/g, '""')}"` // Handle commas/quotes in notes
-                ];
-                csvContent += row.join(",") + "\n";
-            });
-
-            csvContent += "\n\nSummary\n";
-            csvContent += `Total Hours,${summaryData.total.toFixed(2)}\n`;
-            csvContent += `Restricted Hours,${summaryData.restricted.toFixed(2)}\n`;
-            csvContent += `Unrestricted Hours,${summaryData.unrestricted.toFixed(2)}\n`;
-            csvContent += `Supervised Hours,${summaryData.supervised.toFixed(2)}\n`;
-            csvContent += `Supervisor Contacts,${summaryData.contacts}\n`;
-            csvContent += `Supervision Percentage,${summaryData.percentage.toFixed(2)}%\n`;
-
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            const url = URL.createObjectURL(blob);
-            link.setAttribute("href", url);
-            link.setAttribute("download", filename);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        };
-
-        const generatePdf = (title, entries, orientation = 'landscape') => {
-            const doc = new jsPDF({ orientation: orientation });
-            const summary = calculateSummaryData(entries);
-
-            doc.setFontSize(18);
-            doc.setTextColor('#B39CD0'); // Lavender
-            doc.text(title, 14, 22);
-            doc.setFontSize(11);
-            doc.setTextColor(50, 50, 50); // Dark gray text
-            doc.text(`Trainee: ${profileData.name || 'N/A'}`, 14, 32);
-            doc.text(`Summary: Total: ${summary.total.toFixed(2)}hrs | Supervised: ${summary.supervised.toFixed(2)}hrs (${summary.percentage.toFixed(2)}%) | Contacts: ${summary.contacts}`, 14, 38);
-
-            const tableColumn = ["Date", "Time", "Hours", "Setting", "Type", "Supervision", "Supervisor", "Client", "Notes"];
-            const tableRows = [];
-            entries.sort((a, b) => new Date(a.date) - new Date(b.date)).forEach(entry => {
-                let notesDisplay = entry.notes || '';
-                if (entry.unrestrictedActivityType) {
-                    notesDisplay = `[${entry.unrestrictedActivityType}] ${entry.unrestrictedExplanation || notesDisplay}`;
-                } else if (entry.unrestrictedExplanation) {
-                    notesDisplay = entry.unrestrictedExplanation;
-                }
-
-                tableRows.push([
-                    dayjs(entry.date).format('MM/DD/YYYY'),
-                    `${dayjs('1970-01-01T' + entry.startTime).format('h:mm A')} - ${dayjs('1970-01-01T' + entry.endTime).format('h:mm A')}`,
-                    calculateHours(entry.startTime, entry.endTime).toFixed(2),
-                    entry.setting || 'N/A',
-                    entry.activityType,
-                    entry.supervisionType,
-                    entry.supervisorName || 'N/A',
-                    entry.clientName || 'N/A',
-                    notesDisplay
-                ]);
-            });
-            doc.autoTable(tableColumn, tableRows, {
-                startY: 50,
-                styles: { fontSize: 8 },
-                headStyles: { fillColor: '#A8DADC', textColor: '#2C2C2C' }, // Light Cyan Head
-                columnStyles: {
-                    0: { cellWidth: 18 },
-                    1: { cellWidth: 28 },
-                    2: { cellWidth: 12 },
-                    3: { cellWidth: 18 },
-                    4: { cellWidth: 18 },
-                    5: { cellWidth: 25 },
-                    6: { cellWidth: 20 },
-                    7: { cellWidth: 20 },
-                    8: { cellWidth: 'auto' },
-                }
-            });
-
-            showPdfPreview(doc, `${title.replace(/ /g, '_')}.pdf`);
-        }
-
-        const generateMfvfPdf = () => {
-            if (!profileData.supervisors || profileData.supervisors.length === 0) {
-                alert('Please add at least one supervisor in Settings before generating an M-FVF.');
-                return;
-            }
-            mfvfModal.classList.remove('hidden');
-            setTimeout(() => mfvfModal.classList.remove('opacity-0'), 10);
-        };
-
-        const confirmGenerateMfvf = () => {
-            const selectedSupervisorName = mfvfSupervisorSelect.value;
-            const supervisor = profileData.supervisors.find(s => s.name === selectedSupervisorName);
-            if (!supervisor) { alert('Invalid supervisor selected.'); return; }
-
-            const selectedMonth = monthSelector.value;
-            const [year, month] = selectedMonth.split('-');
-            const monthlyEntries = allEntries.filter(e => {
-                const d = dayjs(e.date);
-                return d.year() == year && (d.month() + 1) == month;
-            });
-
-            const summary = calculateSummaryData(monthlyEntries);
-            const independentHours = summary.total - summary.supervised;
-
-            const doc = new jsPDF(); // Default portrait
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(16);
-            doc.setTextColor('#B39CD0'); // Lavender
-            doc.text('Monthly Fieldwork Verification Form', 105, 22, { align: 'center' });
-
-            doc.autoTable({
-                startY: 30,
-                theme: 'plain',
-                styles: { textColor: '#2C2C2C' },
-                body: [
-                    [{ content: `Trainee Name: ${profileData.name || ''}`, styles: { halign: 'left' } }, { content: `BACB ID #: ${profileData.rbtNumber || ''}`, styles: { halign: 'left' } }],
-                    [{ content: `Month/Year: ${dayjs(selectedMonth).format('MMMM YYYY')}`, styles: { halign: 'left' } }, ''],
-                    [{ content: `Supervisor Name: ${supervisor.name}`, styles: { halign: 'left' } }, { content: `Certification #: ${supervisor.cert}`, styles: { halign: 'left' } }]
-                ]
-            });
-
-            doc.autoTable({
-                startY: doc.lastAutoTable.finalY + 10,
-                head: [['Fieldwork Hours (this month only)', '']],
-                body: [
-                    ['A. Independent Hours (supervisor not present):', independentHours.toFixed(2)],
-                    ['B. Supervised Hours (supervisor present):', summary.supervised.toFixed(2)],
-                    [{ content: 'Total Fieldwork Hours', styles: { fontStyle: 'bold' } }, { content: summary.total.toFixed(2), styles: { fontStyle: 'bold' } }],
-                    [{ content: 'Percent of Hours Supervised', styles: { fontStyle: 'bold' } }, { content: `${summary.percentage.toFixed(2)}%`, styles: { fontStyle: 'bold' } }]
-                ],
-                headStyles: { fillColor: '#B39CD0', textColor: '#2C2C2C' },
-                columnStyles: { 1: { halign: 'right' } },
-                styles: { textColor: '#2C2C2C' },
-            });
-
-            const finalY = doc.lastAutoTable.finalY;
-            doc.setFontSize(10);
-            doc.text('By signing below, we hereby attest that the information on this form is true and correct.', 14, finalY + 15);
-            doc.text('_________________________', 14, finalY + 40);
-            doc.text('Trainee Signature & Date', 14, finalY + 45);
-            doc.text('_________________________', 120, finalY + 40);
-            doc.text('Supervisor Signature & Date', 120, finalY + 45);
-
-            mfvfModal.classList.add('opacity-0');
-            setTimeout(() => mfvfModal.classList.add('hidden'), 300);
-
-            showPdfPreview(doc, `M-FVF_${profileData.name}_${dayjs(selectedMonth).format('MMM_YYYY')}_${supervisor.name}.pdf`);
-        };
-
-        // Note: generateNoteWithAI function removed
-
-        // --- Initialization ---
-
-        // This wrapper ensures the script runs only after the HTML document is fully loaded
-        document.addEventListener('DOMContentLoaded', () => {
-            // Initialize Firebase
-            const app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            auth = getAuth(app);
-
-            // Pre-authenticate with environment token to ensure Firestore works immediately
-            // This is critical for the preview environment
-            const initAuth = async () => {
-                // If initial auth token exists, sign in (for preview env)
-                // Otherwise do nothing and let user click Sign In
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                }
-            };
-            initAuth();
-
-            // Setup static event listeners
-            loginBtn.addEventListener('click', handleGoogleLogin);
-            guestLoginBtn.addEventListener('click', handleGuestLogin);
-            logoutBtn.addEventListener('click', handleLogout);
-            viewBtns.forEach(btn => btn.addEventListener('click', (e) => switchView(e.target.dataset.view)));
-            monthSelector.addEventListener('change', updateMonthlyView);
-            yearSelector.addEventListener('change', updateYearlyView);
-            trackerForm.addEventListener('submit', handleAddEntry);
-            logTableBody.addEventListener('click', handleTableClick);
-            yearlyLogTableBody.addEventListener('click', handleTableClick);
-            allTimeLogTableBody.addEventListener('click', handleTableClick);
-            editForm.addEventListener('submit', handleUpdateEntry);
-            deleteBtn.addEventListener('click', handleDeleteEntry);
-            cancelEditBtn.addEventListener('click', closeEditModal);
-            settingsBtn.addEventListener('click', openSettings);
-            closeSettingsBtn.addEventListener('click', closeSettings);
-            profileForm.addEventListener('submit', saveProfile);
-            supervisorForm.addEventListener('submit', addSupervisor);
-            supervisorsList.addEventListener('click', (e) => {
-                if (e.target.classList.contains('remove-supervisor-btn')) removeSupervisor(e.target.dataset.name);
-            });
-
-            // Conditional logic listeners
-            activityTypeSelect.addEventListener('change', () => {
-                toggleFieldVisibility(activityTypeSelect, unrestrictedWrapper, 'Unrestricted');
-                toggleUnrestrictedActivityVisibility();
-            });
-            supervisionTypeSelect.addEventListener('change', () => {
-                toggleUnrestrictedActivityVisibility();
-            });
-            clientPresentSelect.addEventListener('change', () => {
-                // No longer toggling client name wrapper as it's required
-            });
-
-            editActivityTypeSelect.addEventListener('change', () => {
-                toggleFieldVisibility(editActivityTypeSelect, editUnrestrictedWrapper, 'Unrestricted');
-                toggleEditUnrestrictedActivityVisibility();
-            });
-            editSupervisionTypeSelect.addEventListener('change', () => {
-                toggleEditUnrestrictedActivityVisibility();
-            });
-            editClientPresentSelect.addEventListener('change', () => {
-                // No longer toggling client name wrapper as it's required
-            });
-
-            // Export Listeners
-            generateMfvfBtn.addEventListener('click', generateMfvfPdf);
-            mfvfCancel.addEventListener('click', () => { mfvfModal.classList.add('opacity-0'); setTimeout(() => mfvfModal.classList.add('hidden'), 300) });
-            mfvfGenerateConfirm.addEventListener('click', confirmGenerateMfvf);
-            exportMonthlyCsvBtn.addEventListener('click', () => {
-                const selectedMonth = monthSelector.value; const [year, month] = selectedMonth.split('-');
-                const entries = allEntries.filter(e => { const d = dayjs(e.date); return d.year() == year && (d.month() + 1) == month; });
-                const summary = calculateSummaryData(entries);
-                exportToCsv(entries, summary, `Monthly_Log_${dayjs(selectedMonth).format('MMM_YYYY')}.csv`);
-            });
-            
-            exportYearlyPdfBtn.addEventListener('click', () => { const year = yearSelector.value; const entries = allEntries.filter(e => dayjs(e.date).year() == year); generatePdf(`Yearly Report ${year}`, entries, 'landscape'); });
-            exportYearlyCsvBtn.addEventListener('click', () => { const year = yearSelector.value; const entries = allEntries.filter(e => dayjs(e.date).year() == year); const summary = calculateSummaryData(entries); exportToCsv(entries, summary, `Yearly_Log_${year}.csv`); });
-            exportAllTimePdfBtn.addEventListener('click', () => generatePdf('Full Fieldwork History', allEntries, 'landscape'));
-            exportAllTimeCsvBtn.addEventListener('click', () => { const summary = calculateSummaryData(allEntries); exportToCsv(allEntries, summary, 'Full_Fieldwork_History.csv'); });
-            pdfCloseBtn.addEventListener('click', closePdfPreview);
-            pdfDownloadBtn.addEventListener('click', downloadPdf);
-
-            // Note: AI button listener removed
-
-            // Listen for auth state changes
-            onAuthStateChanged(auth, user => {
-                if (unsubscribeEntries) unsubscribeEntries();
-                if (unsubscribeProfile) unsubscribeProfile();
-
-                // Check for authenticated user (Google or Anonymous/Custom Token)
-                // We exclude local 'guest' logic here, handled separately
-                if (user && userId !== 'guest') { 
-                    userId = user.uid;
-                    loginView.classList.add('hidden');
-                    appContainer.classList.remove('hidden');
-                    
-                    // Show a generic name if displayName is missing (common with anon auth)
-                    userDisplay.textContent = user.displayName || "Authenticated User";
-
-                    // Profile Sync
-                    const profileRef = doc(db, `artifacts/${appId}/users/${userId}/profile/data`);
-                    unsubscribeProfile = onSnapshot(profileRef, (doc) => {
-                        const currentUser = auth.currentUser;
-                        if (doc.exists()) {
-                            const data = doc.data();
-                            profileData = {
-                                name: data.name || (currentUser ? currentUser.displayName : ''),
-                                rbtNumber: data.rbtNumber || '',
-                                supervisors: data.supervisors || []
-                            };
-                        } else {
-                            profileData = {
-                                name: currentUser ? currentUser.displayName : '',
-                                rbtNumber: '',
-                                supervisors: []
-                            };
-                        }
-                        document.getElementById('trainee-name').value = profileData.name || '';
-                        document.getElementById('rbt-number').value = profileData.rbtNumber || '';
-                        renderSupervisors();
-                    });
-
-                    // Entries Sync
-                    const entriesRef = collection(db, `artifacts/${appId}/users/${userId}/fieldwork_entries`);
-                    unsubscribeEntries = onSnapshot(entriesRef, snapshot => {
-                        allEntries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                        const activeViewBtn = document.querySelector('.view-btn-active');
-                        const activeViewId = activeViewBtn ? activeViewBtn.dataset.view : 'monthly';
-                        switchView(activeViewId);
-                    });
-                    
-                    switchView('monthly');
-                } else { 
-                    // No Firebase user
-                    if (userId !== 'guest') {
-                        userId = null;
-                        appContainer.classList.add('hidden');
-                        loginView.classList.remove('hidden');
-                        allEntries = [];
-                        profileData = { name: '', rbtNumber: '', supervisors: [] };
-                        updateMonthlyView();
-                        updateYearlyView();
-                        updateAllTimeView();
-                    }
-                }
-            });
-
-            monthSelector.value = dayjs().format('YYYY-MM');
-            yearSelector.value = dayjs().year();
-            trackerForm.elements.date.value = dayjs().format('YYYY-MM-DD');
-            switchView('monthly');
-        });
-
-    </script>
 </body>
 
 </html>
