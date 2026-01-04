@@ -201,18 +201,24 @@ const handleGoogleLogin = async () => {
     }
 };
 
-// Handle redirect result when user returns from Google
-getRedirectResult(auth).then((result) => {
-    if (result) {
-        console.log('App.js: Redirect sign-in successful', result.user.email);
+// Handle redirect result when user returns from Google (called after DOM is ready)
+const handleRedirectResult = async () => {
+    try {
+        const result = await getRedirectResult(auth);
+        if (result && result.user) {
+            console.log('App.js: Redirect sign-in successful', result.user.email);
+        }
+    } catch (error) {
+        console.error('Redirect sign-in error:', error);
+        if (loginErrorMessage) {
+            loginErrorMessage.classList.remove('hidden');
+            loginErrorMessage.querySelector('span').textContent = `Login failed: ${error.message}`;
+        }
     }
-}).catch((error) => {
-    console.error('Redirect sign-in error:', error);
-    if (loginErrorMessage) {
-        loginErrorMessage.classList.remove('hidden');
-        loginErrorMessage.querySelector('span').textContent = `Login failed: ${error.message}`;
-    }
-});
+};
+
+// Call redirect handler after a small delay to ensure auth is ready
+setTimeout(() => handleRedirectResult(), 100);
 
 // --- UI Logic: Slide-over ---
 const openSlideOver = (mode = 'add', entry = null) => {
