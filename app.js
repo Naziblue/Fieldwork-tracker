@@ -198,7 +198,7 @@ const handleGoogleLogin = async () => {
         console.error("Google sign-in error", error);
         loginErrorMessage.classList.remove('hidden');
         loginErrorMessage.querySelector('span').textContent = `Login failed: ${error.message}`;
-    };
+    }
 };
 
 // --- UI Logic: Slide-over ---
