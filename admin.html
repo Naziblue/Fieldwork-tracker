@@ -13,9 +13,10 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
-    <script src="tailwind-config.js"></script>
+    <script src="tailwind-config.js?v=5"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=8">
+    <script src="theme.js?v=4"></script>
 
     <style>
         .admin-terminal {
@@ -38,8 +39,8 @@
 <body class="bg-background text-text antialiased h-screen overflow-hidden flex flex-col md:flex-row">
 
     <!-- Sidebar Navigation -->
-    <aside class="w-full md:w-64 bg-slate-900/95 border-r border-white/5 flex flex-col z-20 md:relative">
-        <div class="p-6 flex items-center gap-3 border-b border-white/5">
+    <aside class="w-full md:w-64 bg-background/95 border-r border-text/10 flex flex-col z-20 md:relative">
+        <div class="p-6 flex items-center gap-3 border-b border-text/10">
             <div
                 class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-glow">
                 <i class="ph-bold ph-shield-check text-white"></i>
@@ -50,34 +51,34 @@
         <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
             <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2 px-3 mt-2">Main Menu</div>
             <button
-                class="admin-view-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-white bg-white/10 group"
+                class="admin-view-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-text bg-surface/50 group"
                 data-view="overview">
-                <i class="ph ph-squares-four text-lg group-hover:text-indigo-400 transition-colors"></i>
+                <i class="ph ph-squares-four text-lg group-hover:text-primary transition-colors"></i>
                 <span>Overview</span>
             </button>
             <button
-                class="admin-view-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-muted hover:text-white hover:bg-white/5 transition-all group"
+                class="admin-view-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-muted hover:text-text hover:bg-surface-hover transition-all group"
                 data-view="users">
-                <i class="ph ph-users-three text-lg group-hover:text-indigo-400 transition-colors"></i>
+                <i class="ph ph-users-three text-lg group-hover:text-primary transition-colors"></i>
                 <span>User Management</span>
             </button>
             <button
-                class="admin-view-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-muted hover:text-white hover:bg-white/5 transition-all group"
+                class="admin-view-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-muted hover:text-text hover:bg-surface-hover transition-all group"
                 data-view="analytics">
                 <i class="ph ph-chart-bar text-lg group-hover:text-indigo-400 transition-colors"></i>
                 <span>System Analytics</span>
             </button>
             <button
-                class="admin-view-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-muted hover:text-white hover:bg-white/5 transition-all group"
+                class="admin-view-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-muted hover:text-text hover:bg-surface-hover transition-all group"
                 data-view="developer">
                 <i class="ph ph-terminal-window text-lg group-hover:text-indigo-400 transition-colors"></i>
                 <span>Dev Controls</span>
             </button>
         </nav>
 
-        <div class="p-4 border-t border-white/5 bg-slate-900/50">
+        <div class="p-4 border-t border-text/10 bg-background/50">
             <button onclick="location.href='app.html'"
-                class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-surface hover:bg-surface-hover text-xs font-medium transition-colors border border-white/5 mb-2">
+                class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-surface hover:bg-surface-hover text-xs font-medium transition-colors border border-text/10 mb-2">
                 <i class="ph ph-arrow-left"></i> Back to App
             </button>
             <div class="flex items-center gap-3 px-2">
@@ -86,8 +87,8 @@
                     <i class="ph-fill ph-user-gear"></i>
                 </div>
                 <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium text-white truncate">Admin User</p>
-                    <p class="text-xs text-indigo-400 truncate font-mono">SuperAdmin</p>
+                    <p class="text-sm font-medium text-text truncate">Admin User</p>
+                    <p class="text-xs text-primary truncate font-mono">SuperAdmin</p>
                 </div>
             </div>
         </div>
@@ -96,19 +97,23 @@
     <!-- Main Content -->
     <main class="flex-1 flex flex-col h-full overflow-hidden bg-background relative">
         <header
-            class="h-16 border-b border-white/5 flex items-center justify-between px-8 bg-slate-900/50 backdrop-blur-md">
-            <h2 id="view-title" class="text-xl font-bold text-white">Dashboard Overview</h2>
+            class="h-16 border-b border-text/10 flex items-center justify-between px-8 bg-background/50 backdrop-blur-md">
+            <h2 id="view-title" class="text-xl font-bold text-text">Dashboard Overview</h2>
             <div class="flex items-center gap-4">
+                <button onclick="toggleTheme()" class="p-2 mr-2 text-text-muted hover:text-text transition-colors">
+                    <i class="ph-fill ph-sun theme-toggle-sun hidden text-xl"></i>
+                    <i class="ph-fill ph-moon theme-toggle-moon text-xl"></i>
+                </button>
                 <button id="admin-login-btn"
                     class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1.5 rounded-full text-xs font-bold transition-all hidden">
                     Login to Admin
                 </button>
                 <div id="admin-status-badge"
-                    class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800 border border-white/5">
-                    <span class="w-2 h-2 rounded-full bg-slate-500" id="admin-status-dot"></span>
+                    class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface border border-text/10">
+                    <span class="w-2 h-2 rounded-full bg-text-muted" id="admin-status-dot"></span>
                     <span class="text-xs font-medium text-text-muted" id="admin-status-text">Disconnected</span>
                 </div>
-                <button class="p-2 text-text-muted hover:text-white transition-colors">
+                <button class="p-2 text-text-muted hover:text-text transition-colors">
                     <i class="ph ph-bell text-xl"></i>
                 </button>
             </div>
@@ -119,26 +124,26 @@
             <!-- OVERVIEW SECTION -->
             <section id="overview-section" class="admin-section space-y-8 animate-fade-in">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div class="glass-card p-6 rounded-2xl border-l-4 border-indigo-500">
+                    <div class="glass-card p-6 rounded-2xl border-l-4 border-primary">
                         <p class="text-xs font-semibold text-text-muted uppercase tracking-wider">Total Users</p>
-                        <h3 class="text-3xl font-bold text-white mt-1" id="stat-total-users">---</h3>
+                        <h3 class="text-3xl font-bold text-text mt-1" id="stat-total-users">---</h3>
                         <p class="text-xs text-text-muted mt-2 flex items-center gap-1">
                             Live system count
                         </p>
                     </div>
                     <div class="glass-card p-6 rounded-2xl border-l-4 border-purple-500">
                         <p class="text-xs font-semibold text-text-muted uppercase tracking-wider">Active Trainees</p>
-                        <h3 class="text-3xl font-bold text-white mt-1" id="stat-active-trainees">---</h3>
+                        <h3 class="text-3xl font-bold text-text mt-1" id="stat-active-trainees">---</h3>
                         <p class="text-xs text-text-muted mt-2">Currently logging hours</p>
                     </div>
                     <div class="glass-card p-6 rounded-2xl border-l-4 border-blue-500">
                         <p class="text-xs font-semibold text-text-muted uppercase tracking-wider">Supervisors</p>
-                        <h3 class="text-3xl font-bold text-white mt-1" id="stat-total-supervisors">---</h3>
+                        <h3 class="text-3xl font-bold text-text mt-1" id="stat-total-supervisors">---</h3>
                         <p class="text-xs text-text-muted mt-2">Verified licenses</p>
                     </div>
                     <div class="glass-card p-6 rounded-2xl border-l-4 border-pink-500">
                         <p class="text-xs font-semibold text-text-muted uppercase tracking-wider">Storage Usage</p>
-                        <h3 class="text-3xl font-bold text-white mt-1" id="stat-storage">---</h3>
+                        <h3 class="text-3xl font-bold text-text mt-1" id="stat-storage">---</h3>
                         <p class="text-xs text-text-muted mt-2 flex items-center gap-1">
                             Estimated Firestore usage
                         </p>
@@ -147,15 +152,15 @@
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div class="glass-panel p-6 rounded-2xl">
-                        <h4 class="font-bold text-white mb-6 flex items-center gap-2">
-                            <i class="ph ph-activity text-indigo-400"></i> Registration Trend
+                        <h4 class="font-bold text-text mb-6 flex items-center gap-2">
+                            <i class="ph ph-activity text-primary"></i> Registration Trend
                         </h4>
                         <div class="h-64">
                             <canvas id="registrationChart"></canvas>
                         </div>
                     </div>
                     <div class="glass-panel p-6 rounded-2xl">
-                        <h4 class="font-bold text-white mb-6 flex items-center gap-2">
+                        <h4 class="font-bold text-text mb-6 flex items-center gap-2">
                             <i class="ph ph-lightning text-yellow-400"></i> Recent System Events
                         </h4>
                         <div class="space-y-4" id="recent-events-list">
@@ -191,8 +196,8 @@
 
                 <div class="glass-panel overflow-hidden rounded-2xl">
                     <table class="w-full text-left text-sm">
-                        <thead class="bg-slate-900 sticky top-0">
-                            <tr class="text-text-muted uppercase text-[11px] tracking-widest border-b border-white/5">
+                        <thead class="bg-surface sticky top-0">
+                            <tr class="text-text-muted uppercase text-[11px] tracking-widest border-b border-text/10">
                                 <th class="px-6 py-4">User</th>
                                 <th class="px-6 py-4">Role</th>
                                 <th class="px-6 py-4">Plan (Access)</th>
@@ -201,7 +206,7 @@
                                 <th class="px-6 py-4 text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody id="user-table-body" class="divide-y divide-white/5">
+                        <tbody id="user-table-body" class="divide-y divide-text/5">
                             <!-- Populated by admin.js -->
                         </tbody>
                     </table>
@@ -212,13 +217,13 @@
             <section id="analytics-section" class="admin-section hidden space-y-8">
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div class="glass-panel p-6 rounded-2xl lg:col-span-2">
-                        <h4 class="font-bold text-white mb-6">Fieldwork Progression (Average)</h4>
+                        <h4 class="font-bold text-text mb-6">Fieldwork Progression (Average)</h4>
                         <div class="h-80">
                             <canvas id="progressionChart"></canvas>
                         </div>
                     </div>
                     <div class="glass-panel p-6 rounded-2xl">
-                        <h4 class="font-bold text-white mb-6">User Distribution</h4>
+                        <h4 class="font-bold text-text mb-6">User Distribution</h4>
                         <div class="h-80">
                             <canvas id="distributionChart"></canvas>
                         </div>
@@ -232,14 +237,14 @@
                     <!-- Controls -->
                     <div class="space-y-6">
                         <div class="glass-panel p-6 rounded-2xl">
-                            <h4 class="font-bold text-white mb-4 flex items-center gap-2">
+                            <h4 class="font-bold text-text mb-4 flex items-center gap-2">
                                 <i class="ph ph-gear-six text-indigo-400"></i> System Settings
                             </h4>
                             <div class="space-y-4">
                                 <div
                                     class="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5">
                                     <div>
-                                        <p class="text-sm font-bold text-white">Maintenance Mode</p>
+                                        <p class="text-sm font-bold text-text">Maintenance Mode</p>
                                         <p class="text-xs text-text-muted">Make site read-only for users</p>
                                     </div>
                                     <label class="relative inline-flex items-center cursor-pointer">
@@ -252,7 +257,7 @@
                                 <div
                                     class="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5">
                                     <div>
-                                        <p class="text-sm font-bold text-white">Debug Logging</p>
+                                        <p class="text-sm font-bold text-text">Debug Logging</p>
                                         <p class="text-xs text-text-muted">Extended console output</p>
                                     </div>
                                     <label class="relative inline-flex items-center cursor-pointer">
@@ -266,7 +271,7 @@
                         </div>
 
                         <div class="glass-panel p-6 rounded-2xl">
-                            <h4 class="font-bold text-white mb-4 flex items-center gap-2">
+                            <h4 class="font-bold text-text mb-4 flex items-center gap-2">
                                 <i class="ph ph-megaphone text-purple-400"></i> Global Announcement
                             </h4>
                             <textarea class="input-field w-full rounded-xl p-4 text-sm mb-4" rows="3"
@@ -288,7 +293,7 @@
                             </div>
                             <span
                                 class="text-[10px] font-mono text-text-muted uppercase tracking-widest">systemlogs.io</span>
-                            <button class="text-text-muted hover:text-white transition-colors"><i
+                            <button class="text-text-muted hover:text-text transition-colors"><i
                                     class="ph ph-trash-simple"></i></button>
                         </div>
                         <div class="flex-1 overflow-y-auto p-4 font-mono text-xs space-y-1" id="terminal-output">

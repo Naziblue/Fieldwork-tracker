@@ -501,14 +501,14 @@ const calculateSummaryData = (entries) => {
 
 // --- Rendering ---
 const createStatCard = (title, value, subtext, iconClass, colorClass) => `
-    <div class="glass-card p-4 rounded-xl flex items-center justify-between">
+    <div class="glass-card p-6 rounded-2xl flex items-center justify-between hover-scale">
         <div>
-            <p class="text-xs font-medium text-text-muted uppercase tracking-wider">${title}</p>
-            <p class="text-2xl font-bold text-white mt-1">${value}</p>
-            ${subtext ? `<p class="text-xs text-text-muted mt-1">${subtext}</p>` : ''}
+            <p class="text-xs font-semibold text-text-muted uppercase tracking-wider">${title}</p>
+            <p class="text-3xl font-bold text-text mt-2">${value}</p>
+            ${subtext ? `<p class="text-sm text-text-muted mt-2">${subtext}</p>` : ''}
         </div>
-        <div class="w-10 h-10 rounded-lg ${colorClass} bg-opacity-10 flex items-center justify-center">
-            <i class="${iconClass} text-xl"></i>
+        <div class="w-14 h-14 rounded-xl ${colorClass} bg-opacity-15 flex items-center justify-center shadow-lg">
+            <i class="${iconClass} text-2xl"></i>
         </div>
     </div>
 `;
@@ -536,7 +536,18 @@ const createSummaryHTML = (data, allTimeTotal) => {
 const renderTable = (entries, tableBodyElement) => {
     tableBodyElement.innerHTML = '';
     if (entries.length === 0) {
-        tableBodyElement.innerHTML = `<tr><td colspan="9" class="text-center py-12 text-text-muted">No activities logged for this period.</td></tr>`;
+        tableBodyElement.innerHTML = `
+            <tr>
+                <td colspan="9" class="py-8">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">
+                            <i class="ph ph-calendar-blank"></i>
+                        </div>
+                        <p class="empty-state-title">No Activities Yet</p>
+                        <p class="empty-state-description">Start logging your fieldwork hours using the + button below.</p>
+                    </div>
+                </td>
+            </tr>`;
         return;
     }
     const sortedEntries = [...entries].sort((a, b) => new Date(b.date) - new Date(a.date)); // Descending
