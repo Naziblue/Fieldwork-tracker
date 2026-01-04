@@ -8,19 +8,22 @@ window.tailwind.config = {
                 sans: ['Inter', 'sans-serif'],
             },
             colors: {
-                // Semantic Colors using CSS variables with rgb() function
-                // These work with Tailwind CDN's opacity modifier
-                background: 'rgb(var(--color-background))',
-                surface: 'rgb(var(--color-surface))',
-                'surface-hover': 'rgb(var(--color-surface-hover))',
-                text: 'rgb(var(--color-text))',
-                'text-muted': 'rgb(var(--color-text-muted))',
-                primary: 'rgb(var(--color-primary))',
-                'primary-hover': 'rgb(var(--color-primary-hover))',
+                // Dark mode base (Slate)
+                background: '#0f172a', // Slate 900
+                surface: '#1e293b',    // Slate 800
+                'surface-hover': '#334155', // Slate 700
 
-                // Static colors
-                secondary: '#10b981',
-                accent: '#8b5cf6',
+                // Text colors
+                text: '#f8fafc',       // Slate 50
+                'text-muted': '#94a3b8', // Slate 400
+
+                // Accents
+                primary: '#6366f1',    // Indigo 500
+                'primary-hover': '#4f46e5', // Indigo 600
+                secondary: '#10b981',  // Emerald 500
+                accent: '#8b5cf6',     // Violet 500
+
+                // Status
                 success: '#22c55e',
                 warning: '#f59e0b',
                 danger: '#ef4444',

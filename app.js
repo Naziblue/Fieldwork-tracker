@@ -504,7 +504,7 @@ const createStatCard = (title, value, subtext, iconClass, colorClass) => `
     <div class="glass-card p-4 rounded-xl flex items-center justify-between">
         <div>
             <p class="text-xs font-medium text-text-muted uppercase tracking-wider">${title}</p>
-            <p class="text-2xl font-bold text-text mt-1">${value}</p>
+            <p class="text-2xl font-bold text-white mt-1">${value}</p>
             ${subtext ? `<p class="text-xs text-text-muted mt-1">${subtext}</p>` : ''}
         </div>
         <div class="w-10 h-10 rounded-lg ${colorClass} bg-opacity-10 flex items-center justify-center">

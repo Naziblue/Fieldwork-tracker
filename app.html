@@ -42,10 +42,9 @@
         };
     </script>
 
-    <script src="tailwind-config.js?v=5"></script>
+    <script src="tailwind-config.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="style.css?v=7">
-    <script src="theme.js?v=4"></script>
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body class="bg-background text-text antialiased h-screen overflow-hidden flex flex-col md:flex-row">
@@ -53,16 +52,16 @@
     <!-- Login View (Full Screen) -->
     <div id="login-view"
         class="fixed inset-0 z-50 flex items-center justify-center bg-[url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop')] bg-cover bg-center">
-        <div class="absolute inset-0 bg-background/80 backdrop-blur-sm"></div>
+        <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm"></div>
 
         <div
-            class="relative glass-panel p-8 rounded-2xl max-w-md w-full mx-4 animate-fade-in shadow-2xl border border-text/10">
+            class="relative glass-panel p-8 rounded-2xl max-w-md w-full mx-4 animate-fade-in shadow-2xl border border-white/10">
             <div class="text-center mb-8">
                 <div
                     class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/20 mb-4 ring-1 ring-primary/50">
                     <i class="ph-fill ph-chart-polar text-3xl text-primary"></i>
                 </div>
-                <h1 class="text-3xl font-bold text-text mb-2 tracking-tight">Fieldwork Tracker</h1>
+                <h1 class="text-3xl font-bold text-white mb-2 tracking-tight">Fieldwork Tracker</h1>
                 <p class="text-text-muted">Professional tracking for your ABA fieldwork hours.</p>
                 <div
                     class="mt-2 inline-block px-3 py-1 rounded-full bg-yellow-500/20 text-yellow-500 text-xs font-mono border border-yellow-500/30">
@@ -100,34 +99,34 @@
 
     <!-- Role Selection View (Hidden by default) -->
     <div id="role-selection-view"
-        class="fixed inset-0 z-50 hidden flex items-center justify-center bg-background/90 backdrop-blur-md">
-        <div class="glass-panel p-8 rounded-2xl max-w-2xl w-full mx-4 animate-fade-in border border-text/10">
+        class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-900/90 backdrop-blur-md">
+        <div class="glass-panel p-8 rounded-2xl max-w-2xl w-full mx-4 animate-fade-in border border-white/10">
             <div class="text-center mb-10">
-                <h2 class="text-3xl font-bold text-text mb-2">Welcome to FieldworkPro</h2>
+                <h2 class="text-3xl font-bold text-white mb-2">Welcome to FieldworkPro</h2>
                 <p class="text-text-muted">Please select your primary role to get started.</p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- Trainee Option -->
                 <button id="select-trainee-btn"
-                    class="group p-6 rounded-2xl bg-surface border border-text/10 hover:border-primary/50 hover:bg-primary/5 transition-all text-left">
+                    class="group p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-primary/50 hover:bg-primary/5 transition-all text-left">
                     <div
                         class="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center mb-4 text-primary group-hover:scale-110 transition-transform">
                         <i class="ph-fill ph-student text-2xl"></i>
                     </div>
-                    <h3 class="text-xl font-bold text-text mb-2">I am a Trainee</h3>
+                    <h3 class="text-xl font-bold text-white mb-2">I am a Trainee</h3>
                     <p class="text-sm text-text-muted">I want to track my fieldwork hours, generate M-FVFs, and
                         monitor my certification progress.</p>
                 </button>
 
                 <!-- Supervisor Option -->
                 <button id="select-supervisor-btn"
-                    class="group p-6 rounded-2xl bg-surface border border-text/10 hover:border-secondary/50 hover:bg-secondary/5 transition-all text-left">
+                    class="group p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-secondary/50 hover:bg-secondary/5 transition-all text-left">
                     <div
                         class="w-12 h-12 rounded-xl bg-secondary/20 flex items-center justify-center mb-4 text-secondary group-hover:scale-110 transition-transform">
                         <i class="ph-fill ph-users-three text-2xl"></i>
                     </div>
-                    <h3 class="text-xl font-bold text-text mb-2">I am a Supervisor</h3>
+                    <h3 class="text-xl font-bold text-white mb-2">I am a Supervisor</h3>
                     <p class="text-sm text-text-muted">I want to review trainee logs, provide digital signatures,
                         and manage multiple trainees.</p>
                 </button>
@@ -139,8 +138,8 @@
     <div id="app-container" class="hidden w-full h-full flex flex-col md:flex-row relative">
 
         <!-- Sidebar Navigation -->
-        <aside class="w-full md:w-64 bg-background/95 border-r border-text/10 flex flex-col z-20 md:relative">
-            <div class="p-6 flex items-center gap-3 border-b border-text/10">
+        <aside class="w-full md:w-64 bg-slate-900/95 border-r border-white/5 flex flex-col z-20 md:relative">
+            <div class="p-6 flex items-center gap-3 border-b border-white/5">
                 <div
                     class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-glow">
                     <i class="ph-bold ph-chart-polar text-white"></i>
@@ -155,19 +154,19 @@
                         Analytics
                     </div>
                     <button
-                        class="view-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-muted hover:text-text hover:bg-surface-hover transition-all group"
+                        class="view-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-muted hover:text-white hover:bg-white/5 transition-all group"
                         data-view="monthly">
                         <i class="ph ph-calendar-blank text-lg group-hover:text-primary transition-colors"></i>
                         <span>Monthly Overview</span>
                     </button>
                     <button
-                        class="view-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-muted hover:text-text hover:bg-surface-hover transition-all group"
+                        class="view-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-muted hover:text-white hover:bg-white/5 transition-all group"
                         data-view="yearly">
                         <i class="ph ph-calendar text-lg group-hover:text-secondary transition-colors"></i>
                         <span>Yearly Report</span>
                     </button>
                     <button
-                        class="view-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-muted hover:text-text hover:bg-surface-hover transition-all group"
+                        class="view-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-muted hover:text-white hover:bg-white/5 transition-all group"
                         data-view="all-time">
                         <i class="ph ph-chart-line-up text-lg group-hover:text-accent transition-colors"></i>
                         <span>All Time Stats</span>
@@ -179,7 +178,7 @@
                     <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2 px-3 mt-2">
                         Management</div>
                     <button
-                        class="view-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-muted hover:text-text hover:bg-surface-hover transition-all group"
+                        class="view-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-muted hover:text-white hover:bg-white/5 transition-all group"
                         data-view="supervisor-dashboard">
                         <i class="ph ph-users-three text-lg group-hover:text-primary transition-colors"></i>
                         <span>My Trainees</span>
@@ -192,7 +191,7 @@
                     <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2 px-3 mt-4">
                         Administrator</div>
                     <button onclick="location.href='admin.html'"
-                        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-primary hover:text-text hover:bg-primary/10 transition-all group">
+                        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-indigo-400 hover:text-white hover:bg-indigo-500/10 transition-all group">
                         <i class="ph ph-shield-check text-lg group-hover:scale-110 transition-transform"></i>
                         <span>Admin Portal</span>
                     </button>
@@ -200,33 +199,26 @@
 
             </nav>
 
-            <div class="p-4 border-t border-text/10 bg-background/50">
+            <div class="p-4 border-t border-white/5 bg-slate-900/50">
                 <div class="flex items-center gap-3 mb-3 px-2">
                     <div class="w-8 h-8 rounded-full bg-surface flex items-center justify-center text-text-muted">
                         <i class="ph-fill ph-user"></i>
                     </div>
                     <div class="flex-1 min-w-0">
-                        <p id="user-display" class="text-sm font-medium text-text truncate">User</p>
-                        <p id="user-role-display" class="text-xs text-text-muted truncate">Trainee
-                        </p>
+                        <p id="user-display" class="text-sm font-medium text-white truncate">User</p>
+                        <p id="user-role-display" class="text-xs text-text-muted truncate">Trainee</p>
                     </div>
                 </div>
-                <div class="flex gap-2">
+                <div class="grid grid-cols-2 gap-2">
                     <button id="settings-btn"
-                        class="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-surface hover:bg-surface-hover text-xs font-medium transition-colors border border-white/5">
+                        class="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-surface hover:bg-surface-hover text-xs font-medium transition-colors border border-white/5">
                         <i class="ph ph-gear"></i> Settings
                     </button>
-                    <button onclick="toggleTheme()"
-                        class="px-3 py-2 rounded-lg bg-surface hover:bg-surface-hover text-text hover:text-primary transition-colors border border-white/5"
-                        title="Toggle Theme">
-                        <i class="ph-fill ph-sun theme-toggle-sun hidden"></i>
-                        <i class="ph-fill ph-moon theme-toggle-moon"></i>
+                    <button id="logout-btn"
+                        class="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-medium transition-colors border border-red-500/10">
+                        <i class="ph ph-sign-out"></i> Logout
                     </button>
                 </div>
-                <button id="logout-btn"
-                    class="mt-2 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-500 dark:text-red-400 text-xs font-medium transition-colors border border-red-500/10">
-                    <i class="ph ph-sign-out"></i> Logout
-                </button>
             </div>
         </aside>
 
@@ -234,17 +226,11 @@
         <main class="flex-1 flex flex-col h-full overflow-hidden bg-background relative">
             <!-- Top Header (Mobile Only / Context) -->
             <header
-                class="md:hidden h-16 border-b border-text/10 flex items-center justify-between px-4 bg-background/90 backdrop-blur-md z-10">
+                class="md:hidden h-16 border-b border-white/5 flex items-center justify-between px-4 bg-slate-900/90 backdrop-blur-md z-10">
                 <span class="font-bold text-lg">Fieldwork<span class="text-primary">Pro</span></span>
-                <div class="flex items-center gap-2">
-                    <button onclick="toggleTheme()" class="p-2 text-text-muted hover:text-white transition-colors">
-                        <i class="ph-fill ph-sun theme-toggle-sun hidden"></i>
-                        <i class="ph-fill ph-moon theme-toggle-moon text-xl"></i>
-                    </button>
-                    <button id="mobile-menu-btn" class="p-2 text-text-muted hover:text-white">
-                        <i class="ph ph-list text-2xl"></i>
-                    </button>
-                </div>
+                <button id="mobile-menu-btn" class="p-2 text-text-muted hover:text-white">
+                    <i class="ph ph-list text-2xl"></i>
+                </button>
             </header>
 
             <!-- Scrollable View Area -->
@@ -260,17 +246,17 @@
                 <div id="monthly-view" class="view-container animate-fade-in max-w-7xl mx-auto">
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                         <div>
-                            <h2 class="text-3xl font-bold text-text tracking-tight">Monthly Overview</h2>
+                            <h2 class="text-3xl font-bold text-white tracking-tight">Monthly Overview</h2>
                             <p class="text-text-muted mt-1">Track your progress for the current month.</p>
                         </div>
-                        <div class="flex items-center gap-3 bg-surface p-1 rounded-xl border border-text/10">
+                        <div class="flex items-center gap-3 bg-surface p-1 rounded-xl border border-white/5">
                             <button id="prev-month-btn"
-                                class="p-2 hover:bg-surface-hover rounded-lg text-text-muted hover:text-text transition-colors"><i
+                                class="p-2 hover:bg-white/5 rounded-lg text-text-muted hover:text-white transition-colors"><i
                                     class="ph-bold ph-caret-left"></i></button>
                             <input type="month" id="month-selector"
-                                class="bg-transparent border-none text-sm font-medium focus:ring-0 text-text cursor-pointer">
+                                class="bg-transparent border-none text-sm font-medium focus:ring-0 text-white cursor-pointer">
                             <button id="next-month-btn"
-                                class="p-2 hover:bg-surface-hover rounded-lg text-text-muted hover:text-text transition-colors"><i
+                                class="p-2 hover:bg-white/5 rounded-lg text-text-muted hover:text-white transition-colors"><i
                                     class="ph-bold ph-caret-right"></i></button>
                         </div>
                     </div>
@@ -283,12 +269,12 @@
                     <!-- Actions Bar -->
                     <div class="flex flex-wrap gap-3 mb-6">
                         <button id="generate-mfvf-btn"
-                            class="flex items-center gap-2 px-4 py-2 bg-surface hover:bg-surface-hover border border-text/10 rounded-lg text-sm font-medium transition-all hover:border-primary/50 group">
+                            class="flex items-center gap-2 px-4 py-2 bg-surface hover:bg-surface-hover border border-white/5 rounded-lg text-sm font-medium transition-all hover:border-primary/50 group">
                             <i class="ph-fill ph-file-pdf text-red-400 group-hover:scale-110 transition-transform"></i>
                             Generate M-FVF
                         </button>
                         <button id="export-monthly-csv-btn"
-                            class="flex items-center gap-2 px-4 py-2 bg-surface hover:bg-surface-hover border border-text/10 rounded-lg text-sm font-medium transition-all hover:border-secondary/50 group">
+                            class="flex items-center gap-2 px-4 py-2 bg-surface hover:bg-surface-hover border border-white/5 rounded-lg text-sm font-medium transition-all hover:border-secondary/50 group">
                             <i
                                 class="ph-fill ph-file-csv text-green-400 group-hover:scale-110 transition-transform"></i>
                             Export CSV
@@ -297,22 +283,22 @@
 
                     <!-- Data Table Card -->
                     <div class="glass-panel rounded-2xl overflow-hidden flex flex-col h-[600px]">
-                        <div class="p-4 border-b border-text/10 flex justify-between items-center bg-surface/50">
-                            <h3 class="font-semibold text-text flex items-center gap-2">
+                        <div class="p-4 border-b border-white/5 flex justify-between items-center bg-slate-900/50">
+                            <h3 class="font-semibold text-white flex items-center gap-2">
                                 <i class="ph-fill ph-list-dashes text-primary"></i> Activity Log
                             </h3>
-                            <span class="text-xs text-text-muted bg-surface/50 px-2 py-1 rounded">Latest entries
+                            <span class="text-xs text-text-muted bg-white/5 px-2 py-1 rounded">Latest entries
                                 first</span>
                         </div>
                         <div class="overflow-auto flex-1">
                             <table class="w-full text-sm text-left">
                                 <thead
-                                    class="text-xs text-text-muted uppercase bg-background/80 sticky top-0 z-10 backdrop-blur-md">
+                                    class="text-xs text-text-muted uppercase bg-slate-900/80 sticky top-0 z-10 backdrop-blur-md">
                                     <tr id="monthly-table-header">
                                         <!-- Headers injected by JS -->
                                     </tr>
                                 </thead>
-                                <tbody id="log-table-body" class="divide-y divide-text/5">
+                                <tbody id="log-table-body" class="divide-y divide-white/5">
                                     <!-- Rows injected by JS -->
                                 </tbody>
                             </table>
@@ -324,12 +310,12 @@
                 <div id="yearly-view" class="view-container hidden animate-fade-in max-w-7xl mx-auto">
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                         <div>
-                            <h2 class="text-3xl font-bold text-text tracking-tight">Yearly Report</h2>
+                            <h2 class="text-3xl font-bold text-white tracking-tight">Yearly Report</h2>
                             <p class="text-text-muted mt-1">Analyze your performance over the year.</p>
                         </div>
                         <div class="bg-surface p-2 rounded-xl border border-white/5">
                             <input type="number" id="year-selector"
-                                class="bg-transparent border-none text-lg font-bold focus:ring-0 text-text w-24 text-center">
+                                class="bg-transparent border-none text-lg font-bold focus:ring-0 text-white w-24 text-center">
                         </div>
                     </div>
 
@@ -350,7 +336,7 @@
                     <div class="glass-panel rounded-2xl overflow-hidden">
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm text-left">
-                                <thead class="text-xs text-text-muted uppercase bg-background/50">
+                                <thead class="text-xs text-text-muted uppercase bg-slate-900/50">
                                     <tr id="yearly-table-header"></tr>
                                 </thead>
                                 <tbody id="yearly-log-table-body" class="divide-y divide-white/5"></tbody>
@@ -362,7 +348,7 @@
                 <!-- ALL TIME VIEW -->
                 <div id="all-time-view" class="view-container hidden animate-fade-in max-w-7xl mx-auto">
                     <div class="mb-8">
-                        <h2 class="text-3xl font-bold text-text tracking-tight">Career Progress</h2>
+                        <h2 class="text-3xl font-bold text-white tracking-tight">Career Progress</h2>
                         <p class="text-text-muted mt-1">Your journey towards certification.</p>
                     </div>
 
@@ -374,7 +360,7 @@
                         <div class="glass-card p-6 rounded-2xl">
                             <div class="flex justify-between items-start mb-4">
                                 <div>
-                                    <h3 class="text-lg font-semibold text-text">Total Hours</h3>
+                                    <h3 class="text-lg font-semibold text-white">Total Hours</h3>
                                     <p class="text-xs text-text-muted">Goal: 1500 hrs</p>
                                 </div>
                                 <div class="p-2 bg-primary/10 rounded-lg text-primary"><i class="ph-fill ph-clock"></i>
@@ -387,7 +373,7 @@
                         <div class="glass-card p-6 rounded-2xl">
                             <div class="flex justify-between items-start mb-4">
                                 <div>
-                                    <h3 class="text-lg font-semibold text-text">Unrestricted</h3>
+                                    <h3 class="text-lg font-semibold text-white">Unrestricted</h3>
                                     <p class="text-xs text-text-muted">Goal: 900 hrs</p>
                                 </div>
                                 <div class="p-2 bg-accent/10 rounded-lg text-accent"><i class="ph-fill ph-brain"></i>
@@ -400,7 +386,7 @@
                         <div class="glass-card p-6 rounded-2xl">
                             <div class="flex justify-between items-start mb-4">
                                 <div>
-                                    <h3 class="text-lg font-semibold text-text">Restricted</h3>
+                                    <h3 class="text-lg font-semibold text-white">Restricted</h3>
                                     <p class="text-xs text-text-muted">Goal: 600 hrs</p>
                                 </div>
                                 <div class="p-2 bg-secondary/10 rounded-lg text-secondary"><i
@@ -426,7 +412,7 @@
                     <div class="glass-panel rounded-2xl overflow-hidden">
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm text-left">
-                                <thead class="text-xs text-text-muted uppercase bg-background/50">
+                                <thead class="text-xs text-text-muted uppercase bg-slate-900/50">
                                     <tr id="all-time-table-header"></tr>
                                 </thead>
                                 <tbody id="all-time-log-table-body" class="divide-y divide-white/5"></tbody>
@@ -438,7 +424,7 @@
                 <!-- SUPERVISOR DASHBOARD VIEW -->
                 <div id="supervisor-dashboard-view" class="view-container hidden animate-fade-in max-w-7xl mx-auto">
                     <div class="mb-8">
-                        <h2 class="text-3xl font-bold text-text tracking-tight">Supervisor Dashboard</h2>
+                        <h2 class="text-3xl font-bold text-white tracking-tight">Supervisor Dashboard</h2>
                         <p class="text-text-muted mt-1">Manage your trainees and review their fieldwork logs.</p>
                     </div>
 
@@ -469,7 +455,7 @@
                                 <div class="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mb-6">
                                     <i class="ph ph-magnifying-glass text-4xl text-text-muted"></i>
                                 </div>
-                                <h3 class="text-xl font-bold text-text mb-2">Select a Trainee</h3>
+                                <h3 class="text-xl font-bold text-white mb-2">Select a Trainee</h3>
                                 <p class="text-text-muted max-w-xs">Choose a trainee from the list to review their
                                     hours
                                     and provide digital signatures.</p>
@@ -483,7 +469,7 @@
                                             <i class="ph-fill ph-user text-2xl"></i>
                                         </div>
                                         <div>
-                                            <h3 id="review-trainee-name" class="text-xl font-bold text-text">Jane
+                                            <h3 id="review-trainee-name" class="text-xl font-bold text-white">Jane
                                                 Doe
                                             </h3>
                                             <p id="review-trainee-email" class="text-sm text-text-muted">
@@ -506,12 +492,12 @@
                                     <div class="overflow-auto flex-1">
                                         <table class="w-full text-sm text-left">
                                             <thead
-                                                class="text-xs text-text-muted uppercase bg-background/80 sticky top-0 z-10 backdrop-blur-md">
+                                                class="text-xs text-text-muted uppercase bg-slate-900/80 sticky top-0 z-10 backdrop-blur-md">
                                                 <tr id="review-table-header">
                                                     <!-- Headers injected by JS -->
                                                 </tr>
                                             </thead>
-                                            <tbody id="review-table-body" class="divide-y divide-text/5">
+                                            <tbody id="review-table-body" class="divide-y divide-white/5">
                                                 <!-- Rows injected by JS -->
                                             </tbody>
                                         </table>
@@ -538,19 +524,19 @@
         aria-modal="true">
         <!-- Background backdrop -->
         <div id="slide-over-backdrop"
-            class="absolute inset-0 bg-background/80 backdrop-blur-sm transition-opacity opacity-0"></div>
+            class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm transition-opacity opacity-0"></div>
 
         <div class="fixed inset-y-0 right-0 flex max-w-full pl-10 pointer-events-none">
             <div id="slide-over-content"
                 class="pointer-events-auto w-screen max-w-md transform transition ease-in-out duration-500 translate-x-full">
-                <div class="flex h-full flex-col overflow-y-scroll bg-background border-l border-text/10 shadow-2xl">
+                <div class="flex h-full flex-col overflow-y-scroll bg-slate-900 border-l border-white/10 shadow-2xl">
                     <div
-                        class="px-4 sm:px-6 py-6 border-b border-text/10 bg-background/50 sticky top-0 z-10 backdrop-blur-md">
+                        class="px-4 sm:px-6 py-6 border-b border-white/5 bg-slate-900/50 sticky top-0 z-10 backdrop-blur-md">
                         <div class="flex items-start justify-between">
-                            <h2 class="text-xl font-semibold text-text" id="slide-over-title">Log Activity</h2>
+                            <h2 class="text-xl font-semibold text-white" id="slide-over-title">Log Activity</h2>
                             <div class="ml-3 flex h-7 items-center">
                                 <button id="close-slide-over-btn" type="button"
-                                    class="rounded-md text-text-muted hover:text-text focus:outline-none">
+                                    class="rounded-md text-gray-400 hover:text-white focus:outline-none">
                                     <span class="sr-only">Close panel</span>
                                     <i class="ph ph-x text-2xl"></i>
                                 </button>
@@ -602,7 +588,7 @@
                                         <input type="radio" name="activity-type-radio" value="Restricted"
                                             class="peer sr-only" checked>
                                         <div
-                                            class="rounded-lg border border-text/10 bg-surface/50 p-3 text-center text-sm font-medium text-text-muted transition-all peer-checked:border-secondary peer-checked:bg-secondary/10 peer-checked:text-secondary hover:bg-surface-hover">
+                                            class="rounded-lg border border-white/10 bg-white/5 p-3 text-center text-sm font-medium text-text-muted transition-all peer-checked:border-secondary peer-checked:bg-secondary/10 peer-checked:text-secondary hover:bg-white/10">
                                             Restricted
                                         </div>
                                     </label>
@@ -610,7 +596,7 @@
                                         <input type="radio" name="activity-type-radio" value="Unrestricted"
                                             class="peer sr-only">
                                         <div
-                                            class="rounded-lg border border-text/10 bg-surface/50 p-3 text-center text-sm font-medium text-text-muted transition-all peer-checked:border-accent peer-checked:bg-accent/10 peer-checked:text-accent hover:bg-surface-hover">
+                                            class="rounded-lg border border-white/10 bg-white/5 p-3 text-center text-sm font-medium text-text-muted transition-all peer-checked:border-accent peer-checked:bg-accent/10 peer-checked:text-accent hover:bg-white/10">
                                             Unrestricted
                                         </div>
                                     </label>
@@ -691,7 +677,7 @@
 
                     <!-- Footer Actions -->
                     <div
-                        class="border-t border-text/10 p-4 bg-background/80 backdrop-blur sticky bottom-0 z-10 flex gap-3">
+                        class="border-t border-white/5 p-4 bg-slate-900/80 backdrop-blur sticky bottom-0 z-10 flex gap-3">
                         <button id="delete-entry-btn" type="button"
                             class="hidden flex-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 font-medium py-2.5 rounded-lg transition-colors border border-red-500/10">
                             Delete
@@ -709,16 +695,16 @@
     <!-- Settings Modal (Reused structure but styled) -->
     <div id="settings-panel" class="fixed inset-0 z-50 hidden" aria-labelledby="settings-title" role="dialog"
         aria-modal="true">
-        <div class="absolute inset-0 bg-background/80 backdrop-blur-sm transition-opacity" id="settings-backdrop">
+        <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm transition-opacity" id="settings-backdrop">
         </div>
         <div class="fixed inset-y-0 right-0 flex max-w-full pl-10 pointer-events-none">
             <div class="pointer-events-auto w-screen max-w-md transform transition ease-in-out duration-500 translate-x-full"
                 id="settings-content">
                 <div
-                    class="flex h-full flex-col overflow-y-scroll bg-background border-l border-text/10 shadow-2xl p-6">
+                    class="flex h-full flex-col overflow-y-scroll bg-slate-900 border-l border-white/10 shadow-2xl p-6">
                     <div class="flex justify-between items-center mb-8">
-                        <h2 class="text-2xl font-bold text-text">Settings</h2>
-                        <button id="close-settings-btn" class="text-text-muted hover:text-text"><i
+                        <h2 class="text-2xl font-bold text-white">Settings</h2>
+                        <button id="close-settings-btn" class="text-text-muted hover:text-white"><i
                                 class="ph ph-x text-2xl"></i></button>
                     </div>
 
@@ -763,7 +749,7 @@
                                     required>
                             </div>
                             <button type="submit"
-                                class="w-full bg-surface hover:bg-surface-hover text-text font-medium py-2 rounded-lg border border-text/10 transition-colors flex items-center justify-center gap-2">
+                                class="w-full bg-surface hover:bg-surface-hover text-white font-medium py-2 rounded-lg border border-white/10 transition-colors flex items-center justify-center gap-2">
                                 <i class="ph-bold ph-plus"></i> Add Supervisor
                             </button>
                         </form>
@@ -776,9 +762,9 @@
 
     <!-- MFVF Modal -->
     <div id="mfvf-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-background/80 backdrop-blur-sm"></div>
+        <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm"></div>
         <div class="relative glass-panel p-6 rounded-2xl max-w-sm w-full animate-fade-in">
-            <h2 class="text-xl font-bold text-text mb-4">Generate M-FVF</h2>
+            <h2 class="text-xl font-bold text-white mb-4">Generate M-FVF</h2>
             <p class="text-sm text-text-muted mb-4">Select the supervisor for this month's verification form.</p>
             <select id="mfvf-supervisor-select" class="input-field w-full rounded-lg px-3 py-2 text-sm mb-6"></select>
             <div class="flex gap-3">
@@ -791,14 +777,14 @@
     </div>
 
     <!-- PDF Preview Modal -->
-    <div id="pdf-preview-modal" class="fixed inset-0 z-50 hidden flex flex-col p-4 bg-background/90 backdrop-blur-md">
+    <div id="pdf-preview-modal" class="fixed inset-0 z-50 hidden flex flex-col p-4 bg-slate-900/90 backdrop-blur-md">
         <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xl font-bold text-text">PDF Preview</h2>
+            <h2 class="text-xl font-bold text-white">PDF Preview</h2>
             <div class="flex gap-3">
                 <button id="pdf-download-btn"
                     class="px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg text-sm font-medium">Download</button>
                 <button id="pdf-close-btn"
-                    class="px-4 py-2 bg-surface hover:bg-surface-hover text-text rounded-lg text-sm font-medium">Close</button>
+                    class="px-4 py-2 bg-surface hover:bg-surface-hover text-white rounded-lg text-sm font-medium">Close</button>
             </div>
         </div>
         <iframe id="pdf-iframe" class="flex-1 w-full bg-white rounded-xl shadow-2xl"></iframe>
@@ -808,7 +794,7 @@
     <!-- We are removing the old edit modal and using the slide-over for both add and edit -->
     <div id="edit-modal" class="hidden"></div>
 
-    <script type="module" src="app.js?v=3"></script>
+    <script type="module" src="app.js?v=2"></script>
 </body>
 
 </html>
