@@ -561,7 +561,10 @@ const renderTable = (entries, tableBodyElement) => {
             <td class="px-4 py-3 text-text-muted text-xs max-w-[150px] truncate" title="${entry.supervisionType}">${entry.supervisionType}</td>
             <td class="px-4 py-3 text-text-muted">${entry.supervisorName || '-'}</td>
             <td class="px-4 py-3 text-text-muted text-xs hidden md:table-cell max-w-xs truncate" title="${notesDisplay}">${notesDisplay}</td>
-            <td class="px-4 py-3 text-right">
+            <td class="px-4 py-3 text-right flex justify-end gap-1">
+                <button class="duplicate-btn p-2 rounded-lg hover:bg-white/10 text-text-muted hover:text-white transition-colors" data-id="${entry.id}" title="Duplicate">
+                    <i class="ph-bold ph-copy"></i>
+                </button>
                 <button class="edit-btn p-2 rounded-lg hover:bg-white/10 text-primary transition-colors" data-id="${entry.id}" title="Edit">
                     <i class="ph-bold ph-pencil-simple"></i>
                 </button>
@@ -748,6 +751,21 @@ const handleDeleteEntry = async () => {
 };
 
 const handleTableClick = (e) => {
+    // Handle Duplicate
+    const dupBtn = e.target.closest('.duplicate-btn');
+    if (dupBtn) {
+        const entryId = dupBtn.dataset.id;
+        const entry = allEntries.find(item => item.id === entryId);
+        if (entry) {
+            openSlideOver('edit', entry);
+            // Convert to "New Entry" mode by clearing ID
+            document.getElementById('entry-id').value = '';
+            document.getElementById('slide-over-title').textContent = 'Duplicate Activity';
+        }
+        return;
+    }
+
+    // Handle Edit
     const btn = e.target.closest('.edit-btn');
     if (!btn) return;
     const entryId = btn.dataset.id;

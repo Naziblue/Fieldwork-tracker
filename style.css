@@ -139,6 +139,7 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.1);
     color: #f8fafc;
     transition: all 0.2s;
+    /* Ensure icon space for selects */
 }
 
 .input-field:focus {
@@ -170,4 +171,46 @@ body {
     100% {
         transform: rotate(360deg);
     }
+}
+
+/* --- Lavender Icon Overrides --- */
+
+/* 1. Date/Time/Month Picker Indicators (Calendar & Clock) */
+/* Target specific input types to apply the filter */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+input[type="month"]::-webkit-calendar-picker-indicator {
+    /* Filter to turn black icon to Lavender (#A78BFA) */
+    filter: invert(74%) sepia(28%) saturate(1003%) hue-rotate(218deg) brightness(103%) contrast(97%);
+    cursor: pointer;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="time"]::-webkit-calendar-picker-indicator:hover,
+input[type="month"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+}
+
+/* 2. Custom Select Arrow (Lavender) */
+select.input-field,
+select.bg-transparent {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    /* Lavender Chevron SVG */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23A78BFA' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1rem;
+    padding-right: 2.5rem;
+    /* Make space so text doesn't overlap arrow */
+}
+
+/* Fix for month-selector specific case since it might not have input-field class but needs it */
+#month-selector {
+    /* Ensure it specifically gets the filter from above rule */
+    cursor: pointer;
 }
