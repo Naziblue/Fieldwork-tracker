@@ -138,7 +138,8 @@
     <div id="app-container" class="hidden w-full h-full flex flex-col md:flex-row relative">
 
         <!-- Sidebar Navigation -->
-        <aside class="w-full md:w-64 bg-slate-900/95 border-r border-white/5 flex flex-col z-20 md:relative">
+        <aside
+            class="w-full md:w-64 bg-sidebar/95 text-sidebar-text border-r border-sidebar-text/10 flex flex-col z-20 md:relative transition-colors duration-300">
             <div class="p-6 flex items-center gap-3 border-b border-white/5">
                 <div
                     class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-glow">
@@ -154,19 +155,19 @@
                         Analytics
                     </div>
                     <button
-                        class="view-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-muted hover:text-white hover:bg-white/5 transition-all group"
+                        class="view-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-muted hover:text-sidebar-text hover:bg-sidebar-text/5 transition-all group"
                         data-view="monthly">
                         <i class="ph ph-calendar-blank text-lg group-hover:text-primary transition-colors"></i>
                         <span>Monthly Overview</span>
                     </button>
                     <button
-                        class="view-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-muted hover:text-white hover:bg-white/5 transition-all group"
+                        class="view-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-muted hover:text-sidebar-text hover:bg-sidebar-text/5 transition-all group"
                         data-view="yearly">
                         <i class="ph ph-calendar text-lg group-hover:text-secondary transition-colors"></i>
                         <span>Yearly Report</span>
                     </button>
                     <button
-                        class="view-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-muted hover:text-white hover:bg-white/5 transition-all group"
+                        class="view-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-muted hover:text-sidebar-text hover:bg-sidebar-text/5 transition-all group"
                         data-view="all-time">
                         <i class="ph ph-chart-line-up text-lg group-hover:text-accent transition-colors"></i>
                         <span>All Time Stats</span>
@@ -178,7 +179,7 @@
                     <div class="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2 px-3 mt-2">
                         Management</div>
                     <button
-                        class="view-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-text-muted hover:text-white hover:bg-white/5 transition-all group"
+                        class="view-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-muted hover:text-sidebar-text hover:bg-sidebar-text/5 transition-all group"
                         data-view="supervisor-dashboard">
                         <i class="ph ph-users-three text-lg group-hover:text-primary transition-colors"></i>
                         <span>My Trainees</span>
@@ -199,26 +200,30 @@
 
             </nav>
 
-            <div class="p-4 border-t border-white/5 bg-slate-900/50">
+            <div class="p-4 border-t border-sidebar-text/10 bg-sidebar/50">
                 <div class="flex items-center gap-3 mb-3 px-2">
                     <div class="w-8 h-8 rounded-full bg-surface flex items-center justify-center text-text-muted">
                         <i class="ph-fill ph-user"></i>
                     </div>
                     <div class="flex-1 min-w-0">
-                        <p id="user-display" class="text-sm font-medium text-white truncate">User</p>
-                        <p id="user-role-display" class="text-xs text-text-muted truncate">Trainee</p>
+                        <p id="user-display" class="text-sm font-medium text-sidebar-text truncate">User</p>
+                        <p id="user-role-display" class="text-xs text-sidebar-muted truncate">Trainee</p>
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-2">
+                <div class="grid grid-cols-2 gap-2 mb-2">
+                    <button id="theme-toggle-btn"
+                        class="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-surface hover:bg-surface-hover text-xs font-medium transition-colors border border-white/5">
+                        <i class="ph ph-sun"></i> Theme
+                    </button>
                     <button id="settings-btn"
                         class="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-surface hover:bg-surface-hover text-xs font-medium transition-colors border border-white/5">
                         <i class="ph ph-gear"></i> Settings
                     </button>
-                    <button id="logout-btn"
-                        class="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-medium transition-colors border border-red-500/10">
-                        <i class="ph ph-sign-out"></i> Logout
-                    </button>
                 </div>
+                <button id="logout-btn"
+                    class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-medium transition-colors border border-red-500/10">
+                    <i class="ph ph-sign-out"></i> Logout
+                </button>
             </div>
         </aside>
 
@@ -246,17 +251,17 @@
                 <div id="monthly-view" class="view-container animate-fade-in max-w-7xl mx-auto">
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                         <div>
-                            <h2 class="text-3xl font-bold text-white tracking-tight">Monthly Overview</h2>
+                            <h2 class="text-3xl font-bold text-text tracking-tight">Monthly Overview</h2>
                             <p class="text-text-muted mt-1">Track your progress for the current month.</p>
                         </div>
                         <div class="flex items-center gap-3 bg-surface p-1 rounded-xl border border-white/5">
                             <button id="prev-month-btn"
-                                class="p-2 hover:bg-white/5 rounded-lg text-text-muted hover:text-white transition-colors"><i
+                                class="p-2 hover:bg-white/5 rounded-lg text-text-muted hover:text-text transition-colors"><i
                                     class="ph-bold ph-caret-left"></i></button>
                             <input type="month" id="month-selector"
-                                class="bg-transparent border-none text-sm font-medium focus:ring-0 text-white cursor-pointer">
+                                class="bg-transparent border-none text-sm font-medium focus:ring-0 text-text cursor-pointer">
                             <button id="next-month-btn"
-                                class="p-2 hover:bg-white/5 rounded-lg text-text-muted hover:text-white transition-colors"><i
+                                class="p-2 hover:bg-white/5 rounded-lg text-text-muted hover:text-text transition-colors"><i
                                     class="ph-bold ph-caret-right"></i></button>
                         </div>
                     </div>
@@ -282,10 +287,11 @@
                     </div>
 
                     <!-- Data Table Card -->
-                    <div class="glass-panel rounded-2xl overflow-hidden flex flex-col h-[600px]">
-                        <div class="p-4 border-b border-white/5 flex justify-between items-center bg-slate-900/50">
-                            <h3 class="font-semibold text-white flex items-center gap-2">
-                                <i class="ph-fill ph-list-dashes text-primary"></i> Activity Log
+                    <div class="glass-panel activity-log-panel rounded-2xl overflow-hidden flex flex-col h-[600px]">
+                        <div
+                            class="p-4 border-b border-white/5 flex justify-between items-center bg-primary text-sidebar-text">
+                            <h3 class="font-semibold text-inherit flex items-center gap-2">
+                                <i class="ph-fill ph-list-dashes text-inherit"></i> Activity Log
                             </h3>
                             <span class="text-xs text-text-muted bg-white/5 px-2 py-1 rounded">Latest entries
                                 first</span>
@@ -293,7 +299,7 @@
                         <div class="overflow-auto flex-1">
                             <table class="w-full text-sm text-left">
                                 <thead
-                                    class="text-xs text-text-muted uppercase bg-slate-900/80 sticky top-0 z-10 backdrop-blur-md">
+                                    class="text-xs text-sidebar-text uppercase table-header-theme sticky top-0 z-10 backdrop-blur-md">
                                     <tr id="monthly-table-header">
                                         <!-- Headers injected by JS -->
                                     </tr>
@@ -310,12 +316,12 @@
                 <div id="yearly-view" class="view-container hidden animate-fade-in max-w-7xl mx-auto">
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                         <div>
-                            <h2 class="text-3xl font-bold text-white tracking-tight">Yearly Report</h2>
+                            <h2 class="text-3xl font-bold text-text tracking-tight">Yearly Report</h2>
                             <p class="text-text-muted mt-1">Analyze your performance over the year.</p>
                         </div>
                         <div class="bg-surface p-2 rounded-xl border border-white/5">
                             <input type="number" id="year-selector"
-                                class="bg-transparent border-none text-lg font-bold focus:ring-0 text-white w-24 text-center">
+                                class="bg-transparent border-none text-lg font-bold focus:ring-0 text-text w-24 text-center">
                         </div>
                     </div>
 
@@ -336,7 +342,7 @@
                     <div class="glass-panel rounded-2xl overflow-hidden">
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm text-left">
-                                <thead class="text-xs text-text-muted uppercase bg-slate-900/50">
+                                <thead class="text-xs text-sidebar-text uppercase table-header-theme">
                                     <tr id="yearly-table-header"></tr>
                                 </thead>
                                 <tbody id="yearly-log-table-body" class="divide-y divide-white/5"></tbody>
@@ -348,7 +354,7 @@
                 <!-- ALL TIME VIEW -->
                 <div id="all-time-view" class="view-container hidden animate-fade-in max-w-7xl mx-auto">
                     <div class="mb-8">
-                        <h2 class="text-3xl font-bold text-white tracking-tight">Career Progress</h2>
+                        <h2 class="text-3xl font-bold text-text tracking-tight">Career Progress</h2>
                         <p class="text-text-muted mt-1">Your journey towards certification.</p>
                     </div>
 
@@ -360,7 +366,7 @@
                         <div class="glass-card p-6 rounded-2xl">
                             <div class="flex justify-between items-start mb-4">
                                 <div>
-                                    <h3 class="text-lg font-semibold text-white">Total Hours</h3>
+                                    <h3 class="text-lg font-semibold text-text">Total Hours</h3>
                                     <p class="text-xs text-text-muted">Goal: 1500 hrs</p>
                                 </div>
                                 <div class="p-2 bg-primary/10 rounded-lg text-primary"><i class="ph-fill ph-clock"></i>
@@ -373,7 +379,7 @@
                         <div class="glass-card p-6 rounded-2xl">
                             <div class="flex justify-between items-start mb-4">
                                 <div>
-                                    <h3 class="text-lg font-semibold text-white">Unrestricted</h3>
+                                    <h3 class="text-lg font-semibold text-text">Unrestricted</h3>
                                     <p class="text-xs text-text-muted">Goal: 900 hrs</p>
                                 </div>
                                 <div class="p-2 bg-accent/10 rounded-lg text-accent"><i class="ph-fill ph-brain"></i>
@@ -386,7 +392,7 @@
                         <div class="glass-card p-6 rounded-2xl">
                             <div class="flex justify-between items-start mb-4">
                                 <div>
-                                    <h3 class="text-lg font-semibold text-white">Restricted</h3>
+                                    <h3 class="text-lg font-semibold text-text">Restricted</h3>
                                     <p class="text-xs text-text-muted">Goal: 600 hrs</p>
                                 </div>
                                 <div class="p-2 bg-secondary/10 rounded-lg text-secondary"><i
@@ -412,7 +418,7 @@
                     <div class="glass-panel rounded-2xl overflow-hidden">
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm text-left">
-                                <thead class="text-xs text-text-muted uppercase bg-slate-900/50">
+                                <thead class="text-xs text-sidebar-text uppercase table-header-theme">
                                     <tr id="all-time-table-header"></tr>
                                 </thead>
                                 <tbody id="all-time-log-table-body" class="divide-y divide-white/5"></tbody>
@@ -492,7 +498,7 @@
                                     <div class="overflow-auto flex-1">
                                         <table class="w-full text-sm text-left">
                                             <thead
-                                                class="text-xs text-text-muted uppercase bg-slate-900/80 sticky top-0 z-10 backdrop-blur-md">
+                                                class="text-xs text-sidebar-text uppercase table-header-theme sticky top-0 z-10 backdrop-blur-md">
                                                 <tr id="review-table-header">
                                                     <!-- Headers injected by JS -->
                                                 </tr>
@@ -519,177 +525,177 @@
         </main>
     </div>
 
-    <!-- Slide-over Form Panel (Add/Edit) -->
-    <div id="slide-over-panel" class="fixed inset-0 z-40 hidden" aria-labelledby="slide-over-title" role="dialog"
-        aria-modal="true">
+    <!-- Modal Form Panel (Add/Edit) - Centered -->
+    <div id="slide-over-panel" class="fixed inset-0 z-40 hidden flex items-center justify-center p-4"
+        aria-labelledby="slide-over-title" role="dialog" aria-modal="true">
         <!-- Background backdrop -->
         <div id="slide-over-backdrop"
             class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm transition-opacity opacity-0"></div>
 
-        <div class="fixed inset-y-0 right-0 flex max-w-full pl-10 pointer-events-none">
-            <div id="slide-over-content"
-                class="pointer-events-auto w-screen max-w-md transform transition ease-in-out duration-500 translate-x-full">
-                <div class="flex h-full flex-col overflow-y-scroll bg-slate-900 border-l border-white/10 shadow-2xl">
-                    <div
-                        class="px-4 sm:px-6 py-6 border-b border-white/5 bg-slate-900/50 sticky top-0 z-10 backdrop-blur-md">
-                        <div class="flex items-start justify-between">
-                            <h2 class="text-xl font-semibold text-white" id="slide-over-title">Log Activity</h2>
-                            <div class="ml-3 flex h-7 items-center">
-                                <button id="close-slide-over-btn" type="button"
-                                    class="rounded-md text-gray-400 hover:text-white focus:outline-none">
-                                    <span class="sr-only">Close panel</span>
-                                    <i class="ph ph-x text-2xl"></i>
-                                </button>
+        <!-- Centered Modal Container -->
+        <div id="slide-over-content"
+            class="relative w-full max-w-2xl transform transition-all duration-300 opacity-0 scale-95">
+            <div
+                class="flex flex-col max-h-[90vh] overflow-hidden bg-slate-900 border border-white/10 rounded-2xl shadow-2xl">
+                <div
+                    class="px-4 sm:px-6 py-6 border-b border-white/5 bg-slate-900/50 sticky top-0 z-10 backdrop-blur-md">
+                    <div class="flex items-start justify-between">
+                        <h2 class="text-xl font-semibold text-white" id="slide-over-title">Log Activity</h2>
+                        <div class="ml-3 flex h-7 items-center">
+                            <button id="close-slide-over-btn" type="button"
+                                class="rounded-md text-gray-400 hover:text-white focus:outline-none">
+                                <span class="sr-only">Close panel</span>
+                                <i class="ph ph-x text-2xl"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <p class="mt-1 text-sm text-text-muted">Fill in the details below to log your fieldwork
+                        hours.
+                    </p>
+                </div>
+                <div class="overflow-y-auto px-4 sm:px-6 py-6">
+                    <!-- Shared Form for Add & Edit -->
+                    <form id="tracker-form" class="space-y-6">
+                        <input type="hidden" id="entry-id"> <!-- Used for edits -->
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-text-muted mb-1">Date</label>
+                                <input type="date" id="date" class="input-field w-full rounded-lg px-3 py-2 text-sm"
+                                    required>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-text-muted mb-1">Setting</label>
+                                <select id="setting" class="input-field w-full rounded-lg px-3 py-2 text-sm">
+                                    <option>School</option>
+                                    <option>Home</option>
+                                    <option>Clinic</option>
+                                    <option>Community</option>
+                                </select>
                             </div>
                         </div>
-                        <p class="mt-1 text-sm text-text-muted">Fill in the details below to log your fieldwork
-                            hours.
-                        </p>
-                    </div>
-                    <div class="relative mt-6 flex-1 px-4 sm:px-6 pb-20">
-                        <!-- Shared Form for Add & Edit -->
-                        <form id="tracker-form" class="space-y-6">
-                            <input type="hidden" id="entry-id"> <!-- Used for edits -->
 
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-xs font-medium text-text-muted mb-1">Date</label>
-                                    <input type="date" id="date" class="input-field w-full rounded-lg px-3 py-2 text-sm"
-                                        required>
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-medium text-text-muted mb-1">Setting</label>
-                                    <select id="setting" class="input-field w-full rounded-lg px-3 py-2 text-sm">
-                                        <option>School</option>
-                                        <option>Home</option>
-                                        <option>Clinic</option>
-                                        <option>Community</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-xs font-medium text-text-muted mb-1">Start Time</label>
-                                    <input type="time" id="start-time"
-                                        class="input-field w-full rounded-lg px-3 py-2 text-sm" required>
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-medium text-text-muted mb-1">End Time</label>
-                                    <input type="time" id="end-time"
-                                        class="input-field w-full rounded-lg px-3 py-2 text-sm" required>
-                                </div>
-                            </div>
-
+                        <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-xs font-medium text-text-muted mb-1">Activity Type</label>
-                                <div class="grid grid-cols-2 gap-2">
-                                    <label class="cursor-pointer">
-                                        <input type="radio" name="activity-type-radio" value="Restricted"
-                                            class="peer sr-only" checked>
-                                        <div
-                                            class="rounded-lg border border-white/10 bg-white/5 p-3 text-center text-sm font-medium text-text-muted transition-all peer-checked:border-secondary peer-checked:bg-secondary/10 peer-checked:text-secondary hover:bg-white/10">
-                                            Restricted
-                                        </div>
-                                    </label>
-                                    <label class="cursor-pointer">
-                                        <input type="radio" name="activity-type-radio" value="Unrestricted"
-                                            class="peer sr-only">
-                                        <div
-                                            class="rounded-lg border border-white/10 bg-white/5 p-3 text-center text-sm font-medium text-text-muted transition-all peer-checked:border-accent peer-checked:bg-accent/10 peer-checked:text-accent hover:bg-white/10">
-                                            Unrestricted
-                                        </div>
-                                    </label>
-                                </div>
-                                <select id="activity-type" class="hidden">
-                                    <option>Restricted</option>
-                                    <option>Unrestricted</option>
-                                </select>
+                                <label class="block text-xs font-medium text-text-muted mb-1">Start Time</label>
+                                <input type="time" id="start-time"
+                                    class="input-field w-full rounded-lg px-3 py-2 text-sm" required>
                             </div>
-
-                            <!-- Conditional Unrestricted -->
-                            <div id="unrestricted-section"
-                                class="hidden space-y-4 p-4 rounded-xl bg-accent/5 border border-accent/10">
-                                <div>
-                                    <label class="block text-xs font-medium text-accent mb-1">Unrestricted
-                                        Category</label>
-                                    <select id="unrestricted-type-select"
-                                        class="input-field w-full rounded-lg px-3 py-2 text-sm border-accent/20 focus:border-accent">
-                                        <option value="">Select Activity...</option>
-                                        <option>Observation</option>
-                                        <option>Training</option>
-                                        <option>Assessments</option>
-                                        <option>Graphing/Analysis</option>
-                                        <option>Research</option>
-                                        <option>Writing Programs/Reports</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-medium text-accent mb-1">Explanation</label>
-                                    <textarea id="unrestricted-explanation" rows="2"
-                                        class="input-field w-full rounded-lg px-3 py-2 text-sm border-accent/20 focus:border-accent"
-                                        placeholder="Details..."></textarea>
-                                </div>
-                            </div>
-
                             <div>
-                                <label class="block text-xs font-medium text-text-muted mb-1">Supervision</label>
-                                <select id="supervision-type" class="input-field w-full rounded-lg px-3 py-2 text-sm">
-                                    <option>No Supervision</option>
-                                    <option>1:1 Meeting (with Supervisor)</option>
-                                    <option>Group Supervision</option>
-                                    <option>Observation with Client (by Supervisor)</option>
-                                </select>
-                            </div>
-
-                            <div id="supervisor-name-wrapper">
-                                <label class="block text-xs font-medium text-text-muted mb-1">Supervisor</label>
-                                <select id="supervisor-select" class="input-field w-full rounded-lg px-3 py-2 text-sm"
+                                <label class="block text-xs font-medium text-text-muted mb-1">End Time</label>
+                                <input type="time" id="end-time" class="input-field w-full rounded-lg px-3 py-2 text-sm"
                                     required>
-                                    <option value="">Select a supervisor...</option>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-text-muted mb-1">Activity Type</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="activity-type-radio" value="Restricted"
+                                        class="peer sr-only" checked>
+                                    <div
+                                        class="rounded-lg border border-white/10 bg-white/5 p-3 text-center text-sm font-medium text-text-muted transition-all peer-checked:border-secondary peer-checked:bg-secondary/10 peer-checked:text-secondary hover:bg-white/10">
+                                        Restricted
+                                    </div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="activity-type-radio" value="Unrestricted"
+                                        class="peer sr-only">
+                                    <div
+                                        class="rounded-lg border border-white/10 bg-white/5 p-3 text-center text-sm font-medium text-text-muted transition-all peer-checked:border-accent peer-checked:bg-accent/10 peer-checked:text-accent hover:bg-white/10">
+                                        Unrestricted
+                                    </div>
+                                </label>
+                            </div>
+                            <select id="activity-type" class="hidden">
+                                <option>Restricted</option>
+                                <option>Unrestricted</option>
+                            </select>
+                        </div>
+
+                        <!-- Conditional Unrestricted -->
+                        <div id="unrestricted-section"
+                            class="hidden space-y-4 p-4 rounded-xl bg-accent/5 border border-accent/10">
+                            <div>
+                                <label class="block text-xs font-medium text-accent mb-1">Unrestricted
+                                    Category</label>
+                                <select id="unrestricted-type-select"
+                                    class="input-field w-full rounded-lg px-3 py-2 text-sm border-accent/20 focus:border-accent">
+                                    <option value="">Select Activity...</option>
+                                    <option>Observation</option>
+                                    <option>Training</option>
+                                    <option>Assessments</option>
+                                    <option>Graphing/Analysis</option>
+                                    <option>Research</option>
+                                    <option>Writing Programs/Reports</option>
                                 </select>
                             </div>
-
-                            <div class="grid grid-cols-3 gap-4">
-                                <div class="col-span-1">
-                                    <label class="block text-xs font-medium text-text-muted mb-1">Client
-                                        Present</label>
-                                    <select id="client-present" class="input-field w-full rounded-lg px-3 py-2 text-sm">
-                                        <option>No</option>
-                                        <option>Yes</option>
-                                    </select>
-                                </div>
-                                <div class="col-span-2">
-                                    <label class="block text-xs font-medium text-text-muted mb-1">Client ID</label>
-                                    <input type="text" id="client-name"
-                                        class="input-field w-full rounded-lg px-3 py-2 text-sm"
-                                        placeholder="e.g. Student A" required>
-                                </div>
-                            </div>
-
                             <div>
-                                <label class="block text-xs font-medium text-text-muted mb-1">Notes</label>
-                                <textarea id="notes" rows="3" class="input-field w-full rounded-lg px-3 py-2 text-sm"
-                                    placeholder="Describe the session..." required></textarea>
+                                <label class="block text-xs font-medium text-accent mb-1">Explanation</label>
+                                <textarea id="unrestricted-explanation" rows="2"
+                                    class="input-field w-full rounded-lg px-3 py-2 text-sm border-accent/20 focus:border-accent"
+                                    placeholder="Details..."></textarea>
                             </div>
-                        </form>
-                    </div>
+                        </div>
 
-                    <!-- Footer Actions -->
-                    <div
-                        class="border-t border-white/5 p-4 bg-slate-900/80 backdrop-blur sticky bottom-0 z-10 flex gap-3">
-                        <button id="delete-entry-btn" type="button"
-                            class="hidden flex-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 font-medium py-2.5 rounded-lg transition-colors border border-red-500/10">
-                            Delete
-                        </button>
-                        <button id="save-entry-btn" type="button"
-                            class="flex-1 bg-primary hover:bg-primary-hover text-white font-medium py-2.5 rounded-lg shadow-lg shadow-primary/20 transition-all">
-                            Save Entry
-                        </button>
-                    </div>
+                        <div>
+                            <label class="block text-xs font-medium text-text-muted mb-1">Supervision</label>
+                            <select id="supervision-type" class="input-field w-full rounded-lg px-3 py-2 text-sm">
+                                <option>No Supervision</option>
+                                <option>1:1 Meeting (with Supervisor)</option>
+                                <option>Group Supervision</option>
+                                <option>Observation with Client (by Supervisor)</option>
+                            </select>
+                        </div>
+
+                        <div id="supervisor-name-wrapper">
+                            <label class="block text-xs font-medium text-text-muted mb-1">Supervisor</label>
+                            <select id="supervisor-select" class="input-field w-full rounded-lg px-3 py-2 text-sm"
+                                required>
+                                <option value="">Select a supervisor...</option>
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="col-span-1">
+                                <label class="block text-xs font-medium text-text-muted mb-1">Client
+                                    Present</label>
+                                <select id="client-present" class="input-field w-full rounded-lg px-3 py-2 text-sm">
+                                    <option>No</option>
+                                    <option>Yes</option>
+                                </select>
+                            </div>
+                            <div class="col-span-2">
+                                <label class="block text-xs font-medium text-text-muted mb-1">Client ID</label>
+                                <input type="text" id="client-name"
+                                    class="input-field w-full rounded-lg px-3 py-2 text-sm" placeholder="e.g. Student A"
+                                    required>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-text-muted mb-1">Notes</label>
+                            <textarea id="notes" rows="3" class="input-field w-full rounded-lg px-3 py-2 text-sm"
+                                placeholder="Describe the session..." required></textarea>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Footer Actions -->
+                <div class="border-t border-white/5 p-4 bg-slate-900/80 backdrop-blur sticky bottom-0 z-10 flex gap-3">
+                    <button id="delete-entry-btn" type="button"
+                        class="hidden flex-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 font-medium py-2.5 rounded-lg transition-colors border border-red-500/10">
+                        Delete
+                    </button>
+                    <button id="save-entry-btn" type="button"
+                        class="flex-1 bg-primary hover:bg-primary-hover text-white font-medium py-2.5 rounded-lg shadow-lg shadow-primary/20 transition-all">
+                        Save Entry
+                    </button>
                 </div>
             </div>
         </div>
+    </div>
     </div>
 
     <!-- Settings Modal (Reused structure but styled) -->

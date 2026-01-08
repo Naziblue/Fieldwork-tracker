@@ -200,14 +200,15 @@ const handleGoogleLogin = async () => {
     }
 };
 
-// --- UI Logic: Slide-over ---
+// --- UI Logic: Modal ---
 const openSlideOver = (mode = 'add', entry = null) => {
     slideOverPanel.classList.remove('hidden');
     // Trigger reflow
     void slideOverPanel.offsetWidth;
 
     slideOverBackdrop.classList.remove('opacity-0');
-    slideOverContent.classList.remove('translate-x-full');
+    slideOverContent.classList.remove('opacity-0', 'scale-95');
+    slideOverContent.classList.add('opacity-100', 'scale-100');
 
     if (mode === 'add') {
         slideOverTitle.textContent = 'Log Activity';
@@ -255,10 +256,11 @@ const openSlideOver = (mode = 'add', entry = null) => {
 
 const closeSlideOver = () => {
     slideOverBackdrop.classList.add('opacity-0');
-    slideOverContent.classList.add('translate-x-full');
+    slideOverContent.classList.remove('opacity-100', 'scale-100');
+    slideOverContent.classList.add('opacity-0', 'scale-95');
     setTimeout(() => {
         slideOverPanel.classList.add('hidden');
-    }, 500);
+    }, 300);
 };
 
 const handleActivityTypeChange = () => {
@@ -456,11 +458,11 @@ const switchView = (viewId) => {
         viewBtns.forEach(btn => {
             const isActive = btn.dataset.view === viewId;
             if (isActive) {
-                btn.classList.add('bg-white/10', 'text-white');
-                btn.classList.remove('text-text-muted');
+                btn.classList.add('bg-primary', 'text-sidebar-text', 'shadow-md', 'ring-1', 'ring-white/10');
+                btn.classList.remove('text-sidebar-muted');
             } else {
-                btn.classList.remove('bg-white/10', 'text-white');
-                btn.classList.add('text-text-muted');
+                btn.classList.remove('bg-primary', 'text-sidebar-text', 'shadow-md', 'ring-1', 'ring-white/10');
+                btn.classList.add('text-sidebar-muted');
             }
         });
 
@@ -504,7 +506,7 @@ const createStatCard = (title, value, subtext, iconClass, colorClass) => `
     <div class="glass-card p-4 rounded-xl flex items-center justify-between">
         <div>
             <p class="text-xs font-medium text-text-muted uppercase tracking-wider">${title}</p>
-            <p class="text-2xl font-bold text-white mt-1">${value}</p>
+            <p class="text-2xl font-bold text-text mt-1">${value}</p>
             ${subtext ? `<p class="text-xs text-text-muted mt-1">${subtext}</p>` : ''}
         </div>
         <div class="w-10 h-10 rounded-lg ${colorClass} bg-opacity-10 flex items-center justify-center">
@@ -543,7 +545,7 @@ const renderTable = (entries, tableBodyElement) => {
     sortedEntries.forEach(entry => {
         const totalHours = calculateHours(entry.startTime, entry.endTime);
         const row = document.createElement('tr');
-        row.className = 'hover:bg-white/5 transition-colors group';
+        row.className = 'hover:bg-surface-hover transition-colors group';
 
         let notesDisplay = entry.notes || '';
         if (entry.unrestrictedActivityType) {
@@ -553,19 +555,19 @@ const renderTable = (entries, tableBodyElement) => {
         const typeBadgeClass = entry.activityType === 'Unrestricted' ? 'badge-purple' : 'badge-danger';
 
         row.innerHTML = `
-            <td class="px-4 py-3 font-medium text-white">${dayjs(entry.date).format('MMM D, YYYY')}</td>
+            <td class="px-4 py-3 font-medium text-text">${dayjs(entry.date).format('MMM D, YYYY')}</td>
             <td class="px-4 py-3 text-text-muted text-xs">${dayjs('1970-01-01T' + entry.startTime).format('h:mm A')} - ${dayjs('1970-01-01T' + entry.endTime).format('h:mm A')}</td>
-            <td class="px-4 py-3 font-bold text-white">${totalHours.toFixed(2)}</td>
+            <td class="px-4 py-3 font-bold text-text">${totalHours.toFixed(2)}</td>
             <td class="px-4 py-3 text-text-muted">${entry.setting || '-'}</td>
             <td class="px-4 py-3"><span class="badge ${typeBadgeClass}">${entry.activityType}</span></td>
             <td class="px-4 py-3 text-text-muted text-xs max-w-[150px] truncate" title="${entry.supervisionType}">${entry.supervisionType}</td>
             <td class="px-4 py-3 text-text-muted">${entry.supervisorName || '-'}</td>
             <td class="px-4 py-3 text-text-muted text-xs hidden md:table-cell max-w-xs truncate" title="${notesDisplay}">${notesDisplay}</td>
             <td class="px-4 py-3 text-right flex justify-end gap-1">
-                <button class="duplicate-btn p-2 rounded-lg hover:bg-white/10 text-text-muted hover:text-white transition-colors" data-id="${entry.id}" title="Duplicate">
+                <button class="duplicate-btn p-2 rounded-lg hover:bg-surface-hover text-text-muted hover:text-text transition-colors" data-id="${entry.id}" title="Duplicate">
                     <i class="ph-bold ph-copy"></i>
                 </button>
-                <button class="edit-btn p-2 rounded-lg hover:bg-white/10 text-primary transition-colors" data-id="${entry.id}" title="Edit">
+                <button class="edit-btn p-2 rounded-lg hover:bg-surface-hover text-accent transition-colors" data-id="${entry.id}" title="Edit">
                     <i class="ph-bold ph-pencil-simple"></i>
                 </button>
             </td>
@@ -1220,7 +1222,29 @@ const setupSupervisorListeners = () => {
 
 // --- Initialization ---
 // --- Initialization ---
+// --- Theme Handling ---
+const initTheme = () => {
+    const savedTheme = localStorage.getItem('theme');
+    const themeBtn = document.getElementById('theme-toggle-btn');
+    if (savedTheme === 'light') {
+        document.body.classList.add('light-mode');
+        if (themeBtn) themeBtn.innerHTML = '<i class="ph ph-moon"></i> Dark';
+    } else {
+        if (themeBtn) themeBtn.innerHTML = '<i class="ph ph-sun"></i> Light'; // Default
+    }
+};
+
+const toggleTheme = () => {
+    const isLight = document.body.classList.toggle('light-mode');
+    localStorage.setItem('theme', isLight ? 'light' : 'dark');
+    const themeBtn = document.getElementById('theme-toggle-btn');
+    if (themeBtn) {
+        themeBtn.innerHTML = isLight ? '<i class="ph ph-moon"></i> Dark' : '<i class="ph ph-sun"></i> Light';
+    }
+};
+
 function init() {
+    initTheme();
     console.log("App.js: Initializing application...");
 
     initDOMElements();
@@ -1234,6 +1258,8 @@ function init() {
     if (loginBtn) loginBtn.addEventListener('click', handleGoogleLogin);
     if (guestLoginBtn) guestLoginBtn.addEventListener('click', handleGuestLogin);
     if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
+    const themeToggleBtn = document.getElementById('theme-toggle-btn');
+    if (themeToggleBtn) themeToggleBtn.addEventListener('click', toggleTheme);
 
     if (viewBtns) {
         viewBtns.forEach(btn => btn.addEventListener('click', (e) => {

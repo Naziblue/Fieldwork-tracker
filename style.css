@@ -1,15 +1,55 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
+:root {
+    /* Dark Mode Defaults */
+    --color-background: 15 23 42;
+    --color-surface: 30 41 59;
+    --color-surface-hover: 51 65 85;
+    --color-text: 248 250 252;
+    --color-text-muted: 148 163 184;
+    --color-primary: 99 102 241;
+    --color-primary-hover: 79 70 229;
+    --color-secondary: 16 185 129;
+    --color-accent: 139 92 246;
+
+    /* Sidebar Defaults */
+    --color-sidebar: 15 23 42;
+    --color-sidebar-text: 255 255 255;
+    --color-sidebar-muted: 148 163 184;
+}
+
+.light-mode {
+    /* User Palette: 251,251,251 | 197,186,255 | 19,36,64 | 22,71,106 */
+    --color-background: 251 251 251;
+    --color-surface: 255 255 255;
+    --color-surface-hover: 243 244 246;
+    --color-text: 19 36 64;
+    --color-text-muted: 71 85 105;
+
+    --color-primary: 197 186 255;
+    /* Lavender */
+    --color-primary-hover: 167 156 235;
+    --color-secondary: 22 71 106;
+    /* Teal Blue */
+    --color-accent: 139 92 246;
+
+    /* Light Mode Sidebar: #A4CCD9 (Blue) & Black Text */
+    --color-sidebar: 164 204 217;
+    --color-sidebar-text: 0 0 0;
+    --color-sidebar-muted: 55 65 81;
+    /* Gray 700 */
+}
+
 body {
     font-family: 'Inter', sans-serif;
-    background-color: #0f172a;
-    /* Fallback */
-    color: #f8fafc;
+    background-color: rgb(var(--color-background));
+    color: rgb(var(--color-text));
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Glassmorphism Utilities */
 .glass-panel {
-    background: rgba(30, 41, 59, 0.7);
+    background: rgba(var(--color-surface), 0.7);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -17,7 +57,7 @@ body {
 }
 
 .glass-card {
-    background: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+    background: linear-gradient(145deg, rgba(var(--color-surface), 0.5) 0%, rgba(var(--color-surface), 0.1) 100%);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.05);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -213,4 +253,55 @@ select.bg-transparent {
 #month-selector {
     /* Ensure it specifically gets the filter from above rule */
     cursor: pointer;
+}
+
+/* Light Mode Specific Overrides */
+.light-mode .activity-log-panel {
+    background: #F2F9FF !important;
+    border: 1px solid rgba(164, 204, 217, 0.3);
+}
+
+/* Table Header Theme */
+.table-header-theme {
+    background-color: rgba(15, 23, 42, 0.8);
+}
+
+.light-mode .table-header-theme {
+    background-color: #D8D0FC !important;
+    color: #000000;
+}
+
+/* FAB (Floating Action Button) in Light Mode */
+.light-mode #fab-add-entry {
+    background-color: #450693 !important;
+}
+
+.light-mode #fab-add-entry:hover {
+    background-color: #5a0bb8 !important;
+}
+
+/* Slide-Over Panel in Light Mode */
+.light-mode #slide-over-backdrop {
+    background-color: rgba(0, 0, 0, 0.3) !important;
+}
+
+.light-mode #slide-over-content>div {
+    background-color: rgb(var(--color-surface)) !important;
+    border-color: rgba(164, 204, 217, 0.3) !important;
+}
+
+.light-mode #slide-over-content .bg-slate-900\/50 {
+    background-color: rgb(var(--color-surface)) !important;
+}
+
+.light-mode #slide-over-title {
+    color: rgb(var(--color-text)) !important;
+}
+/* Modal Transitions */
+#slide-over-content {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.light-mode #slide-over-content .bg-slate-900\/50 {
+    border-bottom-color: rgba(164, 204, 217, 0.2) !important;
 }
