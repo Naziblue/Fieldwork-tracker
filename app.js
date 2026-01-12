@@ -1010,6 +1010,17 @@ const exportToCsv = (entries, summaryData, filename) => {
         csvContent += row.join(",") + "\n";
     });
 
+    // Add summary table at the end
+    csvContent += "\n"; // Empty line separator
+    csvContent += "SUMMARY STATISTICS\n";
+    csvContent += "Metric,Value\n";
+    csvContent += `Total Hours,${summaryData.total.toFixed(2)}\n`;
+    csvContent += `Restricted Hours,${summaryData.restricted.toFixed(2)}\n`;
+    csvContent += `Unrestricted Hours,${summaryData.unrestricted.toFixed(2)}\n`;
+    csvContent += `Supervised Hours,${summaryData.supervised.toFixed(2)}\n`;
+    csvContent += `Supervision %,${summaryData.percentage.toFixed(1)}%\n`;
+    csvContent += `Contacts,${summaryData.contacts}\n`;
+
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
