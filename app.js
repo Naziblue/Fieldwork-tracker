@@ -879,7 +879,7 @@ const generateMfvfPdf = async (entries, supervisor, monthStr, isSigned) => {
         doc.setTextColor(0, 120, 0);
         doc.text("DIGITALLY VERIFIED", 170, 32, { align: 'center' });
         doc.setFontSize(8);
-        doc.text("Verified via FieldworkPro Portal", 170, 37, { align: 'center' });
+        doc.text("Verified via Fieldly Portal", 170, 37, { align: 'center' });
     }
 
     doc.setFontSize(12);
@@ -906,24 +906,60 @@ const generateMfvfPdf = async (entries, supervisor, monthStr, isSigned) => {
         headStyles: { fillColor: [59, 130, 246] }
     });
 
-    // Entries Table
-    const tableData = entries.map(e => [
-        dayjs(e.date).format('MM/DD'),
-        e.startTime,
-        e.endTime,
-        calculateHours(e.startTime, e.endTime).toFixed(2),
-        e.setting,
-        e.activityType,
-        e.supervisionType
-    ]);
+    // Entries Table - Sort by date and time
+    const sortedEntries = [...entries].sort((a, b) => {
+        const dateCompare = new Date(a.date) - new Date(b.date);
+        if (dateCompare !== 0) return dateCompare;
+        // If same date, sort by start time
+        return a.startTime.localeCompare(b.startTime);
+    });
+
+    const tableData = sortedEntries.map(e => {
+        // Combine session notes with unrestricted explanation if applicable
+        let notesColumn = e.notes || '';
+        if (e.unrestrictedActivityType && e.unrestrictedExplanation) {
+            notesColumn = `[${e.unrestrictedActivityType}] ${e.unrestrictedExplanation}`;
+        } else if (e.unrestrictedExplanation) {
+            notesColumn = e.unrestrictedExplanation;
+        }
+
+        return [
+            dayjs(e.date).format('MM/DD'),
+            e.startTime,
+            e.endTime,
+            calculateHours(e.startTime, e.endTime).toFixed(2),
+            e.setting || '-',
+            e.activityType,
+            e.supervisionType,
+            e.unrestrictedActivityType || '-',
+            e.supervisorName || '-',
+            e.clientPresent || '-',
+            e.clientName || '-',
+            notesColumn
+        ];
+    });
 
     doc.autoTable({
         startY: doc.lastAutoTable.finalY + 10,
-        head: [['Date', 'Start', 'End', 'Hrs', 'Setting', 'Type', 'Supervision']],
+        head: [['Date', 'Start', 'End', 'Hours', 'Setting', 'Type', 'Supervision', 'Unrestricted Type', 'Supervisor', 'Client Present', 'Client', 'Session Notes/Unrestricted Activities Explanations']],
         body: tableData,
         theme: 'grid',
         headStyles: { fillColor: [71, 85, 105] },
-        styles: { fontSize: 8 }
+        styles: { fontSize: 7, cellPadding: 1.5 },
+        columnStyles: {
+            0: { cellWidth: 12 }, // Date
+            1: { cellWidth: 12 }, // Start
+            2: { cellWidth: 12 }, // End
+            3: { cellWidth: 10 }, // Hours
+            4: { cellWidth: 12 }, // Setting
+            5: { cellWidth: 15 }, // Type
+            6: { cellWidth: 15 }, // Supervision
+            7: { cellWidth: 18 }, // Unrestricted Type
+            8: { cellWidth: 18 }, // Supervisor
+            9: { cellWidth: 12 }, // Client Present
+            10: { cellWidth: 15 }, // Client
+            11: { cellWidth: 'auto' } // Notes - takes remaining space
+        }
     });
 
     // Show Preview
@@ -935,15 +971,41 @@ const generateMfvfPdf = async (entries, supervisor, monthStr, isSigned) => {
 };
 
 const exportToCsv = (entries, summaryData, filename) => {
-    const headers = ["Date", "Start", "End", "Hours", "Setting", "Type", "Supervision", "Unrestricted Type", "Supervisor", "Client", "Notes"];
+    const headers = ["Date", "Start", "End", "Hours", "Setting", "Type", "Supervision", "Unrestricted Type", "Supervisor", "Client Present", "Client", "Session Notes/Unrestricted Activities Explanations"];
     let csvContent = headers.join(",") + "\n";
 
-    entries.forEach(entry => {
+    // Sort entries by date and time
+    const sortedEntries = [...entries].sort((a, b) => {
+        const dateCompare = new Date(a.date) - new Date(b.date);
+        if (dateCompare !== 0) return dateCompare;
+        // If same date, sort by start time
+        return a.startTime.localeCompare(b.startTime);
+    });
+
+    sortedEntries.forEach(entry => {
         const hours = calculateHours(entry.startTime, entry.endTime).toFixed(2);
+
+        // Combine session notes with unrestricted explanation if applicable
+        let notesColumn = entry.notes || '';
+        if (entry.unrestrictedActivityType && entry.unrestrictedExplanation) {
+            notesColumn = `[${entry.unrestrictedActivityType}] ${entry.unrestrictedExplanation}`;
+        } else if (entry.unrestrictedExplanation) {
+            notesColumn = entry.unrestrictedExplanation;
+        }
+
         const row = [
-            entry.date, entry.startTime, entry.endTime, hours, entry.setting, entry.activityType,
-            entry.supervisionType, entry.unrestrictedActivityType || '', entry.supervisorName, entry.clientName,
-            `"${(entry.notes || '').replace(/"/g, '""')}"`
+            entry.date,
+            entry.startTime,
+            entry.endTime,
+            hours,
+            entry.setting || '-',
+            entry.activityType,
+            entry.supervisionType,
+            entry.unrestrictedActivityType || '-',
+            entry.supervisorName || '-',
+            entry.clientPresent || '-',
+            entry.clientName || '-',
+            `"${notesColumn.replace(/"/g, '""')}"`
         ];
         csvContent += row.join(",") + "\n";
     });
