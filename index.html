@@ -1,41 +1,55 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fieldly - Master Your Hours</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="tailwind-config.js"></script>
     <link rel="stylesheet" href="style.css">
     <style>
         /* Landing specific overrides */
+        body {
+            font-family: 'Quicksand', sans-serif;
+        }
+
         .hero-glow {
-            background: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.15) 0%, rgba(15, 23, 42, 0) 50%);
+            background: radial-gradient(circle at 50% 50%, rgba(167, 139, 250, 0.1) 0%, rgba(255, 255, 255, 0) 50%);
         }
 
         .text-gradient {
-            background: linear-gradient(to right, #818cf8, #c084fc, #2dd4bf);
+            background: linear-gradient(135deg, #a78bfa 0%, #ec4899 50%, #22d3ee 100%);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
+        }
+
+        .glass-card-light {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(167, 139, 250, 0.1);
+        }
+
+        .soft-shadow {
+            box-shadow: 0 8px 32px rgba(167, 139, 250, 0.15);
         }
     </style>
 </head>
 
-<body class="bg-background text-text antialiased overflow-x-hidden">
+<body class="bg-white text-slate-900 antialiased overflow-x-hidden">
 
     <!-- Navbar -->
-    <nav class="fixed w-full z-50 top-0 start-0 border-b border-white/5 bg-slate-900/80 backdrop-blur-md">
+    <nav class="fixed w-full z-50 top-0 start-0 border-b border-purple-100 bg-white/90 backdrop-blur-md">
         <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between p-4">
             <a href="#" class="flex items-center space-x-3 rtl:space-x-reverse">
                 <img src="fieldly-logo.png" alt="Fieldly" class="h-12">
             </a>
             <div class="flex md:order-2 space-x-3 md:space-x-0 rtl:space-x-reverse">
                 <a href="app.html"
-                    class="text-white bg-primary hover:bg-primary-hover font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-all shadow-lg hover:shadow-primary/25">
+                    class="text-white bg-gradient-to-r from-purple-400 to-pink-400 hover:from-purple-500 hover:to-pink-500 font-medium rounded-2xl text-sm px-6 py-3 text-center transition-all shadow-lg shadow-purple-200 hover:shadow-xl hover:shadow-purple-300 hover:-translate-y-0.5">
                     Launch App
                 </a>
             </div>
@@ -43,63 +57,73 @@
                 <ul
                     class="flex flex-col p-4 md:p-0 mt-4 font-medium border border-gray-100 rounded-lg md:space-x-8 rtl:space-x-reverse md:flex-row md:mt-0 md:border-0">
                     <li><a href="#features"
-                            class="block py-2 px-3 text-text-muted hover:text-white transition-colors">Features</a></li>
+                            class="block py-2 px-3 text-slate-500 hover:text-purple-500 transition-colors">Features</a>
+                    </li>
                     <li><a href="#how-it-works"
-                            class="block py-2 px-3 text-text-muted hover:text-white transition-colors">How it Works</a>
+                            class="block py-2 px-3 text-slate-500 hover:text-purple-500 transition-colors">How it
+                            Works</a>
                     </li>
                     <li><a href="#pricing"
-                            class="block py-2 px-3 text-text-muted hover:text-white transition-colors">Pricing</a></li>
+                            class="block py-2 px-3 text-slate-500 hover:text-purple-500 transition-colors">Pricing</a>
+                    </li>
                 </ul>
             </div>
         </div>
     </nav>
 
     <!-- Hero Section -->
-    <section class="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
+    <section class="relative min-h-screen flex items-center overflow-hidden">
         <div class="absolute inset-0 hero-glow pointer-events-none"></div>
-        <div class="px-4 mx-auto max-w-7xl text-center relative z-10">
-            <div
-                class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-sm text-primary mb-8 animate-fade-in">
-                <span class="relative flex h-2 w-2">
-                    <span
-                        class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-                </span>
-                v2.0 is now live
-            </div>
-            <h1
-                class="mb-6 text-5xl font-extrabold tracking-tight leading-none text-white md:text-7xl lg:text-8xl animate-fade-in delay-100">
-                Track Hours.<br>
-                <span class="text-gradient">Get Certified.</span>
-            </h1>
-            <p
-                class="mb-10 text-lg font-normal text-gray-400 lg:text-xl sm:px-16 lg:px-48 max-w-4xl mx-auto animate-fade-in delay-200">
-                The most advanced fieldwork tracker for aspiring BCBAs. Log restricted and unrestricted hours with
-                precision, generate M-FVF forms in one click, and visualize your path to certification.
-            </p>
-            <div
-                class="flex flex-col space-y-4 sm:flex-row sm:justify-center sm:space-y-0 sm:space-x-4 animate-fade-in delay-300">
-                <a href="app.html"
-                    class="inline-flex justify-center items-center py-4 px-8 text-base font-semibold text-center text-white rounded-xl bg-primary hover:bg-primary-hover focus:ring-4 focus:ring-primary/30 transition-all shadow-glow hover:-translate-y-1">
-                    Start Tracking Free
-                    <i class="ph-bold ph-arrow-right ml-2"></i>
-                </a>
-                <a href="#features"
-                    class="inline-flex justify-center items-center py-4 px-8 text-base font-medium text-center text-white rounded-xl border border-white/10 hover:bg-white/5 focus:ring-4 focus:ring-gray-700 transition-all">
-                    View Features
-                </a>
-            </div>
-
-            <!-- Dashboard Preview -->
-            <div class="mt-20 relative mx-auto max-w-5xl animate-fade-in delay-300">
-                <div class="absolute -inset-1 bg-gradient-to-r from-primary to-accent rounded-2xl blur opacity-20">
-                </div>
-                <div class="relative rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-slate-900">
-                    <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2670&auto=format&fit=crop"
-                        alt="App Dashboard"
-                        class="w-full h-auto opacity-90 hover:opacity-100 transition-opacity duration-700">
+        <div class="px-4 mx-auto max-w-7xl relative z-10">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <!-- Left side - Text content -->
+                <div class="text-left">
                     <div
-                        class="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent opacity-60">
+                        class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-50 border border-purple-200 text-sm text-purple-600 font-medium mb-6 animate-fade-in">
+                        <span class="relative flex h-2 w-2">
+                            <span
+                                class="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-purple-400"></span>
+                        </span>
+                        v2.0 is now live
+                    </div>
+                    <h1
+                        class="mb-6 text-5xl font-bold tracking-tight leading-tight text-slate-900 md:text-6xl lg:text-7xl animate-fade-in delay-100">
+                        Track Hours.<br>
+                        <span class="text-gradient">Get Certified.</span>
+                    </h1>
+                    <p class="mb-8 text-base font-medium text-slate-600 lg:text-lg max-w-xl animate-fade-in delay-200">
+                        Everything you need to stay on top of BCBA fieldwork. Easy hour tracking, simple data editing,
+                        better supervisor communication, and guidance that stays aligned with BACB requirements.
+                    </p>
+                    <div
+                        class="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4 animate-fade-in delay-300">
+                        <a href="#features"
+                            class="inline-flex justify-center items-center py-3 px-8 text-base font-semibold text-center text-slate-700 rounded-2xl border-2 border-purple-200 bg-white hover:bg-purple-50 hover:border-purple-300 transition-all">
+                            View Features
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Right side - Illustration -->
+                <div class="relative animate-fade-in delay-300 lg:block hidden">
+                    <div
+                        class="absolute -inset-4 bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 rounded-3xl blur-2xl opacity-20 animate-pulse">
+                    </div>
+                    <div class="relative">
+                        <img src="hero-illustration-side.png" alt="Fieldly Dashboard Illustration"
+                            class="w-full h-auto drop-shadow-2xl">
+                    </div>
+                </div>
+
+                <!-- Mobile illustration (centered below text) -->
+                <div class="relative animate-fade-in delay-300 lg:hidden">
+                    <div
+                        class="absolute -inset-4 bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 rounded-3xl blur-2xl opacity-20 animate-pulse">
+                    </div>
+                    <div class="relative">
+                        <img src="hero-illustration-side.png" alt="Fieldly Dashboard Illustration"
+                            class="w-full h-auto drop-shadow-2xl">
                     </div>
                 </div>
             </div>
@@ -107,82 +131,89 @@
     </section>
 
     <!-- Features Grid -->
-    <section id="features" class="py-24 bg-slate-900/50">
+    <section id="features" class="py-24 bg-gradient-to-b from-purple-50/30 to-pink-50/30">
         <div class="px-4 mx-auto max-w-7xl">
             <div class="text-center mb-16">
-                <h2 class="text-3xl font-bold tracking-tight text-white sm:text-4xl">Everything you need to verify</h2>
-                <p class="mt-4 text-lg text-gray-400">Built specifically for the BACB fieldwork requirements.</p>
+                <h2 class="text-3xl font-bold tracking-tight text-slate-800 sm:text-4xl mb-3">Everything you need to
+                    verify
+                </h2>
+                <p class="mt-4 text-lg text-slate-500">Built specifically for the BACB fieldwork requirements.</p>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <!-- Feature 1 -->
-                <div class="glass-card p-8 rounded-2xl">
-                    <div
-                        class="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center mb-6 text-blue-400">
-                        <i class="ph-fill ph-chart-pie-slice text-2xl"></i>
+                <div
+                    class="bg-white/80 backdrop-blur p-8 rounded-3xl shadow-sm hover:shadow-lg transition-all border border-purple-100 group hover:-translate-y-2 duration-300">
+                    <div class="mb-6 overflow-hidden rounded-2xl">
+                        <img src="analytics-illustration.png" alt="Smart Analytics"
+                            class="w-full h-48 object-contain transform group-hover:scale-110 transition-transform duration-500">
                     </div>
-                    <h3 class="text-xl font-bold text-white mb-3">Smart Analytics</h3>
-                    <p class="text-gray-400">Automatically calculates your Restricted vs. Unrestricted ratio. Know
-                        exactly how many hours you have left.</p>
+                    <h3 class="text-xl font-semibold text-slate-800 mb-3">Easy Tracking</h3>
+                    <p class="text-slate-500">Choose the fieldwork path that fits you and adjust as needed. Fieldly
+                        keeps your hours flexible, clearly organized, and visually displayed, making it easy to
+                        understand your progress at a glance.</p>
                 </div>
                 <!-- Feature 2 -->
-                <div class="glass-card p-8 rounded-2xl">
-                    <div
-                        class="w-12 h-12 rounded-lg bg-purple-500/10 flex items-center justify-center mb-6 text-purple-400">
-                        <i class="ph-fill ph-file-pdf text-2xl"></i>
+                <div
+                    class="bg-white/80 backdrop-blur p-8 rounded-3xl shadow-sm hover:shadow-lg transition-all border border-purple-100 group hover:-translate-y-2 duration-300">
+                    <div class="mb-6 overflow-hidden rounded-2xl">
+                        <img src="document-illustration.png" alt="PDF Generation"
+                            class="w-full h-48 object-contain transform group-hover:scale-110 transition-transform duration-500">
                     </div>
-                    <h3 class="text-xl font-bold text-white mb-3">One-Click M-FVF</h3>
-                    <p class="text-gray-400">Generate your Monthly Fieldwork Verification Forms instantly. No more
-                        manual math errors.</p>
+                    <h3 class="text-xl font-semibold text-slate-800 mb-3">All in One</h3>
+                    <p class="text-slate-500">Fieldwork comes with many moving parts, and managing everything at once
+                        can feel overwhelming. Fieldly brings hours, supervision, and progress into one clear space to
+                        help reduce stress and keep things easier to manage.</p>
                 </div>
                 <!-- Feature 3 -->
-                <div class="glass-card p-8 rounded-2xl">
-                    <div
-                        class="w-12 h-12 rounded-lg bg-teal-500/10 flex items-center justify-center mb-6 text-teal-400">
-                        <i class="ph-fill ph-users-three text-2xl"></i>
+                <div
+                    class="bg-white/80 backdrop-blur p-8 rounded-3xl shadow-sm hover:shadow-lg transition-all border border-purple-100 group hover:-translate-y-2 duration-300">
+                    <div class="mb-6 overflow-hidden rounded-2xl">
+                        <img src="team-illustration.png" alt="Team Management"
+                            class="w-full h-48 object-contain transform group-hover:scale-110 transition-transform duration-500">
                     </div>
-                    <h3 class="text-xl font-bold text-white mb-3">Supervisor Management</h3>
-                    <p class="text-gray-400">Track hours across multiple supervisors. Manage certifications and contact
-                        details easily.</p>
+                    <h3 class="text-xl font-semibold text-slate-800 mb-3">BACB Aligned</h3>
+                    <p class="text-slate-500">Track restricted and unrestricted hours in line with current BACB
+                        fieldwork requirements, with supervision and documentation kept organized and ready when you
+                        need them.</p>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- Social Proof -->
-    <section class="py-20 border-y border-white/5">
+    <section class="py-20 border-y border-slate-200 bg-white">
         <div class="px-4 mx-auto max-w-7xl text-center">
-            <p class="text-sm font-semibold text-gray-500 uppercase tracking-widest mb-8">Trusted by RBTs at top
+            <p class="text-sm font-semibold text-slate-500 uppercase tracking-widest mb-8">Trusted by RBTs at top
                 organizations</p>
-            <div
-                class="flex flex-wrap justify-center gap-12 opacity-50 grayscale hover:grayscale-0 transition-all duration-500">
+            <div class="flex flex-wrap justify-center gap-12 opacity-60 hover:opacity-100 transition-all duration-500">
                 <!-- Mock Logos -->
-                <div class="flex items-center gap-2 text-xl font-bold text-white"><i
+                <div class="flex items-center gap-2 text-xl font-bold text-slate-700"><i
                         class="ph-fill ph-infinity text-3xl"></i> ABA Corp</div>
-                <div class="flex items-center gap-2 text-xl font-bold text-white"><i
+                <div class="flex items-center gap-2 text-xl font-bold text-slate-700"><i
                         class="ph-fill ph-brain text-3xl"></i> NeuroCare</div>
-                <div class="flex items-center gap-2 text-xl font-bold text-white"><i
+                <div class="flex items-center gap-2 text-xl font-bold text-slate-700"><i
                         class="ph-fill ph-heartbeat text-3xl"></i> HealthFirst</div>
-                <div class="flex items-center gap-2 text-xl font-bold text-white"><i
+                <div class="flex items-center gap-2 text-xl font-bold text-slate-700"><i
                         class="ph-fill ph-student text-3xl"></i> EduTherapy</div>
             </div>
         </div>
     </section>
 
     <!-- CTA Section -->
-    <section class="py-24 relative overflow-hidden">
-        <div class="absolute inset-0 bg-primary/5"></div>
+    <section class="py-24 relative overflow-hidden bg-gradient-to-br from-purple-100 via-pink-50 to-cyan-50">
+        <div class="absolute inset-0 bg-white/40"></div>
         <div class="px-4 mx-auto max-w-4xl text-center relative z-10">
-            <h2 class="text-4xl font-bold tracking-tight text-white mb-6">Ready to certify with confidence?</h2>
-            <p class="text-xl text-gray-400 mb-10">Join thousands of trainees who have ditched their spreadsheets.</p>
+            <h2 class="text-3xl font-bold tracking-tight text-slate-800 mb-4">Ready to certify with confidence?</h2>
+            <p class="text-lg text-slate-500 mb-8">Join thousands of trainees who have ditched their spreadsheets.</p>
             <a href="app.html"
-                class="inline-flex justify-center items-center py-4 px-10 text-lg font-bold text-white rounded-xl bg-gradient-to-r from-primary to-accent hover:shadow-glow transition-all transform hover:scale-105">
+                class="inline-flex justify-center items-center py-4 px-10 text-lg font-semibold text-white rounded-2xl bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 hover:from-purple-500 hover:via-pink-500 hover:to-cyan-500 shadow-xl shadow-purple-200/50 hover:shadow-2xl hover:shadow-purple-300/50 transition-all transform hover:scale-105">
                 Get Started for Free
             </a>
         </div>
     </section>
 
     <!-- Footer -->
-    <footer class="bg-slate-900 border-t border-white/5 py-12">
+    <footer class="bg-slate-900 border-t border-slate-800 py-12">
         <div class="px-4 mx-auto max-w-7xl flex flex-col md:flex-row justify-between items-center">
             <div class="flex items-center gap-2 mb-4 md:mb-0">
                 <img src="fieldly-logo.png" alt="Fieldly" class="h-10">
