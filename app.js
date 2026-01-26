@@ -487,6 +487,8 @@ const calculateHours = (start, end) => {
 
 const calculateSummaryData = (entries) => {
     let total = 0, supervised = 0, restricted = 0, unrestricted = 0, contacts = 0;
+    let observationMinutes = 0;
+
     entries.forEach(entry => {
         const hours = calculateHours(entry.startTime, entry.endTime);
         total += hours;
@@ -495,10 +497,15 @@ const calculateSummaryData = (entries) => {
         if (entry.supervisionType !== 'No Supervision') {
             supervised += hours;
             contacts++;
+
+            // 2027 Requirement: Track Observation Duration
+            if (entry.supervisionType.includes('Observation with Client')) {
+                observationMinutes += hours * 60;
+            }
         }
     });
     const percentage = total > 0 ? (supervised / total) * 100 : 0;
-    return { restricted, unrestricted, total, supervised, percentage, contacts };
+    return { restricted, unrestricted, total, supervised, percentage, contacts, observationMinutes };
 };
 
 // --- Rendering ---
@@ -518,20 +525,40 @@ const createStatCard = (title, value, subtext, iconClass, colorClass) => `
 const createSummaryHTML = (data, allTimeTotal) => {
     const isConcentrated = profileData.fieldworkType === 'Concentrated';
     const totalGoal = isConcentrated ? 1500 : 2000;
-    const supervisionGoal = isConcentrated ? 10 : 5;
+    // 2027 Change: Concentrated supervision reduced to 7.5%
+    const supervisionGoal = isConcentrated ? 7.5 : 5;
+    const observationGoal = isConcentrated ? 90 : 60; // Minutes
 
     const hoursRemaining = Math.max(0, totalGoal - allTimeTotal).toFixed(2);
 
     // Supervision status
     const supervisionStatus = data.percentage >= supervisionGoal
-        ? `<span class="text-green-400">On Track (Goal: ${supervisionGoal}%)</span>`
-        : `<span class="text-red-400">Needs Focus (Goal: ${supervisionGoal}%)</span>`;
+        ? `<span class="text-green-400">On Track (${supervisionGoal}%)</span>`
+        : `<span class="text-red-400">Needs Focus (${supervisionGoal}%)</span>`;
+
+    // Observation status (2027)
+    const obsStatus = data.observationMinutes >= observationGoal
+        ? `<span class="text-green-400">OK</span>`
+        : `<span class="text-red-400">Low</span>`;
+
+    // Monthly Cap Warning (2027: 160 hours)
+    let totalTitle = 'Total Hours';
+    if (data.total > 160) {
+        totalTitle = `Total Hours <span class="text-red-400 text-[10px] ml-1 animate-pulse">(! >160h)</span>`;
+    }
+
+    const supervisedSubtext = `
+        <div class="flex flex-col gap-1">
+            <span>${data.percentage.toFixed(1)}% • ${supervisionStatus}</span>
+            <span>Obs: ${Math.round(data.observationMinutes)}/${observationGoal}m • ${obsStatus}</span>
+        </div>
+    `;
 
     return `
-        ${createStatCard('Total Hours', data.total.toFixed(2), `Remaining: ${hoursRemaining}`, 'ph-fill ph-clock', 'bg-blue-500 text-blue-400')}
+        ${createStatCard(totalTitle, data.total.toFixed(2), `Remaining: ${hoursRemaining}`, 'ph-fill ph-clock', 'bg-blue-500 text-blue-400')}
         ${createStatCard('Restricted', data.restricted.toFixed(2), null, 'ph-fill ph-hand-heart', 'bg-pink-500 text-pink-400')}
         ${createStatCard('Unrestricted', data.unrestricted.toFixed(2), null, 'ph-fill ph-brain', 'bg-purple-500 text-purple-400')}
-        ${createStatCard('Supervised', data.supervised.toFixed(2), `${data.percentage.toFixed(1)}% - ${supervisionStatus}`, 'ph-fill ph-users-three', 'bg-teal-500 text-teal-400')}
+        ${createStatCard('Supervised', data.supervised.toFixed(2), supervisedSubtext, 'ph-fill ph-users-three', 'bg-teal-500 text-teal-400')}
     `;
 };
 
@@ -895,7 +922,7 @@ const generateMfvfPdf = async (entries, supervisor, monthStr, isSigned) => {
         ["Unrestricted Hours", summary.unrestricted.toFixed(2)],
         ["Supervised Hours", summary.supervised.toFixed(2)],
         ["Supervision %", `${summary.percentage.toFixed(1)}%`],
-        ["Contacts", summary.contacts]
+        ["Observation Duration", `${Math.round(summary.observationMinutes)} min`]
     ];
 
     doc.autoTable({
@@ -948,6 +975,16 @@ const exportToCsv = (entries, summaryData, filename) => {
         csvContent += row.join(",") + "\n";
     });
 
+    // Add summary table at the end
+    csvContent += "\n"; // Empty line separator
+    csvContent += "SUMMARY STATISTICS\n";
+    csvContent += "Metric,Value\n";
+    csvContent += `Total Hours,${summaryData.total.toFixed(2)}\n`;
+    csvContent += `Restricted Hours,${summaryData.restricted.toFixed(2)}\n`;
+    csvContent += `Unrestricted Hours,${summaryData.unrestricted.toFixed(2)}\n`;
+    csvContent += `Supervised Hours,${summaryData.supervised.toFixed(2)}\n`;
+    csvContent += `Supervision %,${summaryData.percentage.toFixed(1)}%\n`;
+    csvContent += `Observation Duration,${Math.round(summaryData.observationMinutes)} min\n`;
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
