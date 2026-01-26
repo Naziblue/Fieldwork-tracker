@@ -506,7 +506,8 @@ const calculateSummaryData = (entries) => {
     });
     const percentage = total > 0 ? (supervised / total) * 100 : 0;
     const unsupervised = total - supervised;
-    return { restricted, unrestricted, total, supervised, percentage, contacts, observationMinutes, unsupervised };
+    const observationHours = observationMinutes / 60;
+    return { restricted, unrestricted, total, supervised, percentage, contacts, observationMinutes, observationHours, unsupervised };
 };
 
 // --- Rendering ---
@@ -551,9 +552,10 @@ const createSummaryHTML = (data, allTimeTotal) => {
     const supervisedSubtext = `
         <div class="flex flex-col gap-1">
             <span>${data.percentage.toFixed(1)}% • ${supervisionStatus}</span>
-            <span>Obs: ${Math.round(data.observationMinutes)}/${observationGoal}m • ${obsStatus}</span>
         </div>
     `;
+
+    const observationGoalText = `Goal: ${observationGoal}m • ${obsStatus}`;
 
     const formatDuration = (hours) => {
         const h = Math.floor(hours);
@@ -566,6 +568,7 @@ const createSummaryHTML = (data, allTimeTotal) => {
         ${createStatCard('Restricted', formatDuration(data.restricted), null, 'ph-fill ph-hand-heart', 'bg-pink-500 text-pink-400')}
         ${createStatCard('Unrestricted', formatDuration(data.unrestricted), null, 'ph-fill ph-brain', 'bg-purple-500 text-purple-400')}
         ${createStatCard('Supervised', formatDuration(data.supervised), supervisedSubtext, 'ph-fill ph-users-three', 'bg-teal-500 text-teal-400')}
+        ${createStatCard('Observation', formatDuration(data.observationHours), observationGoalText, 'ph-fill ph-eye', 'bg-cyan-500 text-cyan-400')}
         ${createStatCard('Unsupervised', formatDuration(data.unsupervised), null, 'ph-fill ph-user', 'bg-indigo-500 text-indigo-400')}
     `;
 };
