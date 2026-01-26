@@ -560,7 +560,7 @@ const createSummaryHTML = (data, allTimeTotal) => {
         ${createStatCard('Restricted', data.restricted.toFixed(2), null, 'ph-fill ph-hand-heart', 'bg-pink-500 text-pink-400')}
         ${createStatCard('Unrestricted', data.unrestricted.toFixed(2), null, 'ph-fill ph-brain', 'bg-purple-500 text-purple-400')}
         ${createStatCard('Supervised', data.supervised.toFixed(2), supervisedSubtext, 'ph-fill ph-users-three', 'bg-teal-500 text-teal-400')}
-        ${createStatCard('Unsupervised', data.unsupervised.toFixed(2), null, 'ph-fill ph-user', 'bg-indigo-500 text-indigo-400')}
+        ${createStatCard('Unsupervised', `${Math.floor(data.unsupervised)}h ${Math.round((data.unsupervised % 1) * 60)}m`, null, 'ph-fill ph-user', 'bg-indigo-500 text-indigo-400')}
     `;
 };
 
@@ -926,7 +926,7 @@ const generateMfvfPdf = async (entries, supervisor, monthStr, isSigned) => {
         ["Supervision %", `${summary.percentage.toFixed(1)}%`],
 
         ["Observation Duration", `${Math.round(summary.observationMinutes)} min`],
-        ["Unsupervised Hours", summary.unsupervised.toFixed(2)]
+        ["Unsupervised Duration", `${Math.floor(summary.unsupervised)}h ${Math.round((summary.unsupervised % 1) * 60)}m`]
     ];
 
     doc.autoTable({
@@ -1052,7 +1052,7 @@ const exportToCsv = (entries, summaryData, filename) => {
     csvContent += `Supervision %,${summaryData.percentage.toFixed(1)}%\n`;
 
     csvContent += `Observation Duration,${Math.round(summaryData.observationMinutes)} min\n`;
-    csvContent += `Unsupervised Hours,${summaryData.unsupervised.toFixed(2)}\n`;
+    csvContent += `Unsupervised Duration,${Math.floor(summaryData.unsupervised)}h ${Math.round((summaryData.unsupervised % 1) * 60)}m\n`;
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
