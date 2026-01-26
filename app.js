@@ -555,12 +555,18 @@ const createSummaryHTML = (data, allTimeTotal) => {
         </div>
     `;
 
+    const formatDuration = (hours) => {
+        const h = Math.floor(hours);
+        const m = Math.round((hours % 1) * 60);
+        return `${h}h ${m}m`;
+    };
+
     return `
-        ${createStatCard(totalTitle, data.total.toFixed(2), `Remaining: ${hoursRemaining}`, 'ph-fill ph-clock', 'bg-blue-500 text-blue-400')}
-        ${createStatCard('Restricted', data.restricted.toFixed(2), null, 'ph-fill ph-hand-heart', 'bg-pink-500 text-pink-400')}
-        ${createStatCard('Unrestricted', data.unrestricted.toFixed(2), null, 'ph-fill ph-brain', 'bg-purple-500 text-purple-400')}
-        ${createStatCard('Supervised', data.supervised.toFixed(2), supervisedSubtext, 'ph-fill ph-users-three', 'bg-teal-500 text-teal-400')}
-        ${createStatCard('Unsupervised', `${Math.floor(data.unsupervised)}h ${Math.round((data.unsupervised % 1) * 60)}m`, null, 'ph-fill ph-user', 'bg-indigo-500 text-indigo-400')}
+        ${createStatCard(totalTitle, formatDuration(data.total), `Remaining: ${formatDuration(Math.max(0, totalGoal - allTimeTotal))}`, 'ph-fill ph-clock', 'bg-blue-500 text-blue-400')}
+        ${createStatCard('Restricted', formatDuration(data.restricted), null, 'ph-fill ph-hand-heart', 'bg-pink-500 text-pink-400')}
+        ${createStatCard('Unrestricted', formatDuration(data.unrestricted), null, 'ph-fill ph-brain', 'bg-purple-500 text-purple-400')}
+        ${createStatCard('Supervised', formatDuration(data.supervised), supervisedSubtext, 'ph-fill ph-users-three', 'bg-teal-500 text-teal-400')}
+        ${createStatCard('Unsupervised', formatDuration(data.unsupervised), null, 'ph-fill ph-user', 'bg-indigo-500 text-indigo-400')}
     `;
 };
 
@@ -917,16 +923,21 @@ const generateMfvfPdf = async (entries, supervisor, monthStr, isSigned) => {
     doc.text(`Supervisor: ${supervisor ? supervisor.name : 'N/A'} (Cert: ${supervisor ? supervisor.cert : 'N/A'})`, 20, 48);
     doc.text(`Month: ${monthName}`, 20, 56);
 
+    const formatDuration = (hours) => {
+        const h = Math.floor(hours);
+        const m = Math.round((hours % 1) * 60);
+        return `${h}h ${m}m`;
+    };
+
     // Summary Table
     const summaryRows = [
-        ["Total Hours", summary.total.toFixed(2)],
-        ["Restricted Hours", summary.restricted.toFixed(2)],
-        ["Unrestricted Hours", summary.unrestricted.toFixed(2)],
-        ["Supervised Hours", summary.supervised.toFixed(2)],
+        ["Total Duration", formatDuration(summary.total)],
+        ["Restricted Duration", formatDuration(summary.restricted)],
+        ["Unrestricted Duration", formatDuration(summary.unrestricted)],
+        ["Supervised Duration", formatDuration(summary.supervised)],
         ["Supervision %", `${summary.percentage.toFixed(1)}%`],
-
         ["Observation Duration", `${Math.round(summary.observationMinutes)} min`],
-        ["Unsupervised Duration", `${Math.floor(summary.unsupervised)}h ${Math.round((summary.unsupervised % 1) * 60)}m`]
+        ["Unsupervised Duration", formatDuration(summary.unsupervised)]
     ];
 
     doc.autoTable({
@@ -1044,15 +1055,21 @@ const exportToCsv = (entries, summaryData, filename) => {
     // Add summary table at the end
     csvContent += "\n"; // Empty line separator
     csvContent += "SUMMARY STATISTICS\n";
+    const formatDuration = (hours) => {
+        const h = Math.floor(hours);
+        const m = Math.round((hours % 1) * 60);
+        return `${h}h ${m}m`;
+    };
+
     csvContent += "Metric,Value\n";
-    csvContent += `Total Hours,${summaryData.total.toFixed(2)}\n`;
-    csvContent += `Restricted Hours,${summaryData.restricted.toFixed(2)}\n`;
-    csvContent += `Unrestricted Hours,${summaryData.unrestricted.toFixed(2)}\n`;
-    csvContent += `Supervised Hours,${summaryData.supervised.toFixed(2)}\n`;
+    csvContent += `Total Duration,${formatDuration(summaryData.total)}\n`;
+    csvContent += `Restricted Duration,${formatDuration(summaryData.restricted)}\n`;
+    csvContent += `Unrestricted Duration,${formatDuration(summaryData.unrestricted)}\n`;
+    csvContent += `Supervised Duration,${formatDuration(summaryData.supervised)}\n`;
     csvContent += `Supervision %,${summaryData.percentage.toFixed(1)}%\n`;
 
     csvContent += `Observation Duration,${Math.round(summaryData.observationMinutes)} min\n`;
-    csvContent += `Unsupervised Duration,${Math.floor(summaryData.unsupervised)}h ${Math.round((summaryData.unsupervised % 1) * 60)}m\n`;
+    csvContent += `Unsupervised Duration,${formatDuration(summaryData.unsupervised)}\n`;
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
