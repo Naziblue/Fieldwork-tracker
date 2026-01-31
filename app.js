@@ -488,6 +488,8 @@ const calculateHours = (start, end) => {
 const calculateSummaryData = (entries) => {
     let total = 0, supervised = 0, restricted = 0, unrestricted = 0, contacts = 0;
     let observationMinutes = 0;
+    let individualSupervision = 0;
+    let groupSupervision = 0;
 
     entries.forEach(entry => {
         const hours = calculateHours(entry.startTime, entry.endTime);
@@ -498,6 +500,14 @@ const calculateSummaryData = (entries) => {
             supervised += hours;
             contacts++;
 
+            // Individual vs Group Tracking
+            if (entry.supervisionType === 'Group Supervision') {
+                groupSupervision += hours;
+            } else if (entry.supervisionType === '1:1 Meeting (with Supervisor)' ||
+                entry.supervisionType === 'Observation with Client (by Supervisor)') {
+                individualSupervision += hours;
+            }
+
             // 2027 Requirement: Track Observation Duration
             if (entry.supervisionType.includes('Observation with Client')) {
                 observationMinutes += hours * 60;
@@ -507,7 +517,11 @@ const calculateSummaryData = (entries) => {
     const percentage = total > 0 ? (supervised / total) * 100 : 0;
     const unsupervised = total - supervised;
     const observationHours = observationMinutes / 60;
-    return { restricted, unrestricted, total, supervised, percentage, contacts, observationMinutes, observationHours, unsupervised };
+    return {
+        restricted, unrestricted, total, supervised, percentage,
+        contacts, observationMinutes, observationHours, unsupervised,
+        individualSupervision, groupSupervision
+    };
 };
 
 // --- Rendering ---
@@ -573,6 +587,44 @@ const createSummaryHTML = (data, allTimeTotal) => {
     `;
 };
 
+const updateAlerts = (data, containerId) => {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    container.innerHTML = '';
+    let hasAlerts = false;
+
+    // Group Supervision Warning (BACB Requirement: Group <= 50% of total supervision)
+    if (data.supervised > 0 && data.groupSupervision > (data.supervised * 0.5)) {
+        const groupPercentage = ((data.groupSupervision / data.supervised) * 100).toFixed(1);
+        const diff = (data.groupSupervision - data.individualSupervision).toFixed(2);
+
+        const alert = document.createElement('div');
+        alert.className = 'bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4 flex items-start gap-3 animate-fade-in';
+        alert.innerHTML = `
+            <div class="w-10 h-10 rounded-lg bg-yellow-500/10 flex items-center justify-center flex-shrink-0 text-yellow-500 transition-transform hover:scale-110">
+                <i class="ph-fill ph-warning-diamond text-xl"></i>
+            </div>
+            <div class="flex-1">
+                <h4 class="text-sm font-bold text-yellow-500 uppercase tracking-wider">Group Supervision Warning</h4>
+                <p class="text-sm text-text-muted mt-1 leading-relaxed">
+                    Your group supervision is <span class="text-yellow-500 font-semibold">${groupPercentage}%</span> of your total supervision 
+                    and <span class="text-yellow-500 font-semibold">${diff} hours</span> more than individual supervision.
+                </p>
+                <p class="text-[10px] text-text-muted mt-2 opacity-60">BACB regulations require group supervision to not exceed 50% of total supervised hours.</p>
+            </div>
+        `;
+        container.appendChild(alert);
+        hasAlerts = true;
+    }
+
+    if (hasAlerts) {
+        container.classList.remove('hidden');
+    } else {
+        container.classList.add('hidden');
+    }
+};
+
 const renderTable = (entries, tableBodyElement) => {
     tableBodyElement.innerHTML = '';
     if (entries.length === 0) {
@@ -623,7 +675,9 @@ const updateMonthlyView = () => {
         return d.year() == year && (d.month() + 1) == month;
     });
     const allTimeTotal = calculateSummaryData(allEntries).total;
-    monthlySummaryGrid.innerHTML = createSummaryHTML(calculateSummaryData(monthlyEntries), allTimeTotal);
+    const summaryData = calculateSummaryData(monthlyEntries);
+    monthlySummaryGrid.innerHTML = createSummaryHTML(summaryData, allTimeTotal);
+    updateAlerts(summaryData, 'monthly-alerts');
     renderTable(monthlyEntries, logTableBody);
 };
 
@@ -632,13 +686,16 @@ const updateYearlyView = () => {
     if (!selectedYear) return;
     const yearlyEntries = allEntries.filter(e => dayjs(e.date).year() == selectedYear);
     const allTimeTotal = calculateSummaryData(allEntries).total;
-    yearlySummaryGrid.innerHTML = createSummaryHTML(calculateSummaryData(yearlyEntries), allTimeTotal);
+    const summaryData = calculateSummaryData(yearlyEntries);
+    yearlySummaryGrid.innerHTML = createSummaryHTML(summaryData, allTimeTotal);
+    updateAlerts(summaryData, 'yearly-alerts');
     renderTable(yearlyEntries, yearlyLogTableBody);
 };
 
 const updateAllTimeView = () => {
     const summary = calculateSummaryData(allEntries);
     allTimeSummaryGrid.innerHTML = createSummaryHTML(summary, summary.total);
+    updateAlerts(summary, 'all-time-alerts');
     renderTable(allEntries, allTimeLogTableBody);
     renderAllTimeCharts(allEntries);
 };
