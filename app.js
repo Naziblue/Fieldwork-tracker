@@ -263,7 +263,6 @@ const openSlideOver = (mode = 'add', entry = null) => {
 
         if (entry.activityType === 'Unrestricted') {
             unrestrictedTypeSelect.value = entry.unrestrictedActivityType || '';
-            document.getElementById('unrestricted-explanation').value = entry.unrestrictedExplanation || '';
         }
 
         document.getElementById('supervision-type').value = entry.supervisionType;
@@ -657,8 +656,8 @@ const renderTable = (entries, tableBodyElement) => {
         row.className = 'hover:bg-surface-hover transition-colors group';
 
         let notesDisplay = entry.notes || '';
-        if (entry.unrestrictedActivityType) {
-            notesDisplay = `[${entry.unrestrictedActivityType}] ${entry.unrestrictedExplanation || notesDisplay}`;
+        if (entry.activityType === 'Unrestricted' && entry.unrestrictedActivityType) {
+            notesDisplay = `[${entry.unrestrictedActivityType}] ${notesDisplay}`;
         }
 
         const typeBadgeClass = entry.activityType === 'Unrestricted' ? 'badge-purple' : 'badge-danger';
@@ -810,7 +809,6 @@ const handleSaveEntry = async () => {
         endTime: document.getElementById('end-time').value,
         setting: document.getElementById('setting').value,
         activityType: activityTypeSelect.value,
-        unrestrictedExplanation: document.getElementById('unrestricted-explanation').value,
         unrestrictedActivityType: unrestrictedTypeSelect.value,
         supervisionType: document.getElementById('supervision-type').value,
         supervisorName: document.getElementById('supervisor-select').value,
@@ -1186,12 +1184,10 @@ const generateMfvfPdf = async (entries, supervisor, monthStr, isSigned) => {
     });
 
     const tableData = sortedEntries.map(e => {
-        // Combine session notes with unrestricted explanation if applicable
+        // Combine session notes with unrestricted type if applicable
         let notesColumn = e.notes || '';
-        if (e.unrestrictedActivityType && e.unrestrictedExplanation) {
-            notesColumn = `[${e.unrestrictedActivityType}] ${e.unrestrictedExplanation}`;
-        } else if (e.unrestrictedExplanation) {
-            notesColumn = e.unrestrictedExplanation;
+        if (e.activityType === 'Unrestricted' && e.unrestrictedActivityType) {
+            notesColumn = `[${e.unrestrictedActivityType}] ${notesColumn}`;
         }
 
         return [
@@ -1256,12 +1252,10 @@ const exportToCsv = (entries, summaryData, filename) => {
     sortedEntries.forEach(entry => {
         const hours = calculateHours(entry.startTime, entry.endTime).toFixed(2);
 
-        // Combine session notes with unrestricted explanation if applicable
+        // Combine session notes with unrestricted type if applicable
         let notesColumn = entry.notes || '';
-        if (entry.unrestrictedActivityType && entry.unrestrictedExplanation) {
-            notesColumn = `[${entry.unrestrictedActivityType}] ${entry.unrestrictedExplanation}`;
-        } else if (entry.unrestrictedExplanation) {
-            notesColumn = entry.unrestrictedExplanation;
+        if (entry.activityType === 'Unrestricted' && entry.unrestrictedActivityType) {
+            notesColumn = `[${entry.unrestrictedActivityType}] ${notesColumn}`;
         }
 
         const row = [
