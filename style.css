@@ -19,25 +19,22 @@
 }
 
 .light-mode {
-    /* User Palette: 251,251,251 | 197,186,255 | 19,36,64 | 22,71,106 */
-    --color-background: 251 251 251;
+    /* User Palette: Re-engineered for 10x Visual Excellence & Legibility */
+    --color-background: 245 247 251; /* Elegant cool white-gray background */
     --color-surface: 255 255 255;
-    --color-surface-hover: 243 244 246;
-    --color-text: 19 36 64;
-    --color-text-muted: 71 85 105;
+    --color-surface-hover: 241 245 249;
+    --color-text: 15 23 42; /* Slate 900 for high-contrast elite typography */
+    --color-text-muted: 71 85 105; /* Slate 600 */
 
-    --color-primary: 197 186 255;
-    /* Lavender */
-    --color-primary-hover: 167 156 235;
+    --color-primary: 99 102 241; /* Indigo Primary */
+    --color-primary-hover: 79 70 229;
     --color-secondary: 22 71 106;
-    /* Teal Blue */
     --color-accent: 139 92 246;
 
-    /* Light Mode Sidebar: #A4CCD9 (Blue) & Black Text */
-    --color-sidebar: 164 204 217;
-    --color-sidebar-text: 0 0 0;
-    --color-sidebar-muted: 55 65 81;
-    /* Gray 700 */
+    /* Light Mode Sidebar: Pure Clean White Glass sidebar */
+    --color-sidebar: 255 255 255;
+    --color-sidebar-text: 15 23 42; /* Slate 900 */
+    --color-sidebar-muted: 100 116 139; /* Slate 500 */
 }
 
 body {
@@ -256,139 +253,211 @@ select.bg-transparent {
 }
 
 /* Light Mode Specific Overrides */
-.light-mode .activity-log-panel {
-    background: #F2F9FF !important;
-    border: 1px solid rgba(164, 204, 217, 0.3);
+
+/* 1. Custom Premium Subtle Background Gradient */
+.light-mode {
+    background: linear-gradient(135deg, #f1f4fb 0%, #fcfdfe 60%, #f0f3fa 100%) !important;
 }
 
-/* Table Header Theme */
-.table-header-theme {
-    background-color: rgba(15, 23, 42, 0.8);
+/* 2. Glassmorphism Stat Cards with Frost & Glow */
+.light-mode .glass-card {
+    background: rgba(255, 255, 255, 0.75) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.75) !important;
+    box-shadow: 0 6px 20px rgba(31, 41, 135, 0.03) !important;
+    border-radius: 16px !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.light-mode .glass-card:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 10px 25px rgba(31, 41, 135, 0.06) !important;
+    border-color: rgba(99, 102, 241, 0.15) !important;
+}
+
+/* 3. Soft Contrast Backgrounds and Glow for Stat Icon Circles */
+.light-mode .bg-blue-500.bg-opacity-10 { background-color: rgba(37, 99, 235, 0.08) !important; border: 1px solid rgba(37, 99, 235, 0.15) !important; }
+.light-mode .bg-pink-500.bg-opacity-10 { background-color: rgba(219, 39, 119, 0.08) !important; border: 1px solid rgba(219, 39, 119, 0.15) !important; }
+.light-mode .bg-purple-500.bg-opacity-10 { background-color: rgba(124, 58, 237, 0.08) !important; border: 1px solid rgba(124, 58, 237, 0.15) !important; }
+.light-mode .bg-teal-500.bg-opacity-10 { background-color: rgba(13, 148, 136, 0.08) !important; border: 1px solid rgba(13, 148, 136, 0.15) !important; }
+.light-mode .bg-cyan-500.bg-opacity-10 { background-color: rgba(8, 145, 178, 0.08) !important; border: 1px solid rgba(8, 145, 178, 0.15) !important; }
+.light-mode .bg-indigo-500.bg-opacity-10 { background-color: rgba(79, 70, 229, 0.08) !important; border: 1px solid rgba(79, 70, 229, 0.15) !important; }
+
+/* 4. Elegant Sidebar with Soft Sidebar-Text and active glow */
+.light-mode aside {
+    background: rgba(255, 255, 255, 0.8) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border-right: 1px solid rgba(0, 0, 0, 0.06) !important;
+}
+
+.light-mode aside .border-b {
+    border-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Sidebar Navigation Items */
+.light-mode .view-btn {
+    font-weight: 500 !important;
+    border-radius: 10px !important;
+    transition: all 0.2s ease-in-out !important;
+}
+
+.light-mode .view-btn:hover {
+    background-color: rgba(99, 102, 241, 0.05) !important;
+    color: #4f46e5 !important;
+}
+
+/* Active navigation item in Light Mode */
+.light-mode .view-btn.bg-primary {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(139, 92, 246, 0.08) 100%) !important;
+    color: #4f46e5 !important;
+    box-shadow: none !important;
+    border: 1px solid rgba(99, 102, 241, 0.12) !important;
+    font-weight: 600 !important;
+}
+
+/* 5. Premium Table / Activity Log Panel Styling */
+.light-mode .activity-log-panel {
+    background: rgba(255, 255, 255, 0.8) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(0, 0, 0, 0.05) !important;
+    border-radius: 18px !important;
+    box-shadow: 0 10px 30px rgba(31, 41, 135, 0.02) !important;
+    overflow: hidden !important;
 }
 
 .light-mode .table-header-theme {
-    background-color: #D8D0FC !important;
-    color: #000000;
+    background: linear-gradient(135deg, #e0e7ff 0%, #f5f3ff 100%) !important;
+    border-bottom: 1px solid rgba(99, 102, 241, 0.1) !important;
+    color: #312e81 !important;
 }
 
-/* FAB (Floating Action Button) in Light Mode */
-.light-mode #fab-add-entry {
-    background-color: #450693 !important;
+.light-mode table {
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
 }
 
-.light-mode #fab-add-entry:hover {
-    background-color: #5a0bb8 !important;
-}
-
-/* Slide-Over Panel in Light Mode */
-.light-mode #slide-over-backdrop {
-    background-color: rgba(0, 0, 0, 0.3) !important;
-}
-
-.light-mode #slide-over-content>div {
-    background-color: rgb(var(--color-surface)) !important;
-    border-color: rgba(164, 204, 217, 0.3) !important;
-}
-
-.light-mode #slide-over-content .bg-slate-900\/50 {
-    background-color: rgb(var(--color-surface)) !important;
-}
-
-.light-mode #slide-over-title {
-    color: rgb(var(--color-text)) !important;
-}
-/* Modal Transitions */
-#slide-over-content {
-    transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
-.light-mode #slide-over-content .bg-slate-900\/50 {
-    border-bottom-color: rgba(164, 204, 217, 0.2) !important;
-}
-
-/* --- Google Sign-In Button: Premium Dark Pink Theme (All Modes) --- */
-#login-btn {
-    background: linear-gradient(135deg, #ec4899 0%, #be185d 100%) !important; /* Premium Dark Pink to Rose Gradient */
-    color: #ffffff !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
-    box-shadow: 0 4px 15px rgba(219, 39, 119, 0.3) !important; /* Elegant Pink Glow */
+.light-mode th {
+    background-color: rgba(255, 255, 255, 0.5) !important;
+    color: #475569 !important;
     font-weight: 600 !important;
-    transition: all 0.3s ease !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04) !important;
+    padding: 12px 16px !important;
 }
 
-#login-btn:hover {
-    background: linear-gradient(135deg, #db2777 0%, #9d174d 100%) !important;
-    box-shadow: 0 6px 20px rgba(219, 39, 119, 0.45) !important;
-    transform: translateY(-1px) !important;
+.light-mode td {
+    padding: 14px 16px !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.03) !important;
+    color: #1e293b !important;
+    font-weight: 500 !important;
 }
 
-/* --- Light Mode Button & Legibility Overrides --- */
-
-/* 1. Primary Buttons in Light Mode: Set high-contrast dark navy text color */
-.light-mode .bg-primary {
-    background-color: rgb(var(--color-primary)) !important;
-    color: #132440 !important; /* Dark Navy Text for contrast against light Lavender */
-    font-weight: 600 !important;
+.light-mode tr:hover td {
+    background-color: rgba(99, 102, 241, 0.02) !important;
+    color: #0f172a !important;
 }
 
-.light-mode .bg-primary:hover {
-    background-color: rgb(var(--color-primary-hover)) !important;
+/* 6. Form Inputs in Light Mode */
+.light-mode .input-field {
+    background-color: rgba(255, 255, 255, 0.9) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    color: #0f172a !important;
+    border-radius: 10px !important;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.01) !important;
 }
 
-/* 2. Secondary & Surface Buttons/Dropdowns in Light Mode: Tinted Lavender theme with clear border */
+.light-mode .input-field:focus {
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15) !important;
+}
+
+/* 7. Action Buttons (Generate M-FVF, Export CSV) */
 .light-mode button.bg-surface,
 .light-mode a.bg-surface,
 .light-mode select.bg-surface {
-    background-color: rgba(197, 186, 255, 0.08) !important;
-    border: 1px solid rgba(197, 186, 255, 0.5) !important;
-    color: #132440 !important; /* Force legibility */
-    transition: all 0.2s ease-in-out !important;
+    background: #ffffff !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    color: #334155 !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02) !important;
+    font-weight: 500 !important;
+    border-radius: 10px !important;
+    transition: all 0.2s ease !important;
 }
 
 .light-mode button.bg-surface:hover,
 .light-mode a.bg-surface:hover {
-    background-color: rgba(197, 186, 255, 0.18) !important;
-    border-color: rgba(167, 156, 235, 0.8) !important;
+    background: #f8fafc !important;
+    border-color: rgba(99, 102, 241, 0.3) !important;
+    color: #4f46e5 !important;
+    transform: translateY(-0.5px) !important;
 }
 
-/* 3. Delete button override for warning action in light mode */
+/* 8. Slide-Over Panel Form Container & title */
+.light-mode #slide-over-backdrop {
+    background-color: rgba(15, 23, 42, 0.3) !important;
+    backdrop-filter: blur(4px) !important;
+}
+
+.light-mode #slide-over-content > div {
+    background-color: #ffffff !important;
+    border-left: 1px solid rgba(0, 0, 0, 0.05) !important;
+}
+
+.light-mode #slide-over-content .border-t {
+    border-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+.light-mode #slide-over-title {
+    color: #0f172a !important;
+}
+
+.light-mode #slide-over-content .bg-slate-900\/50 {
+    background-color: #f8fafc !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+}
+
+/* 9. Delete button override for warning action in light mode */
 .light-mode #delete-entry-btn {
-    background-color: rgba(239, 68, 68, 0.08) !important;
-    border: 1px solid rgba(239, 68, 68, 0.3) !important;
+    background-color: rgba(239, 68, 68, 0.06) !important;
+    border: 1px solid rgba(239, 68, 68, 0.2) !important;
     color: #b91c1c !important; /* Rich Dark Red */
 }
 
 .light-mode #delete-entry-btn:hover {
-    background-color: rgba(239, 68, 68, 0.15) !important;
-    border-color: rgba(239, 68, 68, 0.5) !important;
+    background-color: rgba(239, 68, 68, 0.12) !important;
+    border-color: rgba(239, 68, 68, 0.4) !important;
 }
 
-/* 4. High-Contrast Status Badges in Light Mode */
+/* 10. High-Contrast Status Badges in Light Mode */
 .light-mode .badge-success {
-    background-color: rgba(22, 163, 74, 0.1) !important;
+    background-color: rgba(22, 163, 74, 0.08) !important;
     color: #16a34a !important;
-    border-color: rgba(22, 163, 74, 0.2) !important;
+    border-color: rgba(22, 163, 74, 0.15) !important;
 }
 
 .light-mode .badge-warning {
-    background-color: rgba(217, 119, 6, 0.1) !important;
+    background-color: rgba(217, 119, 6, 0.08) !important;
     color: #d97706 !important;
-    border-color: rgba(217, 119, 6, 0.2) !important;
+    border-color: rgba(217, 119, 6, 0.15) !important;
 }
 
 .light-mode .badge-danger {
-    background-color: rgba(220, 38, 38, 0.1) !important;
-    color: #dc2626 !important;
-    border-color: rgba(220, 38, 38, 0.2) !important;
+    background-color: rgba(225, 29, 72, 0.08) !important;
+    color: #e11d48 !important;
+    border-color: rgba(225, 29, 72, 0.15) !important;
 }
 
 .light-mode .badge-purple {
-    background-color: rgba(124, 58, 237, 0.1) !important;
+    background-color: rgba(124, 58, 237, 0.08) !important;
     color: #7c3aed !important;
-    border-color: rgba(124, 58, 237, 0.2) !important;
+    border-color: rgba(124, 58, 237, 0.15) !important;
 }
 
-/* 5. Stat Card Icon Color Overrides for Premium Vibrancy & Contrast */
+/* 11. Stat Card Icon Color Overrides for Premium Vibrancy & Contrast */
 .light-mode .text-blue-400 { color: #2563eb !important; }
 .light-mode .text-pink-400 { color: #db2777 !important; }
 .light-mode .text-purple-400 { color: #7c3aed !important; }
@@ -398,6 +467,33 @@ select.bg-transparent {
 .light-mode .text-red-400 { color: #dc2626 !important; }
 .light-mode .text-green-400 { color: #16a34a !important; }
 .light-mode .text-yellow-400 { color: #ca8a04 !important; }
+
+/* 12. Floating Action Button */
+.light-mode #fab-add-entry {
+    background: linear-gradient(135deg, #db2777 0%, #be185d 100%) !important;
+    box-shadow: 0 6px 20px rgba(219, 39, 119, 0.3) !important;
+}
+
+.light-mode #fab-add-entry:hover {
+    background: linear-gradient(135deg, #be185d 0%, #9d174d 100%) !important;
+    box-shadow: 0 8px 25px rgba(219, 39, 119, 0.45) !important;
+}
+
+/* Google Sign-in button */
+#login-btn {
+    background: linear-gradient(135deg, #ec4899 0%, #be185d 100%) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    box-shadow: 0 4px 15px rgba(219, 39, 119, 0.3) !important;
+    font-weight: 600 !important;
+    transition: all 0.3s ease !important;
+}
+
+#login-btn:hover {
+    background: linear-gradient(135deg, #db2777 0%, #9d174d 100%) !important;
+    box-shadow: 0 6px 20px rgba(219, 39, 119, 0.45) !important;
+    transform: translateY(-1px) !important;
+}
 
 /* AI Note Assistant Glowing Transition */
 .ai-loading-glow {
