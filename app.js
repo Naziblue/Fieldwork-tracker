@@ -175,6 +175,7 @@ function setupTableHeaders() {
         <th class="px-4 py-3 font-medium text-text-muted">Time</th>
         <th class="px-4 py-3 font-medium text-text-muted">Hrs</th>
         <th class="px-4 py-3 font-medium text-text-muted">Setting</th>
+        <th class="px-4 py-3 font-medium text-text-muted">Client</th>
         <th class="px-4 py-3 font-medium text-text-muted">Type</th>
         <th class="px-4 py-3 font-medium text-text-muted">Supervision</th>
         <th class="px-4 py-3 font-medium text-text-muted">Supervisor</th>
@@ -649,6 +650,7 @@ const renderTable = (entries, tableBodyElement) => {
             <td class="px-4 py-3 text-text-muted text-xs">${dayjs('1970-01-01T' + entry.startTime).format('h:mm A')} - ${dayjs('1970-01-01T' + entry.endTime).format('h:mm A')}</td>
             <td class="px-4 py-3 font-bold text-text">${totalHours.toFixed(2)}</td>
             <td class="px-4 py-3 text-text-muted">${entry.setting || '-'}</td>
+            <td class="px-4 py-3 text-text-muted">${entry.clientName || '-'}</td>
             <td class="px-4 py-3"><span class="badge ${typeBadgeClass}">${entry.activityType}</span></td>
             <td class="px-4 py-3 text-text-muted text-xs max-w-[150px] truncate" title="${entry.supervisionType}">${entry.supervisionType}</td>
             <td class="px-4 py-3 text-text-muted">${entry.supervisorName || '-'}</td>
@@ -1341,6 +1343,7 @@ const renderTraineeReview = async (entries) => {
                     <td class="px-4 py-3 text-text-muted text-xs">${entry.startTime} - ${entry.endTime}</td>
                     <td class="px-4 py-3 text-white font-medium">${calculateHours(entry.startTime, entry.endTime).toFixed(2)}</td>
                     <td class="px-4 py-3 text-text-muted">${entry.setting}</td>
+                    <td class="px-4 py-3 text-text-muted">${entry.clientName || '-'}</td>
                     <td class="px-4 py-3">
                         <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${entry.activityType === 'Restricted' ? 'bg-pink-500/10 text-pink-400' : 'bg-purple-500/10 text-purple-400'}">
                             ${entry.activityType}
