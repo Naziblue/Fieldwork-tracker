@@ -305,3 +305,80 @@ select.bg-transparent {
 .light-mode #slide-over-content .bg-slate-900\/50 {
     border-bottom-color: rgba(164, 204, 217, 0.2) !important;
 }
+
+/* --- Light Mode Button & Legibility Overrides --- */
+
+/* 1. Primary Buttons in Light Mode: Set high-contrast dark navy text color */
+.light-mode .bg-primary {
+    background-color: rgb(var(--color-primary)) !important;
+    color: #132440 !important; /* Dark Navy Text for contrast against light Lavender */
+    font-weight: 600 !important;
+}
+
+.light-mode .bg-primary:hover {
+    background-color: rgb(var(--color-primary-hover)) !important;
+}
+
+/* 2. Secondary & Surface Buttons/Dropdowns in Light Mode: Tinted Lavender theme with clear border */
+.light-mode button.bg-surface,
+.light-mode a.bg-surface,
+.light-mode select.bg-surface {
+    background-color: rgba(197, 186, 255, 0.08) !important;
+    border: 1px solid rgba(197, 186, 255, 0.5) !important;
+    color: #132440 !important; /* Force legibility */
+    transition: all 0.2s ease-in-out !important;
+}
+
+.light-mode button.bg-surface:hover,
+.light-mode a.bg-surface:hover {
+    background-color: rgba(197, 186, 255, 0.18) !important;
+    border-color: rgba(167, 156, 235, 0.8) !important;
+}
+
+/* 3. Delete button override for warning action in light mode */
+.light-mode #delete-entry-btn {
+    background-color: rgba(239, 68, 68, 0.08) !important;
+    border: 1px solid rgba(239, 68, 68, 0.3) !important;
+    color: #b91c1c !important; /* Rich Dark Red */
+}
+
+.light-mode #delete-entry-btn:hover {
+    background-color: rgba(239, 68, 68, 0.15) !important;
+    border-color: rgba(239, 68, 68, 0.5) !important;
+}
+
+/* 4. High-Contrast Status Badges in Light Mode */
+.light-mode .badge-success {
+    background-color: rgba(22, 163, 74, 0.1) !important;
+    color: #16a34a !important;
+    border-color: rgba(22, 163, 74, 0.2) !important;
+}
+
+.light-mode .badge-warning {
+    background-color: rgba(217, 119, 6, 0.1) !important;
+    color: #d97706 !important;
+    border-color: rgba(217, 119, 6, 0.2) !important;
+}
+
+.light-mode .badge-danger {
+    background-color: rgba(220, 38, 38, 0.1) !important;
+    color: #dc2626 !important;
+    border-color: rgba(220, 38, 38, 0.2) !important;
+}
+
+.light-mode .badge-purple {
+    background-color: rgba(124, 58, 237, 0.1) !important;
+    color: #7c3aed !important;
+    border-color: rgba(124, 58, 237, 0.2) !important;
+}
+
+/* 5. Stat Card Icon Color Overrides for Premium Vibrancy & Contrast */
+.light-mode .text-blue-400 { color: #2563eb !important; }
+.light-mode .text-pink-400 { color: #db2777 !important; }
+.light-mode .text-purple-400 { color: #7c3aed !important; }
+.light-mode .text-teal-400 { color: #0d9488 !important; }
+.light-mode .text-cyan-400 { color: #0891b2 !important; }
+.light-mode .text-indigo-400 { color: #4f46e5 !important; }
+.light-mode .text-red-400 { color: #dc2626 !important; }
+.light-mode .text-green-400 { color: #16a34a !important; }
+.light-mode .text-yellow-400 { color: #ca8a04 !important; }
