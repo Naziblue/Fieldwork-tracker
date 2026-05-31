@@ -306,6 +306,22 @@ select.bg-transparent {
     border-bottom-color: rgba(164, 204, 217, 0.2) !important;
 }
 
+/* --- Google Sign-In Button: Premium Indigo Brand Theme (All Modes) --- */
+#login-btn {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.25) !important;
+    font-weight: 600 !important;
+    transition: all 0.3s ease !important;
+}
+
+#login-btn:hover {
+    background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%) !important;
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4) !important;
+    transform: translateY(-1px) !important;
+}
+
 /* --- Light Mode Button & Legibility Overrides --- */
 
 /* 1. Primary Buttons in Light Mode: Set high-contrast dark navy text color */
@@ -317,21 +333,6 @@ select.bg-transparent {
 
 .light-mode .bg-primary:hover {
     background-color: rgb(var(--color-primary-hover)) !important;
-}
-
-/* 1b. Google Sign-In Button in Light Mode: Distinct dark border and shadow for visibility */
-.light-mode #login-btn {
-    background-color: #ffffff !important;
-    border: 1.5px solid rgba(19, 36, 64, 0.25) !important; /* Elegant dark navy border for visibility */
-    color: #132440 !important; /* High contrast Dark Navy text */
-    box-shadow: 0 4px 12px rgba(19, 36, 64, 0.08) !important; /* Soft, premium shadow */
-    font-weight: 600 !important;
-}
-
-.light-mode #login-btn:hover {
-    background-color: #f8fafc !important;
-    border-color: rgba(19, 36, 64, 0.5) !important;
-    box-shadow: 0 6px 16px rgba(19, 36, 64, 0.12) !important;
 }
 
 /* 2. Secondary & Surface Buttons/Dropdowns in Light Mode: Tinted Lavender theme with clear border */
