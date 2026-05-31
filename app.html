@@ -44,7 +44,7 @@
 
     <script src="tailwind-config.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="style.css?v=pink">
+    <link rel="stylesheet" href="style.css?v=ai_assist">
 </head>
 
 <body class="bg-background text-text antialiased h-screen overflow-hidden flex flex-col md:flex-row">
@@ -679,9 +679,22 @@
                         </div>
 
                         <div>
-                            <label class="block text-xs font-medium text-text-muted mb-1">Notes</label>
-                            <textarea id="notes" rows="3" class="input-field w-full rounded-lg px-3 py-2 text-sm"
-                                placeholder="Describe the session..." required></textarea>
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="block text-xs font-medium text-text-muted">Notes</label>
+                                <button id="ai-assist-btn" type="button" 
+                                    class="text-xs bg-primary/10 hover:bg-primary/20 text-primary px-2 py-0.5 rounded flex items-center gap-1 border border-primary/20 hover:border-primary/40 transition-all font-medium">
+                                    <i class="ph-fill ph-sparkle text-[10px]"></i> ✨ AI Assist
+                                </button>
+                            </div>
+                            <div class="relative">
+                                <textarea id="notes" rows="3" class="input-field w-full rounded-lg px-3 py-2 text-sm border-white/10"
+                                    placeholder="Describe the session..." required></textarea>
+                                <!-- Floating Undo / Accept Bar -->
+                                <div id="ai-undo-bar" class="hidden absolute bottom-2 right-2 flex gap-1.5 z-10 bg-slate-950/95 backdrop-blur border border-white/10 p-1 rounded-lg shadow-xl">
+                                    <button id="ai-undo-btn" type="button" class="text-[11px] bg-red-500/20 hover:bg-red-500/30 text-red-300 px-2 py-1 rounded transition-colors font-medium">Undo</button>
+                                    <button id="ai-accept-btn" type="button" class="text-[11px] bg-green-500/20 hover:bg-green-500/30 text-green-300 px-2 py-1 rounded transition-colors font-medium">Accept</button>
+                                </div>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -765,6 +778,35 @@
                         </form>
                         <div id="supervisors-list" class="space-y-2"></div>
                     </div>
+
+                    <!-- AI Note Assistant -->
+                    <div class="border-t border-white/10 pt-6 mt-6">
+                        <h3 class="text-sm font-semibold text-primary uppercase tracking-wider mb-4 flex items-center gap-2">
+                            <i class="ph-fill ph-sparkle"></i> AI Note Assistant
+                        </h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-medium text-text-muted mb-1">Gemini API Key</label>
+                                <div class="relative flex items-center">
+                                    <input type="password" id="gemini-api-key" 
+                                        class="input-field w-full rounded-lg px-3 py-2 text-sm pr-10 border-white/10 bg-slate-950 text-white" 
+                                        placeholder="AIzaSy...">
+                                    <button type="button" id="toggle-api-key-btn" 
+                                        class="absolute right-3 text-text-muted hover:text-white transition-colors focus:outline-none bg-transparent border-0 p-0">
+                                        <i class="ph ph-eye text-lg"></i>
+                                    </button>
+                                </div>
+                                <p class="text-[10px] text-text-muted mt-1 leading-relaxed">
+                                    Your key is stored securely in your browser's local storage and used directly to communicate with Gemini. 
+                                    <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-primary hover:underline font-medium">Get a free key from Google AI Studio</a>.
+                                </p>
+                            </div>
+                            <button id="save-ai-settings-btn" type="button"
+                                class="w-full bg-surface hover:bg-surface-hover text-white font-medium py-2 rounded-lg border border-white/10 transition-colors">
+                                Save AI Key
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -804,7 +846,7 @@
     <!-- We are removing the old edit modal and using the slide-over for both add and edit -->
     <div id="edit-modal" class="hidden"></div>
 
-    <script type="module" src="app.js?v=cap_warning_v3"></script>
+    <script type="module" src="app.js?v=ai_assist"></script>
 </body>
 
 </html>

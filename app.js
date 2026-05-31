@@ -61,6 +61,10 @@ let pdfPreviewModal, pdfIframe, pdfDownloadBtn, pdfCloseBtn;
 let chartContexts = {};
 let tableHeaders = {};
 
+// AI Note Assistant State Variables
+let geminiApiKey = '', geminiApiKeyInput, toggleApiKeyBtn, saveAiSettingsBtn,
+    aiAssistBtn, aiUndoBar, aiUndoBtn, aiAcceptBtn, originalNotes = '';
+
 function initDOMElements() {
     console.log("App.js: Initializing DOM elements...");
     try {
@@ -142,6 +146,21 @@ function initDOMElements() {
             review: document.getElementById('review-table-header')
         };
 
+        // Query AI Assistant Elements
+        geminiApiKeyInput = document.getElementById('gemini-api-key');
+        toggleApiKeyBtn = document.getElementById('toggle-api-key-btn');
+        saveAiSettingsBtn = document.getElementById('save-ai-settings-btn');
+        aiAssistBtn = document.getElementById('ai-assist-btn');
+        aiUndoBar = document.getElementById('ai-undo-bar');
+        aiUndoBtn = document.getElementById('ai-undo-btn');
+        aiAcceptBtn = document.getElementById('ai-accept-btn');
+
+        // Load saved Gemini API key
+        geminiApiKey = localStorage.getItem('gemini_api_key') || '';
+        if (geminiApiKeyInput) {
+            geminiApiKeyInput.value = geminiApiKey;
+        }
+
         console.log("App.js: DOM elements initialized successfully");
     } catch (e) {
         console.error("App.js: Error initializing DOM elements:", e);
@@ -202,6 +221,7 @@ const handleGoogleLogin = async () => {
 
 // --- UI Logic: Modal ---
 const openSlideOver = (mode = 'add', entry = null) => {
+    if (aiUndoBar) aiUndoBar.classList.add('hidden');
     slideOverPanel.classList.remove('hidden');
     // Trigger reflow
     void slideOverPanel.offsetWidth;
@@ -255,6 +275,7 @@ const openSlideOver = (mode = 'add', entry = null) => {
 };
 
 const closeSlideOver = () => {
+    if (aiUndoBar) aiUndoBar.classList.add('hidden');
     slideOverBackdrop.classList.add('opacity-0');
     slideOverContent.classList.remove('opacity-100', 'scale-100');
     slideOverContent.classList.add('opacity-0', 'scale-95');
@@ -919,6 +940,99 @@ const handleLogout = async () => {
     }
 };
 
+// --- AI Note Assistant Helpers ---
+const callGemini = async (apiKey, prompt) => {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }]
+        })
+    });
+    if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error?.message || 'Failed to call Gemini API');
+    }
+    const result = await response.json();
+    return result.candidates?.[0]?.content?.parts?.[0]?.text;
+};
+
+const handleAiAssist = async () => {
+    if (!geminiApiKey) {
+        alert("✨ AI Assist requires a Gemini API Key!\n\nPlease open Settings (gear icon) and add your key in the 'AI Note Assistant' section.");
+        openSettingsPanel();
+        return;
+    }
+
+    const notesField = document.getElementById('notes');
+    if (!notesField) return;
+
+    let currentVal = notesField.value.trim();
+    let promptText = "";
+
+    if (!currentVal) {
+        // Generate from scratch
+        const inputPrompt = prompt("Enter a few rough words or bullet points about your session (e.g., 'tacting practice, token economy, manding redirection'):");
+        if (!inputPrompt || !inputPrompt.trim()) return;
+        promptText = `You are a professional BCBA (Board Certified Behavior Analyst). 
+Generate a brief, highly professional, BACB-compliant clinical session note based on the following keywords/topics.
+Include realistic clinical details appropriate for a standard ABA session, but keep it concise, clear, and professional.
+Keywords: "${inputPrompt.trim()}"
+Your output must ONLY be the polished note itself, with no conversational preamble, introduction, formatting marks like markdown headers, or quotes. Just plain text.`;
+    } else {
+        // Improve existing note
+        promptText = `You are a professional BCBA (Board Certified Behavior Analyst). 
+Your task is to take the rough, informal notes of a behavioral session or supervised fieldwork experience and rewrite them into a professional, clinical, BACB-compliant note.
+Keep the exact same facts, data points, and client details, but use correct ABA terminology (e.g., replacement behavior, schedules of reinforcement, antecedent manipulation, prompt hierarchy, data collection).
+Be concise, clear, and highly professional. Avoid personal opinions or informal phrasing.
+Your output must ONLY be the polished note itself, with no conversational preamble, introduction, formatting marks like markdown headers, or quotes. Just plain text.
+Rough note to rewrite:
+"${currentVal}"`;
+    }
+
+    // Set UI to loading state
+    aiAssistBtn.disabled = true;
+    const origBtnHtml = aiAssistBtn.innerHTML;
+    aiAssistBtn.innerHTML = `<i class="ph-bold ph-spinner animate-spin"></i> Generating...`;
+    notesField.classList.add('ai-loading-glow');
+    notesField.disabled = true;
+
+    try {
+        const resultText = await callGemini(geminiApiKey, promptText);
+        if (resultText) {
+            let cleanedText = resultText.trim();
+            // Remove enclosing quotes if returned
+            if (cleanedText.startsWith('"') && cleanedText.endsWith('"')) {
+                cleanedText = cleanedText.slice(1, -1);
+            }
+            // Remove markdown code blocks if returned
+            if (cleanedText.startsWith('```')) {
+                cleanedText = cleanedText.replace(/^```[a-zA-Z]*\n/, '').replace(/\n```$/, '');
+            }
+            cleanedText = cleanedText.trim();
+
+            // Save original notes in memory
+            originalNotes = notesField.value;
+            // Inject polished text
+            notesField.value = cleanedText;
+            // Show Undo / Accept Bar
+            if (aiUndoBar) aiUndoBar.classList.remove('hidden');
+        } else {
+            alert("Sorry, Gemini returned an empty response. Please try again.");
+        }
+    } catch (e) {
+        console.error("AI Assist error:", e);
+        alert("AI Assist failed: " + e.message);
+    } finally {
+        // Reset loading states
+        aiAssistBtn.disabled = false;
+        aiAssistBtn.innerHTML = origBtnHtml;
+        notesField.classList.remove('ai-loading-glow');
+        notesField.disabled = false;
+    }
+};
+
 const saveProfile = async (e) => {
     e.preventDefault();
     const saveBtn = profileForm.querySelector('button[type="submit"]');
@@ -1485,6 +1599,49 @@ function init() {
     if (settingsBackdrop) settingsBackdrop.addEventListener('click', closeSettingsPanel);
     if (profileForm) profileForm.addEventListener('submit', saveProfile);
     if (supervisorForm) supervisorForm.addEventListener('submit', addOrUpdateSupervisor);
+
+    // AI Note Assistant Event Listeners
+    if (saveAiSettingsBtn) {
+        saveAiSettingsBtn.addEventListener('click', () => {
+            if (geminiApiKeyInput) {
+                const key = geminiApiKeyInput.value.trim();
+                localStorage.setItem('gemini_api_key', key);
+                geminiApiKey = key;
+                alert("✨ Gemini API Key saved successfully!");
+            }
+        });
+    }
+
+    if (toggleApiKeyBtn) {
+        toggleApiKeyBtn.addEventListener('click', () => {
+            if (geminiApiKeyInput) {
+                const isPass = geminiApiKeyInput.type === 'password';
+                geminiApiKeyInput.type = isPass ? 'text' : 'password';
+                const icon = toggleApiKeyBtn.querySelector('i');
+                if (icon) {
+                    icon.className = isPass ? 'ph ph-eye-slash text-lg' : 'ph ph-eye text-lg';
+                }
+            }
+        });
+    }
+
+    if (aiAssistBtn) aiAssistBtn.addEventListener('click', handleAiAssist);
+
+    if (aiUndoBtn) {
+        aiUndoBtn.addEventListener('click', () => {
+            const notesField = document.getElementById('notes');
+            if (notesField) {
+                notesField.value = originalNotes;
+            }
+            if (aiUndoBar) aiUndoBar.classList.add('hidden');
+        });
+    }
+
+    if (aiAcceptBtn) {
+        aiAcceptBtn.addEventListener('click', () => {
+            if (aiUndoBar) aiUndoBar.classList.add('hidden');
+        });
+    }
 
     if (supervisorsList) {
         supervisorsList.addEventListener('click', (e) => {
