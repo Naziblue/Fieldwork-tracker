@@ -965,30 +965,87 @@ const handleAiAssist = async () => {
         return;
     }
 
+    const clientName = document.getElementById('client-name')?.value.trim() || 'Client A';
+    const setting = document.getElementById('setting')?.value || 'Clinic';
+    const startTime = document.getElementById('start-time')?.value || '';
+    const endTime = document.getElementById('end-time')?.value || '';
+    const supervisionType = document.getElementById('supervision-type')?.value || 'Unsupervised';
+    const supervisorName = document.getElementById('supervisor-select')?.value || '';
+    const isUnrestricted = activityTypeRadios && activityTypeRadios[1] ? activityTypeRadios[1].checked : false;
+    const unrestrictedCategory = unrestrictedTypeSelect ? unrestrictedTypeSelect.value : '';
+
+    const durationHrs = calculateHours(startTime, endTime);
+    const durationText = durationHrs > 0 ? `${durationHrs.toFixed(2)} hours` : "N/A";
+
     const notesField = document.getElementById('notes');
     if (!notesField) return;
 
     let currentVal = notesField.value.trim();
     let promptText = "";
 
-    if (!currentVal) {
-        // Generate from scratch
-        const inputPrompt = prompt("Enter a few rough words or bullet points about your session (e.g., 'tacting practice, token economy, manding redirection'):");
-        if (!inputPrompt || !inputPrompt.trim()) return;
-        promptText = `You are a professional BCBA (Board Certified Behavior Analyst). 
-Generate a brief, highly professional, BACB-compliant clinical session note based on the following keywords/topics.
-Include realistic clinical details appropriate for a standard ABA session, but keep it concise, clear, and professional.
-Keywords: "${inputPrompt.trim()}"
-Your output must ONLY be the polished note itself, with no conversational preamble, introduction, formatting marks like markdown headers, or quotes. Just plain text.`;
+    if (isUnrestricted) {
+        // --- UNRESTRICTED HOURS PROMPT ---
+        let rawNotes = currentVal;
+        if (!rawNotes) {
+            const inputPrompt = prompt("Enter raw details of what you did (e.g., looked at graphs, updated BIP, trained staff):");
+            if (!inputPrompt || !inputPrompt.trim()) return;
+            rawNotes = inputPrompt.trim();
+        }
+
+        promptText = `Act as an expert Board Certified Behavior Analyst (BCBA) supervisor. Help me write a professional, audit-proof BACB fieldwork activity note for my UNRESTRICTED hours. 
+
+Here are the details of my activity:
+- Client Pseudonym/Initials: ${clientName || 'N/A'}
+- Category of Unrestricted Work: ${unrestrictedCategory || 'Data Analysis / Clinical Task'}
+- Exact Duration: ${durationText}
+- Raw details of what I did: ${rawNotes}
+
+Based on this information, please generate a structured note that includes:
+1. A concise, professional summary of the behavior-analytic activity.
+2. Active, analytical verbs (e.g., analyzed, designed, evaluated, formulated, synthesized) to reflect high-level clinical oversight.
+3. The specific BACB Task List item (6th Edition) that best aligns with this unrestricted activity.
+
+Keep the final note completely objective, concise, formatted perfectly, with no conversational preamble or quotes. Just plain text.`;
     } else {
-        // Improve existing note
-        promptText = `You are a professional BCBA (Board Certified Behavior Analyst). 
-Your task is to take the rough, informal notes of a behavioral session or supervised fieldwork experience and rewrite them into a professional, clinical, BACB-compliant note.
-Keep the exact same facts, data points, and client details, but use correct ABA terminology (e.g., replacement behavior, schedules of reinforcement, antecedent manipulation, prompt hierarchy, data collection).
-Be concise, clear, and highly professional. Avoid personal opinions or informal phrasing.
-Your output must ONLY be the polished note itself, with no conversational preamble, introduction, formatting marks like markdown headers, or quotes. Just plain text.
-Rough note to rewrite:
-"${currentVal}"`;
+        // --- RESTRICTED HOURS PROMPT ---
+        let rawNotes = currentVal;
+        let targetedSkills = "";
+
+        if (!rawNotes) {
+            const inputPrompt = prompt("What you actually did (e.g., played with blocks, gave tokens, did flashcards):");
+            if (!inputPrompt || !inputPrompt.trim()) return;
+            rawNotes = inputPrompt.trim();
+
+            const skillsPrompt = prompt("Skills or Behaviors Targeted (e.g., Manding, reducing aggression):");
+            targetedSkills = skillsPrompt ? skillsPrompt.trim() : "Manding / Social Skills";
+        } else {
+            targetedSkills = "Extracted from raw notes.";
+        }
+
+        const supervisorText = supervisionType.includes('Supervised') || supervisionType.includes('Observation')
+            ? `Supervisor ${supervisorName || 'BCBA'} observed the session and provided feedback.`
+            : "Direct service session.";
+
+        promptText = `Act as an expert Board Certified Behavior Analyst (BCBA) supervisor. Help me write a professional, audit-proof BACB fieldwork activity note for my restricted hours. 
+
+Never copy/paste: Write unique, case-specific activities for every entry to protect confidentiality.
+Include context: Always reference the specific curriculum, program, or behavior plan being addressed.
+Ties to supervision: If the activity involved a supervisor, make sure to note if they observed you and the feedback provided.
+
+Here are the details of the session:
+- Client Pseudonym/Initials: ${clientName || 'Client A'}
+- Setting: ${setting || 'Clinic'}
+- Exact Duration: ${durationText}
+- Skills or Behaviors Targeted: ${targetedSkills}
+- What I actually did: ${rawNotes}
+- Supervision Ties: ${supervisorText}
+
+Based on this information, please generate a structured note that includes:
+1. A concise, professional summary of the direct service provided.
+2. Clear behavioral language (avoiding mentalisms or subjective terms).
+3. The specific BACB Task List item (6th Edition) that best aligns with this restricted activity.
+
+Keep the final note objective, concise, and ready, with no conversational preamble or quotes. Just plain text.`;
     }
 
     // Set UI to loading state
