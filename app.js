@@ -1593,6 +1593,11 @@ function init() {
     console.log("App.js: Initializing application...");
 
     initDOMElements();
+
+    // Initialize interactive dynamic particle backgrounds
+    initInteractiveParticles('login-particles-canvas');
+    initInteractiveParticles('role-particles-canvas');
+
     setupTableHeaders();
 
     const app = initializeApp(firebaseConfig);
@@ -1838,6 +1843,255 @@ function init() {
     });
 
     console.log("App.js: Initialization complete");
+}
+
+// --- 3D Interactive Particle Engine ---
+function initInteractiveParticles(canvasId) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) {
+        console.warn(`[Particles] Canvas not found: #${canvasId}`);
+        return;
+    }
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let width = canvas.width = window.innerWidth;
+    let height = canvas.height = window.innerHeight;
+    let dpr = window.devicePixelRatio || 1;
+
+    function resize() {
+        const rect = canvas.getBoundingClientRect();
+        width = rect.width;
+        height = rect.height;
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        ctx.scale(dpr, dpr);
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    const mouse = { x: null, y: null, targetX: null, targetY: null, radius: 180, active: false };
+
+    // Capture mouse/touch positions
+    const container = canvas.parentElement || window;
+
+    container.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        mouse.targetX = e.clientX - rect.left;
+        mouse.targetY = e.clientY - rect.top;
+        mouse.active = true;
+    });
+
+    container.addEventListener('mouseleave', () => {
+        mouse.targetX = null;
+        mouse.targetY = null;
+        mouse.active = false;
+    });
+
+    container.addEventListener('touchmove', (e) => {
+        if (e.touches.length > 0) {
+            const rect = canvas.getBoundingClientRect();
+            mouse.targetX = e.touches[0].clientX - rect.left;
+            mouse.targetY = e.touches[0].clientY - rect.top;
+            mouse.active = true;
+        }
+    }, { passive: true });
+
+    container.addEventListener('touchend', () => {
+        mouse.targetX = null;
+        mouse.targetY = null;
+        mouse.active = false;
+    });
+
+    // Create particles centered asymmetrically
+    const particles = [];
+    const isRoleSelection = canvasId === 'role-particles-canvas';
+    
+    // Scale count by screen area for perfect density
+    const baseCount = isRoleSelection ? 160 : 190;
+    const particleCount = Math.min(220, Math.max(70, Math.floor((width * height) / 7500) + baseCount));
+
+    for (let i = 0; i < particleCount; i++) {
+        // Spiral vortex in 3D
+        const ratio = i / particleCount;
+        const angle = ratio * Math.PI * 18; // Swirling spiral wraps
+        const orbitRadius = 60 + ratio * 480; // Distance from orbit center
+        
+        // 3D coordinates
+        const x3d = Math.cos(angle) * orbitRadius;
+        const z3d = Math.sin(angle) * orbitRadius;
+        // Curved elevation grid pattern with random scatter
+        const y3d = (Math.sin(orbitRadius * 0.02) * 55) + (Math.random() - 0.5) * 12;
+
+        const colorVal = Math.random();
+        let hue = 330;
+        if (colorVal < 0.25) hue = 330; // Pink
+        else if (colorVal < 0.5) hue = 270; // Purple
+        else if (colorVal < 0.75) hue = 210; // Blue
+        else hue = 175; // Teal
+
+        particles.push({
+            x3d: x3d,
+            y3d: y3d,
+            z3d: z3d,
+            x: 0,
+            y: 0,
+            vx: 0,
+            vy: 0,
+            radius: 1.0 + Math.random() * 2.5,
+            hue: hue,
+            alpha: 0.25 + Math.random() * 0.55
+        });
+    }
+
+    const parentView = canvas.closest('#login-view, #role-selection-view');
+    function isViewVisible() {
+        if (!parentView) return true;
+        return !parentView.classList.contains('hidden') && parentView.style.display !== 'none';
+    }
+
+    const fov = 450;
+    const rotationSpeedY = 0.0012;
+    const rotationSpeedX = 0.0004;
+
+    const cosY = Math.cos(rotationSpeedY);
+    const sinY = Math.sin(rotationSpeedY);
+    const cosX = Math.cos(rotationSpeedX);
+    const sinX = Math.sin(rotationSpeedX);
+
+    function tick() {
+        const isLight = document.body.classList.contains('light-mode');
+
+        // Interpolate mouse coordinates smoothly
+        if (mouse.targetX !== null && mouse.targetY !== null) {
+            if (mouse.x === null) {
+                mouse.x = mouse.targetX;
+                mouse.y = mouse.targetY;
+            } else {
+                mouse.x += (mouse.targetX - mouse.x) * 0.12;
+                mouse.y += (mouse.targetY - mouse.y) * 0.12;
+            }
+        } else {
+            mouse.x = null;
+            mouse.y = null;
+        }
+
+        const centerX = isRoleSelection ? width * 0.5 : width * 0.72;
+        const centerY = height * 0.45;
+
+        ctx.clearRect(0, 0, width, height);
+
+        // Update, project and sort particles by 3D depth (z3d)
+        particles.forEach(p => {
+            // Apply slow 3D rotation
+            // Rotate around Y-axis
+            const x1 = p.x3d * cosY - p.z3d * sinY;
+            const z1 = p.z3d * cosY + p.x3d * sinY;
+            
+            // Rotate around X-axis
+            const y2 = p.y3d * cosX - z1 * sinX;
+            const z2 = z1 * cosX + p.y3d * sinX;
+
+            p.x3d = x1;
+            p.y3d = y2;
+            p.z3d = z2;
+
+            // Project onto 2D viewport
+            const scale = fov / (fov + p.z3d + 200);
+            const target2dX = centerX + p.x3d * scale;
+            const target2dY = centerY + p.y3d * scale;
+
+            if (p.x === 0 && p.y === 0) {
+                p.x = target2dX;
+                p.y = target2dY;
+            }
+
+            // Mouse interaction forces
+            let forceX = 0;
+            let forceY = 0;
+
+            if (mouse.x !== null && mouse.y !== null) {
+                const dx = p.x - mouse.x;
+                const dy = p.y - mouse.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < mouse.radius) {
+                    const strength = (mouse.radius - dist) / mouse.radius;
+                    
+                    // Repel force
+                    const repForce = 4.2;
+                    const pushX = (dx / (dist || 1)) * strength * repForce;
+                    const pushY = (dy / (dist || 1)) * strength * repForce;
+
+                    // Swirling fluid flow force
+                    const swirlForce = 3.6;
+                    const swirlX = (-dy / (dist || 1)) * strength * swirlForce;
+                    const swirlY = (dx / (dist || 1)) * strength * swirlForce;
+
+                    forceX += pushX + swirlX;
+                    forceY += pushY + swirlY;
+                }
+            }
+
+            // Return-to-home spring physics
+            const spring = 0.04;
+            const friction = 0.88;
+
+            const ax = (target2dX - p.x) * spring;
+            const ay = (target2dY - p.y) * spring;
+
+            p.vx = (p.vx + ax + forceX) * friction;
+            p.vy = (p.vy + ay + forceY) * friction;
+
+            p.x += p.vx;
+            p.y += p.vy;
+        });
+
+        // Depth sorting
+        const sorted = [...particles].sort((a, b) => b.z3d - a.z3d);
+
+        // Draw particles
+        sorted.forEach(p => {
+            const scale = fov / (fov + p.z3d + 200);
+            const drawRadius = p.radius * scale * (isLight ? 0.9 : 1.2);
+
+            let alpha = p.alpha;
+            let lightness = 65;
+            let saturation = 90;
+
+            if (isLight) {
+                alpha = p.alpha * 0.4;
+                lightness = 55;
+                saturation = 75;
+            } else {
+                alpha = p.alpha * 0.8;
+                lightness = 65;
+                saturation = 95;
+            }
+
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, Math.max(0.35, drawRadius), 0, Math.PI * 2);
+            ctx.fillStyle = `hsla(${p.hue}, ${saturation}%, ${lightness}%, ${alpha})`;
+
+            if (!isLight) {
+                ctx.shadowColor = `hsla(${p.hue}, ${saturation}%, ${lightness}%, ${alpha * 0.45})`;
+                ctx.shadowBlur = drawRadius * 2.2;
+            } else {
+                ctx.shadowBlur = 0;
+            }
+
+            ctx.fill();
+        });
+
+        ctx.shadowBlur = 0;
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+        if (!isViewVisible()) return;
+        tick();
+    }
+    animate();
 }
 
 // Start the app

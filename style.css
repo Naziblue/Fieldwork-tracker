@@ -674,3 +674,25 @@ select.bg-transparent {
 .light-mode .option-description {
     color: #475569 !important; /* Slate 600 - high legibility in Light mode */
 }
+
+/* ==========================================================================
+   🌌 INTERACTIVE PARTICLES OVERLAY STYLES 🌌
+   ========================================================================== */
+#login-particles-canvas,
+#role-particles-canvas {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    pointer-events: none !important;
+    z-index: 1 !important; /* Above the dark backdrops, below the main cards */
+}
+
+/* Enforce card layers on top of particle canvases */
+#login-view > div.glass-panel,
+#login-view > div.relative.glass-panel,
+#role-selection-view > div.role-selection-panel {
+    position: relative !important;
+    z-index: 10 !important;
+}

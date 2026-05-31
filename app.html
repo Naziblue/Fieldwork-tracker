@@ -44,7 +44,7 @@
 
     <script src="tailwind-config.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="style.css?v=gorgeous_roles">
+    <link rel="stylesheet" href="style.css?v=antigravity_particles">
 </head>
 
 <body class="bg-background text-text antialiased h-screen overflow-hidden flex flex-col md:flex-row">
@@ -53,6 +53,7 @@
     <div id="login-view"
         class="fixed inset-0 z-50 flex items-center justify-center bg-[url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop')] bg-cover bg-center">
         <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm"></div>
+        <canvas id="login-particles-canvas" class="absolute inset-0 w-full h-full pointer-events-none z-0"></canvas>
 
         <div
             class="relative glass-panel p-8 rounded-2xl max-w-md w-full mx-4 animate-fade-in shadow-2xl border border-white/10">
@@ -98,6 +99,7 @@
     <!-- Role Selection View (Hidden by default) -->
     <div id="role-selection-view"
         class="fixed inset-0 z-50 hidden flex items-center justify-center transition-colors duration-300">
+        <canvas id="role-particles-canvas" class="absolute inset-0 w-full h-full pointer-events-none z-0"></canvas>
         <div class="role-selection-panel p-8 rounded-3xl max-w-2xl w-full mx-4 shadow-2xl transition-all duration-300 transform">
             <div class="text-center mb-10">
                 <div class="flex justify-center mb-4">
@@ -839,7 +841,7 @@
     <!-- We are removing the old edit modal and using the slide-over for both add and edit -->
     <div id="edit-modal" class="hidden"></div>
 
-    <script type="module" src="app.js?v=ai_assist_v6"></script>
+    <script type="module" src="app.js?v=antigravity_particles"></script>
 </body>
 
 </html>
