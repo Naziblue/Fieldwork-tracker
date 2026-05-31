@@ -538,14 +538,12 @@ const createStatCard = (title, value, subtext, iconClass, colorClass) => `
     </div>
 `;
 
-const createSummaryHTML = (data, allTimeTotal) => {
+const createSummaryHTML = (data, allTimeTotal, isMonthly = false) => {
     const isConcentrated = profileData.fieldworkType === 'Concentrated';
     const totalGoal = isConcentrated ? 1500 : 2000;
     // 2027 Change: Concentrated supervision reduced to 7.5%
     const supervisionGoal = isConcentrated ? 7.5 : 5;
-    const observationGoal = isConcentrated ? 90 : 60; // Minutes
-
-    const hoursRemaining = Math.max(0, totalGoal - allTimeTotal).toFixed(2);
+    const observationGoal = isConcentrated ? 90 : 90; // 90 minutes observations
 
     // Supervision status
     const supervisionStatus = data.percentage >= supervisionGoal
@@ -557,9 +555,9 @@ const createSummaryHTML = (data, allTimeTotal) => {
         ? `<span class="text-green-400">OK</span>`
         : `<span class="text-red-400">Low</span>`;
 
-    // Monthly Cap Warning (2027: 160 hours)
+    // Monthly Cap Warning (2027: 160 hours, only for monthly view)
     let totalTitle = 'Total Hours';
-    if (data.total > 160) {
+    if (isMonthly && data.total > 160) {
         totalTitle = `Total Hours <span class="text-red-400 text-[10px] ml-1 animate-pulse">(! >160h)</span>`;
     }
 
@@ -676,7 +674,7 @@ const updateMonthlyView = () => {
     });
     const allTimeTotal = calculateSummaryData(allEntries).total;
     const summaryData = calculateSummaryData(monthlyEntries);
-    monthlySummaryGrid.innerHTML = createSummaryHTML(summaryData, allTimeTotal);
+    monthlySummaryGrid.innerHTML = createSummaryHTML(summaryData, allTimeTotal, true);
     updateAlerts(summaryData, 'monthly-alerts');
     renderTable(monthlyEntries, logTableBody);
 };
