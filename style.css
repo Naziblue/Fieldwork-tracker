@@ -512,3 +512,165 @@ select.bg-transparent {
         box-shadow: 0 0 15px rgba(219, 39, 119, 0.6) !important;
     }
 }
+
+/* ==========================================================================
+   🚀 ROLE SELECTION SCREEN OVERHAUL (100X BETTER DESIGN) 🚀
+   ========================================================================== */
+
+/* 1. Backdrop Overlay depending on Active Theme */
+#role-selection-view {
+    background: radial-gradient(circle at center, #0f172a 0%, #020617 100%) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+}
+
+.light-mode #role-selection-view {
+    background: radial-gradient(circle at center, #f8fafc 0%, #e2e8f0 100%) !important;
+}
+
+/* 2. Glassmorphic Role Panel Container */
+.role-selection-panel {
+    background: rgba(15, 23, 42, 0.45) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+    animation: role-selection-bounce-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+.light-mode .role-selection-panel {
+    background: rgba(255, 255, 255, 0.75) !important;
+    border: 1px solid rgba(99, 102, 241, 0.1) !important;
+    box-shadow: 0 25px 60px -12px rgba(99, 102, 241, 0.08) !important;
+}
+
+@keyframes role-selection-bounce-in {
+    0% {
+        opacity: 0;
+        transform: scale(0.95) translateY(15px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Logo glow */
+.logo-glow {
+    filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.25));
+}
+
+/* Typography controls with exact theme safety */
+.selection-title {
+    color: #ffffff !important;
+}
+.light-mode .selection-title {
+    color: #0f172a !important;
+}
+
+.selection-subtitle {
+    color: #94a3b8 !important;
+}
+.light-mode .selection-subtitle {
+    color: #475569 !important;
+}
+
+/* 3. Role Options Cards with Glowing Custom Hover States */
+.role-option-card {
+    background: rgba(30, 41, 59, 0.4) !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+.light-mode .role-option-card {
+    background: #ffffff !important;
+    border: 1px solid rgba(0, 0, 0, 0.06) !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02) !important;
+}
+
+/* Trainee specific Hover effects */
+.trainee-card:hover {
+    background: rgba(219, 39, 119, 0.03) !important; /* Soft Pink tint */
+    border-color: rgba(219, 39, 119, 0.35) !important;
+    box-shadow: 0 0 30px rgba(219, 39, 119, 0.15) !important;
+    transform: translateY(-4px) scale(1.01) !important;
+}
+
+.light-mode .trainee-card:hover {
+    background: rgba(219, 39, 119, 0.02) !important;
+    border-color: rgba(219, 39, 119, 0.4) !important;
+    box-shadow: 0 8px 30px rgba(219, 39, 119, 0.08) !important;
+}
+
+/* Supervisor specific Hover effects */
+.supervisor-card:hover {
+    background: rgba(139, 92, 246, 0.03) !important; /* Soft Purple tint */
+    border-color: rgba(139, 92, 246, 0.35) !important;
+    box-shadow: 0 0 30px rgba(139, 92, 246, 0.15) !important;
+    transform: translateY(-4px) scale(1.01) !important;
+}
+
+.light-mode .supervisor-card:hover {
+    background: rgba(139, 92, 246, 0.02) !important;
+    border-color: rgba(139, 92, 246, 0.4) !important;
+    box-shadow: 0 8px 30px rgba(139, 92, 246, 0.08) !important;
+}
+
+/* Icons Box glow */
+.role-icon-box {
+    width: 56px !important;
+    height: 56px !important;
+    border-radius: 16px !important;
+    transition: all 0.3s ease !important;
+}
+
+.trainee-icon {
+    background-color: rgba(219, 39, 119, 0.1) !important;
+    color: #f472b6 !important;
+    border: 1px solid rgba(219, 39, 119, 0.2) !important;
+}
+
+.light-mode .trainee-icon {
+    background-color: rgba(219, 39, 119, 0.08) !important;
+    color: #db2777 !important;
+    border: 1px solid rgba(219, 39, 119, 0.15) !important;
+}
+
+.supervisor-icon {
+    background-color: rgba(139, 92, 246, 0.1) !important;
+    color: #c084fc !important;
+    border: 1px solid rgba(139, 92, 246, 0.2) !important;
+}
+
+.light-mode .supervisor-icon {
+    background-color: rgba(139, 92, 246, 0.08) !important;
+    color: #7c3aed !important;
+    border: 1px solid rgba(139, 92, 246, 0.15) !important;
+}
+
+/* Scaling icons on hover */
+.role-option-card:hover .role-icon-box {
+    transform: scale(1.1) rotate(2deg) !important;
+}
+
+/* Option Titles & Descriptions */
+.option-title {
+    color: #ffffff !important;
+    font-size: 1.25rem !important;
+    letter-spacing: -0.01em !important;
+}
+
+.light-mode .option-title {
+    color: #0f172a !important;
+}
+
+/* OPTION DESCRIPTION: Crucial fix for 100% legibility in both modes */
+.option-description {
+    color: #94a3b8 !important; /* Slate 400 - high legibility in Dark mode */
+}
+
+.light-mode .option-description {
+    color: #475569 !important; /* Slate 600 - high legibility in Light mode */
+}
