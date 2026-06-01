@@ -1452,7 +1452,23 @@ const updateSupervisorDashboard = async () => {
         renderTraineesList();
     } catch (error) {
         console.error("Error updating supervisor dashboard:", error);
-        traineesList.innerHTML = '<div class="p-4 text-center text-red-400">Error loading trainees.</div>';
+        if (error.code === 'permission-denied') {
+            traineesList.innerHTML = `
+                <div class="p-5 rounded-2xl bg-red-500/10 border border-red-500/25 text-center py-8">
+                    <i class="ph ph-warning-circle text-3xl text-red-400 mb-3 block"></i>
+                    <p class="text-sm font-bold text-red-400 mb-1">Database Access Denied</p>
+                    <p class="text-xs text-slate-300 mt-2 leading-relaxed px-4">
+                        Your Firebase Security Rules are blocking supervisors from loading trainee documents.
+                    </p>
+                    <div class="mt-4">
+                        <a href="DB_UPDATE_INSTRUCTIONS.md" class="inline-block bg-red-500/20 hover:bg-red-500/35 border border-red-500/40 text-red-300 text-xs font-semibold py-2 px-4 rounded-xl transition-all" target="_blank">
+                            <i class="ph ph-shield-warning mr-1"></i> Read Update Instructions
+                        </a>
+                    </div>
+                </div>`;
+        } else {
+            traineesList.innerHTML = `<div class="p-4 text-center text-red-400">Error loading trainees: ${error.message}</div>`;
+        }
     }
 };
 

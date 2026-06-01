@@ -20,26 +20,36 @@ service cloud.firestore {
     // --- NEW: Professional User Collections ---
     
     // 1. Users Collection (Root Level)
-    // Allow users to read/write ONLY their own profile
+    // Allow users to read/write ONLY their own profile.
+    // Allow Supervisors to read a trainee's profile if their email is in the trainee's supervisorEmails array.
+    // Allow Admin to read all profiles (for the Admin Portal).
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-      
-      // Allow Admin to read all profiles (for the Admin Portal)
-      allow read: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null && (
+        request.auth.uid == userId ||
+        (resource != null && request.auth.token.email in resource.data.supervisorEmails) ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
     }
 
     // 2. Entries Subcollection
-    // Allow users to read/write ONLY their own entries
+    // Allow users to read/write ONLY their own entries.
+    // Allow Supervisors to read their trainees' entries if their email is in the trainee's profile supervisorEmails array.
     match /users/{userId}/entries/{entryId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-      
-      // Allow Supervisors to read their trainees' entries
-      // (This requires a complex query, for now we allow the owner)
+      allow write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null && (
+        request.auth.uid == userId ||
+        request.auth.token.email in get(/databases/$(database)/documents/users/$(userId)).data.supervisorEmails
+      );
     }
     
     // 3. Verifications
+    // Allow trainees and their linked supervisors to read/write FVF digital signature verifications.
     match /users/{userId}/verifications/{verifId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if request.auth != null && (
+        request.auth.uid == userId ||
+        request.auth.token.email in get(/databases/$(database)/documents/users/$(userId)).data.supervisorEmails
+      );
     }
 
     // --- NEW: Requested Collections (Initialize & Admin Only) ---
