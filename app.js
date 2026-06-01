@@ -447,9 +447,33 @@ const removeSupervisor = async (name) => {
     }
 };
 
+// Data migration helper for legacy explanations
+const migrateLegacyExplanations = (entries) => {
+    if (!entries || !Array.isArray(entries)) return [];
+    return entries.map(entry => {
+        const legacyText = entry.unrestrictedExplanation || entry.explanation;
+        if (legacyText && !entry.notes) {
+            entry.notes = legacyText;
+        }
+        return entry;
+    });
+};
+
 // --- Local Storage Functions ---
 const loadDataFromLocalStorage = () => {
-    allEntries = JSON.parse(localStorage.getItem('fieldwork_entries')) || [];
+    const raw = JSON.parse(localStorage.getItem('fieldwork_entries')) || [];
+    let migrated = false;
+    allEntries = raw.map(entry => {
+        const legacyText = entry.unrestrictedExplanation || entry.explanation;
+        if (legacyText && !entry.notes) {
+            entry.notes = legacyText;
+            migrated = true;
+        }
+        return entry;
+    });
+    if (migrated) {
+        saveEntriesToLocalStorage();
+    }
     profileData = JSON.parse(localStorage.getItem('fieldwork_profile')) || { name: 'Guest User', rbtNumber: '', supervisors: [], fieldworkType: 'Supervised' };
 
     document.getElementById('trainee-name').value = profileData.name;
@@ -1361,7 +1385,7 @@ const setupTraineeListeners = () => {
     if (unsubscribeEntries) unsubscribeEntries();
     const entriesRef = collection(db, `users/${userId}/entries`);
     unsubscribeEntries = onSnapshot(entriesRef, (snapshot) => {
-        allEntries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        allEntries = migrateLegacyExplanations(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
         console.log(`[DEBUG] Loaded ${allEntries.length} entries. First entry:`, allEntries[0]);
         const activeView = document.querySelector('.view-btn.bg-white\\/10')?.dataset.view || 'monthly';
         if (activeView !== 'supervisor-dashboard') switchView(activeView);
@@ -1444,7 +1468,7 @@ const selectTrainee = async (traineeId) => {
 
     const entriesRef = collection(db, `users/${traineeId}/entries`);
     const snapshot = await getDocs(entriesRef);
-    const entries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const entries = migrateLegacyExplanations(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
 
     renderTraineeReview(entries);
 };
