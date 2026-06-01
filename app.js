@@ -1983,13 +1983,8 @@ function init() {
     }
 
     // Exports & PDF
-    if (generateMfvfBtn) generateMfvfBtn.addEventListener('click', async () => {
-        if (profileData.supervisors && profileData.supervisors.length > 0) {
-            mfvfModal.classList.remove('hidden');
-        } else {
-            await CustomModal.alert("Please add at least one supervisor in Settings first.", "Supervisor Required");
-            openSettingsPanel();
-        }
+    if (generateMfvfBtn) generateMfvfBtn.addEventListener('click', () => {
+        window.open('https://www.bacb.com/wp-content/uploads/2025/03/2027-Monthly-Fieldwork-Verification-Form-Individual_260213-2-a.pdf', '_blank');
     });
 
     if (exportMonthlyCsvBtn) exportMonthlyCsvBtn.addEventListener('click', () => {
