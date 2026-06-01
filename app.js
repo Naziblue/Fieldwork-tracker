@@ -926,20 +926,27 @@ const handleGuestLogin = async () => {
         console.log("App.js: Hiding login view");
         loginView.classList.add('hidden');
 
-        // 2. Show App
-        console.log("App.js: Showing app container");
-        appContainer.classList.remove('hidden');
-
-        // 3. Update UI
-        userDisplay.textContent = 'Guest User';
-
-        // 4. Load Data
+        // 2. Load Data first to check profile settings
         console.log("App.js: Loading local storage data");
         loadDataFromLocalStorage();
 
-        // 5. Switch View
-        console.log("App.js: Switching to monthly view");
-        await switchView('monthly');
+        // 3. Update UI identity
+        userDisplay.textContent = 'Guest User';
+
+        // 4. Route based on role existence
+        if (!profileData.role) {
+            console.log("App.js: Guest has no role selected yet, directing to role selection screen");
+            if (appContainer) appContainer.classList.add('hidden');
+            if (roleSelectionView) roleSelectionView.classList.remove('hidden');
+        } else {
+            console.log("App.js: Guest role loaded:", profileData.role);
+            if (roleSelectionView) roleSelectionView.classList.add('hidden');
+            if (appContainer) appContainer.classList.remove('hidden');
+            setupUIByRole(profileData.role);
+            if (profileData.role === 'trainee') setupTraineeListeners();
+            else setupSupervisorListeners();
+            await switchView('monthly');
+        }
 
         console.log("App.js: Guest login complete");
     } catch (e) {
@@ -1329,37 +1336,66 @@ const exportToCsv = (entries, summaryData, filename) => {
 // --- Role-based UI Functions ---
 const handleRoleSelection = async (role) => {
     if (!userId) return;
+
+    console.log(`[DEBUG] handleRoleSelection called with role: ${role}, userId: ${userId}`);
+
+    if (userId === 'guest') {
+        // Handle Guest Role Selection purely client-side
+        profileData = {
+            role: role,
+            name: 'Guest User',
+            rbtNumber: '',
+            supervisors: [],
+            fieldworkType: 'Supervised'
+        };
+        saveProfileToLocalStorage();
+        
+        // Hide selection, show app
+        if (roleSelectionView) roleSelectionView.classList.add('hidden');
+        if (appContainer) appContainer.classList.remove('hidden');
+        
+        // Setup UI for Guest
+        setupUIByRole(role);
+        if (role === 'trainee') {
+            setupTraineeListeners();
+        } else {
+            setupSupervisorListeners();
+        }
+        
+        if (userRoleDisplay) userRoleDisplay.textContent = role === 'supervisor' ? 'Supervisor' : 'Trainee';
+        renderSupervisors();
+        return;
+    }
+
+    // For Authenticated Firebase Users
     const profileRef = doc(db, `users/${userId}`);
     const user = auth.currentUser;
+    if (!user) {
+        console.error("No authenticated user found for role selection.");
+        return;
+    }
 
     try {
-        // Create professional user profile
-        const profileData = {
-            // Core Identity
+        const newProfile = {
             role: role,
-            email: user.email,
+            email: user.email || '',
             name: user.displayName || 'New User',
             photoURL: user.photoURL || null,
-
-            // Business Logic (Free vs VIP)
-            planType: 'free',       // Default to Free entry level
-            isVip: false,           // Boolean for easy checks
-            status: 'active',       // active, suspended, pending
-
-            // Timestamps
+            planType: 'free',
+            isVip: false,
+            status: 'active',
             registeredAt: new Date().toISOString(),
             lastLoginAt: new Date().toISOString(),
-
-            // Metadata
             version: '1.0'
         };
 
-        await setDoc(profileRef, profileData, { merge: true });
+        await setDoc(profileRef, newProfile, { merge: true });
 
         if (roleSelectionView) roleSelectionView.classList.add('hidden');
         if (appContainer) appContainer.classList.remove('hidden');
     } catch (error) {
         console.error("Error saving role and profile:", error);
+        await CustomModal.alert("Error saving profile: " + error.message, "Profile Save Error");
     }
 };
 
