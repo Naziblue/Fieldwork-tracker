@@ -1533,6 +1533,35 @@ const renderTraineeReview = async (entries) => {
 
     if (!reviewMonthSelector) return;
 
+    if (!entries || entries.length === 0) {
+        // Handle empty cloud log states gracefully
+        reviewMonthSelector.innerHTML = '<option value="">No Months Available</option>';
+        if (signMonthBtn) {
+            signMonthBtn.innerHTML = '<i class="ph-fill ph-pencil-line"></i> Digitally Sign Month';
+            signMonthBtn.classList.add('bg-primary');
+            signMonthBtn.classList.remove('bg-green-500');
+            signMonthBtn.disabled = true;
+        }
+        if (reviewStatsGrid) {
+            reviewStatsGrid.innerHTML = `
+                ${createStatCard('Total', '0.00', null, 'ph ph-clock', 'bg-blue-500 text-blue-400')}
+                ${createStatCard('Restricted', '0.00', null, 'ph ph-hand-heart', 'bg-pink-500 text-pink-400')}
+                ${createStatCard('Unrestricted', '0.00', null, 'ph ph-brain', 'bg-purple-500 text-purple-400')}
+                ${createStatCard('Supervised', '0.00', '0.0%', 'ph ph-users-three', 'bg-teal-500 text-teal-400')}
+            `;
+        }
+        if (reviewTableBody) {
+            reviewTableBody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="px-4 py-8 text-center text-text-muted">
+                        <i class="ph ph-note-blank text-3xl mb-2 block mx-auto opacity-30"></i>
+                        No activities logged by this trainee in the cloud yet.
+                    </td>
+                </tr>`;
+        }
+        return;
+    }
+
     const months = [...new Set(entries.map(e => dayjs(e.date).format('YYYY-MM')))].sort().reverse();
     reviewMonthSelector.innerHTML = months.map(m => `<option value="${m}">${dayjs(m).format('MMMM YYYY')}</option>`).join('');
 
