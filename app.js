@@ -467,14 +467,15 @@ const saveProfileToLocalStorage = () => {
 };
 
 // --- Core App Logic ---
-const switchView = (viewId) => {
+const switchView = async (viewId) => {
     console.log("App.js: switching view to variables", viewId);
     try {
         views.forEach(view => view.classList.add('hidden'));
         const targetView = document.getElementById(`${viewId}-view`);
         if (targetView) targetView.classList.remove('hidden');
-        else console.error(`View element ${viewId}-view not found`);
+        else console.warn("App.js: switchView target not found:", viewId);
 
+        // Sidebar active states
         viewBtns.forEach(btn => {
             const isActive = btn.dataset.view === viewId;
             if (isActive) {
@@ -493,7 +494,7 @@ const switchView = (viewId) => {
         }
     } catch (e) {
         console.error("Error in switchView:", e);
-        alert("Error rendering view: " + e.message);
+        await CustomModal.alert("Error rendering view: " + e.message, "View Error");
     }
 };
 
@@ -850,7 +851,7 @@ const handleSaveEntry = async () => {
 
 const handleDeleteEntry = async () => {
     const entryId = document.getElementById('entry-id').value;
-    if (!entryId || !confirm("Delete this entry permanently?")) return;
+    if (!entryId || !(await CustomModal.confirm("Delete this entry permanently?", "Confirm Deletion"))) return;
 
     if (userId === 'guest') {
         allEntries = allEntries.filter(e => e.id !== entryId);
@@ -887,7 +888,7 @@ const handleTableClick = (e) => {
     if (entry) openSlideOver('edit', entry);
 };
 
-const handleGuestLogin = () => {
+const handleGuestLogin = async () => {
     // alert("Guest Login Clicked! Attempting to load dashboard...");
     console.log("App.js: Guest login started");
     try {
@@ -914,12 +915,12 @@ const handleGuestLogin = () => {
 
         // 5. Switch View
         console.log("App.js: Switching to monthly view");
-        switchView('monthly');
+        await switchView('monthly');
 
         console.log("App.js: Guest login complete");
     } catch (e) {
         console.error("App.js: Guest login failed:", e);
-        alert("Login Error: " + e.message);
+        await CustomModal.alert("Login Error: " + e.message, "Login Error");
         // Attempt recovery
         loginView.classList.remove('hidden');
         appContainer.classList.add('hidden');
@@ -958,7 +959,7 @@ const callGemini = async (apiKey, prompt) => {
 
 const handleAiAssist = async () => {
     if (!geminiApiKey) {
-        alert("✨ AI Assist requires a Gemini API Key!\n\nPlease open Settings (gear icon) and add your key in the 'AI Note Assistant' section.");
+        await CustomModal.alert("✨ AI Assist requires a Gemini API Key!\n\nPlease open Settings (gear icon) and add your key in the 'AI Note Assistant' section.", "API Key Required");
         openSettingsPanel();
         return;
     }
@@ -985,7 +986,7 @@ const handleAiAssist = async () => {
         // --- UNRESTRICTED HOURS PROMPT ---
         let rawNotes = currentVal;
         if (!rawNotes) {
-            const inputPrompt = prompt("Enter raw details of what you did (e.g., looked at graphs, updated BIP, trained staff):");
+            const inputPrompt = await CustomModal.prompt("Enter raw details of what you did (e.g., looked at graphs, updated BIP, trained staff):", "e.g., analyzed graph data, reviewed BIP criteria, etc.", "Clinical Work Details");
             if (!inputPrompt || !inputPrompt.trim()) return;
             rawNotes = inputPrompt.trim();
         }
@@ -1010,11 +1011,11 @@ Keep the final note completely objective, concise, formatted perfectly, with no 
         let targetedSkills = "";
 
         if (!rawNotes) {
-            const inputPrompt = prompt("What you actually did (e.g., played with blocks, gave tokens, did flashcards):");
+            const inputPrompt = await CustomModal.prompt("What you actually did (e.g., played with blocks, gave tokens, did flashcards):", "e.g., delivered direct instruction, matching tasks, token reinforcement", "Session Details");
             if (!inputPrompt || !inputPrompt.trim()) return;
             rawNotes = inputPrompt.trim();
 
-            const skillsPrompt = prompt("Skills or Behaviors Targeted (e.g., Manding, reducing aggression):");
+            const skillsPrompt = await CustomModal.prompt("Skills or Behaviors Targeted (e.g., Manding, reducing aggression):", "e.g., manding, motor imitation, reduction of task-avoidance", "Targeted Skills");
             targetedSkills = skillsPrompt ? skillsPrompt.trim() : "Manding / Social Skills";
         } else {
             targetedSkills = "Extracted from raw notes.";
@@ -1074,11 +1075,11 @@ Keep the final note objective, concise, and ready, with no conversational preamb
             // Show Undo / Accept Bar
             if (aiUndoBar) aiUndoBar.classList.remove('hidden');
         } else {
-            alert("Sorry, Gemini returned an empty response. Please try again.");
+            await CustomModal.alert("Sorry, Gemini returned an empty response. Please try again.", "Empty Response");
         }
     } catch (e) {
         console.error("AI Assist error:", e);
-        alert("AI Assist failed: " + e.message);
+        await CustomModal.alert("AI Assist failed: " + e.message, "AI Assist Failed");
     } finally {
         // Reset loading states
         aiAssistBtn.disabled = false;
@@ -1529,8 +1530,8 @@ const setupSupervisorListeners = () => {
     const signMonthBtn = document.getElementById('sign-month-btn');
 
     if (addTraineeBtn) {
-        addTraineeBtn.addEventListener('click', () => {
-            alert("Trainees must add your email in their Settings > Profile to link with you.");
+        addTraineeBtn.addEventListener('click', async () => {
+            await CustomModal.alert("Trainees must add your email in their Settings > Profile to link with you.", "Link Trainee");
             updateSupervisorDashboard();
         });
     }
@@ -1553,20 +1554,188 @@ const setupSupervisorListeners = () => {
                     supervisorName,
                     month
                 }, { merge: true });
-                alert("Month digitally signed!");
+                await CustomModal.alert("Month digitally signed!", "Digital Signature");
                 selectTrainee(selectedTraineeId);
             } catch (error) {
                 console.error("Error signing month:", error);
             }
         });
+    };
+};
+
+// --- Custom Dialogue Modal System ---
+const CustomModal = {
+    alert(message, title = "Notification") {
+        return new Promise((resolve) => {
+            const isLight = document.body.classList.contains('light-mode');
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/65 backdrop-blur-md modal-fade-in p-4';
+            
+            const cardBg = isLight ? 'bg-white' : 'rgba(15, 23, 42, 0.75)';
+            const borderCol = isLight ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255, 255, 255, 0.1)';
+            const textTitle = isLight ? 'text-slate-900' : 'text-white';
+            const textBody = isLight ? 'text-slate-600' : 'text-slate-300';
+            const btnBg = 'bg-primary hover:bg-primary-hover';
+            const btnText = 'text-white';
+            const shadow = isLight ? 'box-shadow: 0 25px 50px -12px rgba(99, 102, 241, 0.1)' : 'box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5)';
+            const glassBlur = isLight ? 'backdrop-filter: blur(25px);' : 'backdrop-filter: blur(25px);';
+
+            modal.innerHTML = `
+                <div class="p-6 rounded-2xl max-w-sm w-full border transform modal-scale-up text-center"
+                     style="background: ${cardBg}; border-color: ${borderCol}; ${shadow}; ${glassBlur}">
+                    <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4 text-primary text-xl">
+                        <i class="ph ph-bell"></i>
+                    </div>
+                    <h3 class="text-lg font-bold ${textTitle} mb-2">${title}</h3>
+                    <p class="text-sm ${textBody} mb-6 whitespace-pre-line leading-relaxed text-left">${message}</p>
+                    <button class="modal-close-btn w-full ${btnBg} ${btnText} font-semibold py-2.5 px-4 rounded-xl transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5">
+                        Dismiss
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            const closeBtn = modal.querySelector('.modal-close-btn');
+            closeBtn.focus();
+            closeBtn.addEventListener('click', () => {
+                modal.classList.replace('modal-fade-in', 'modal-fade-out');
+                modal.querySelector('.transform').classList.replace('modal-scale-up', 'modal-scale-down');
+                setTimeout(() => {
+                    modal.remove();
+                    resolve();
+                }, 200);
+            });
+        });
+    },
+
+    confirm(message, title = "Confirm Action") {
+        return new Promise((resolve) => {
+            const isLight = document.body.classList.contains('light-mode');
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/65 backdrop-blur-md modal-fade-in p-4';
+            
+            const cardBg = isLight ? 'bg-white' : 'rgba(15, 23, 42, 0.75)';
+            const borderCol = isLight ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255, 255, 255, 0.1)';
+            const textTitle = isLight ? 'text-slate-900' : 'text-white';
+            const textBody = isLight ? 'text-slate-600' : 'text-slate-300';
+            const cancelBtnBg = isLight ? 'bg-slate-100 hover:bg-slate-200' : 'bg-white/5 hover:bg-white/10';
+            const cancelBtnText = isLight ? 'text-slate-700' : 'text-white';
+            const cancelBorder = isLight ? 'border-slate-200' : 'border-white/5';
+            const shadow = isLight ? 'box-shadow: 0 25px 50px -12px rgba(99, 102, 241, 0.1)' : 'box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5)';
+            const glassBlur = isLight ? 'backdrop-filter: blur(25px);' : 'backdrop-filter: blur(25px);';
+
+            modal.innerHTML = `
+                <div class="p-6 rounded-2xl max-w-sm w-full border transform modal-scale-up text-center"
+                     style="background: ${cardBg}; border-color: ${borderCol}; ${shadow}; ${glassBlur}">
+                    <div class="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4 text-red-400 text-xl">
+                        <i class="ph ph-warning-circle"></i>
+                    </div>
+                    <h3 class="text-lg font-bold ${textTitle} mb-2">${title}</h3>
+                    <p class="text-sm ${textBody} mb-6 leading-relaxed">${message}</p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button class="modal-cancel-btn w-full ${cancelBtnBg} ${cancelBtnText} font-semibold py-2.5 px-4 rounded-xl border ${cancelBorder} transition-all">
+                            Cancel
+                        </button>
+                        <button class="modal-confirm-btn w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-2.5 px-4 rounded-xl transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5">
+                            Confirm
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            const cancelBtn = modal.querySelector('.modal-cancel-btn');
+            const confirmBtn = modal.querySelector('.modal-confirm-btn');
+            confirmBtn.focus();
+
+            cancelBtn.addEventListener('click', () => {
+                closeModal(false);
+            });
+            confirmBtn.addEventListener('click', () => {
+                closeModal(true);
+            });
+
+            function closeModal(result) {
+                modal.classList.replace('modal-fade-in', 'modal-fade-out');
+                modal.querySelector('.transform').classList.replace('modal-scale-up', 'modal-scale-down');
+                setTimeout(() => {
+                    modal.remove();
+                    resolve(result);
+                }, 200);
+            }
+        });
+    },
+
+    prompt(message, placeholder = "", title = "Input Needed") {
+        return new Promise((resolve) => {
+            const isLight = document.body.classList.contains('light-mode');
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/65 backdrop-blur-md modal-fade-in p-4';
+            
+            const cardBg = isLight ? 'bg-white' : 'rgba(15, 23, 42, 0.75)';
+            const borderCol = isLight ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255, 255, 255, 0.1)';
+            const textTitle = isLight ? 'text-slate-900' : 'text-white';
+            const textBody = isLight ? 'text-slate-600' : 'text-slate-300';
+            const textareaBg = isLight ? 'bg-slate-50 border-slate-200 focus:border-primary text-slate-900' : 'bg-white/5 border-white/10 focus:border-primary text-white';
+            const cancelBtnBg = isLight ? 'bg-slate-100 hover:bg-slate-200' : 'bg-white/5 hover:bg-white/10';
+            const cancelBtnText = isLight ? 'text-slate-700' : 'text-white';
+            const cancelBorder = isLight ? 'border-slate-200' : 'border-white/5';
+            const shadow = isLight ? 'box-shadow: 0 25px 50px -12px rgba(99, 102, 241, 0.1)' : 'box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5)';
+            const glassBlur = isLight ? 'backdrop-filter: blur(25px);' : 'backdrop-filter: blur(25px);';
+
+            modal.innerHTML = `
+                <div class="p-6 rounded-2xl max-w-md w-full border transform modal-scale-up"
+                     style="background: ${cardBg}; border-color: ${borderCol}; ${shadow}; ${glassBlur}">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary text-lg">
+                            <i class="ph ph-pencil-line"></i>
+                        </div>
+                        <h3 class="text-lg font-bold ${textTitle}">${title}</h3>
+                    </div>
+                    <p class="text-sm ${textBody} mb-4 leading-relaxed">${message}</p>
+                    <textarea class="modal-input-field w-full h-28 border rounded-xl p-3 text-sm focus:outline-none transition-all resize-none mb-6 ${textareaBg}"
+                              placeholder="${placeholder}"></textarea>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button class="modal-cancel-btn w-full ${cancelBtnBg} ${cancelBtnText} font-semibold py-2.5 px-4 rounded-xl border ${cancelBorder} transition-all">
+                            Cancel
+                        </button>
+                        <button class="modal-submit-btn w-full bg-primary hover:bg-primary-hover text-white font-semibold py-2.5 px-4 rounded-xl transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5">
+                            Submit
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            const inputField = modal.querySelector('.modal-input-field');
+            const cancelBtn = modal.querySelector('.modal-cancel-btn');
+            const submitBtn = modal.querySelector('.modal-submit-btn');
+            
+            inputField.focus();
+
+            cancelBtn.addEventListener('click', () => {
+                closeModal(null);
+            });
+            submitBtn.addEventListener('click', () => {
+                closeModal(inputField.value.trim());
+            });
+
+            inputField.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    submitBtn.click();
+                }
+            });
+
+            function closeModal(result) {
+                modal.classList.replace('modal-fade-in', 'modal-fade-out');
+                modal.querySelector('.transform').classList.replace('modal-scale-up', 'modal-scale-down');
+                setTimeout(() => {
+                    modal.remove();
+                    resolve(result);
+                }, 200);
+            }
+        });
     }
 };
 
-// --- Initialization ---
-
-
-// --- Initialization ---
-// --- Initialization ---
 // --- Theme Handling ---
 const initTheme = () => {
     const savedTheme = localStorage.getItem('theme');
@@ -1658,12 +1827,12 @@ function init() {
 
     // AI Note Assistant Event Listeners
     if (saveAiSettingsBtn) {
-        saveAiSettingsBtn.addEventListener('click', () => {
+        saveAiSettingsBtn.addEventListener('click', async () => {
             if (geminiApiKeyInput) {
                 const key = geminiApiKeyInput.value.trim();
                 localStorage.setItem('gemini_api_key', key);
                 geminiApiKey = key;
-                alert("✨ Gemini API Key saved successfully!");
+                await CustomModal.alert("✨ Gemini API Key saved successfully!", "Settings Saved");
             }
         });
     }
@@ -1709,11 +1878,11 @@ function init() {
     }
 
     // Exports & PDF
-    if (generateMfvfBtn) generateMfvfBtn.addEventListener('click', () => {
+    if (generateMfvfBtn) generateMfvfBtn.addEventListener('click', async () => {
         if (profileData.supervisors && profileData.supervisors.length > 0) {
             mfvfModal.classList.remove('hidden');
         } else {
-            alert("Please add at least one supervisor in Settings first.");
+            await CustomModal.alert("Please add at least one supervisor in Settings first.", "Supervisor Required");
             openSettingsPanel();
         }
     });
@@ -1728,14 +1897,14 @@ function init() {
         exportToCsv(monthData, calculateSummaryData(monthData), `Fieldwork_${selectedMonth}.csv`);
     });
 
-    if (exportYearlyPdfBtn) exportYearlyPdfBtn.addEventListener('click', () => alert("Yearly PDF coming soon!"));
+    if (exportYearlyPdfBtn) exportYearlyPdfBtn.addEventListener('click', async () => await CustomModal.alert("Yearly PDF coming soon!", "Feature Coming Soon"));
     if (exportYearlyCsvBtn) exportYearlyCsvBtn.addEventListener('click', () => {
         const year = yearSelector.value;
         const yearData = allEntries.filter(e => dayjs(e.date).year() == year);
         exportToCsv(yearData, calculateSummaryData(yearData), `Fieldwork_${year}.csv`);
     });
 
-    if (exportAllTimePdfBtn) exportAllTimePdfBtn.addEventListener('click', () => alert("Career PDF coming soon!"));
+    if (exportAllTimePdfBtn) exportAllTimePdfBtn.addEventListener('click', async () => await CustomModal.alert("Career PDF coming soon!", "Feature Coming Soon"));
     if (exportAllTimeCsvBtn) exportAllTimeCsvBtn.addEventListener('click', () => {
         exportToCsv(allEntries, calculateSummaryData(allEntries), `Fieldwork_AllTime.csv`);
     });
@@ -1747,7 +1916,10 @@ function init() {
         const supName = mfvfSupervisorSelect.value;
         const supervisor = profileData.supervisors.find(s => s.name === supName);
 
-        if (!supervisor) return alert("Please select a supervisor");
+        if (!supervisor) {
+            await CustomModal.alert("Please select a supervisor", "Selection Required");
+            return;
+        }
 
         const [year, month] = selectedMonth.split('-');
         const entries = allEntries.filter(e => {
