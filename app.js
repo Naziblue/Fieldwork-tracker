@@ -1982,51 +1982,230 @@ function init() {
         });
     }
 
-    // Exports & PDF
+    // ===== PDF VIEWER with Smart Auto-Fill Panel =====
     const BACB_PDF_URL = 'https://www.bacb.com/wp-content/uploads/2025/03/2027-Monthly-Fieldwork-Verification-Form-Individual_260213-2-a.pdf';
     const pdfPreviewModal = document.getElementById('pdf-preview-modal');
     const pdfIframe = document.getElementById('pdf-iframe');
     const pdfFallback = document.getElementById('pdf-fallback');
     const pdfCloseBtn = document.getElementById('pdf-close-btn');
+    const pdfMonthSelector = document.getElementById('pdf-month-selector');
+    const pdfAutofillPanel = document.getElementById('pdf-autofill-panel');
+    const pdfCopyToast = document.getElementById('pdf-copy-toast');
+
+    // Helper: format decimal hours → hh h mm m
+    function fmtHrsMin(hours) {
+        const h = Math.floor(hours);
+        const m = Math.round((hours % 1) * 60);
+        return `${h}h ${m}m`;
+    }
+    // Helper: format decimal hours → "__ hh __ mm" BACB form style
+    function fmtBacb(hours) {
+        const h = Math.floor(hours);
+        const m = Math.round((hours % 1) * 60);
+        return `${h} hh ${m} mm`;
+    }
+
+    function copyToClipboard(text, btn) {
+        navigator.clipboard.writeText(text).then(() => {
+            // Animate the button
+            const icon = btn.querySelector('i');
+            const orig = icon.className;
+            icon.className = 'ph-fill ph-check text-green-400 text-sm';
+            btn.style.background = 'rgba(34,197,94,0.15)';
+            btn.style.borderColor = 'rgba(34,197,94,0.3)';
+            // Show toast
+            if (pdfCopyToast) {
+                pdfCopyToast.classList.remove('hidden');
+                clearTimeout(pdfCopyToast._timer);
+                pdfCopyToast._timer = setTimeout(() => pdfCopyToast.classList.add('hidden'), 2000);
+            }
+            setTimeout(() => {
+                icon.className = orig;
+                btn.style.background = '';
+                btn.style.borderColor = '';
+            }, 1800);
+        }).catch(() => {
+            // Fallback for older browsers
+            const el = document.createElement('textarea');
+            el.value = text; el.style.position = 'fixed'; el.style.opacity = '0';
+            document.body.appendChild(el); el.select();
+            document.execCommand('copy'); document.body.removeChild(el);
+        });
+    }
+
+    function makeCopyCard(label, value, color = 'blue', icon = 'ph-fill ph-copy') {
+        if (!value || value === '-' || value === '') {
+            return `
+            <div class="rounded-xl px-3 py-2.5 border border-white/5 opacity-40" style="background: rgba(255,255,255,0.02);">
+                <p class="text-[10px] text-text-muted uppercase tracking-widest mb-0.5">${label}</p>
+                <p class="text-xs text-text-muted italic">Not available</p>
+            </div>`;
+        }
+        const colorMap = {
+            blue:   ['rgba(59,130,246,0.1)',  'rgba(59,130,246,0.2)',  'text-blue-400'],
+            purple: ['rgba(139,92,246,0.1)',   'rgba(139,92,246,0.2)',  'text-purple-400'],
+            green:  ['rgba(34,197,94,0.1)',    'rgba(34,197,94,0.2)',   'text-green-400'],
+            teal:   ['rgba(20,184,166,0.1)',   'rgba(20,184,166,0.2)',  'text-teal-400'],
+            pink:   ['rgba(236,72,153,0.1)',   'rgba(236,72,153,0.2)', 'text-pink-400'],
+            orange: ['rgba(249,115,22,0.1)',   'rgba(249,115,22,0.2)',  'text-orange-400'],
+            red:    ['rgba(239,68,68,0.1)',    'rgba(239,68,68,0.2)',   'text-red-400'],
+        };
+        const [bg, border, textColor] = colorMap[color] || colorMap.blue;
+        const escapedValue = value.replace(/"/g, '&quot;');
+        return `
+        <div class="group relative rounded-xl px-3 py-2.5 border transition-all hover:scale-[1.01] cursor-default"
+            style="background: ${bg}; border-color: ${border};">
+            <div class="flex items-center justify-between gap-2">
+                <div class="min-w-0">
+                    <p class="text-[10px] ${textColor} uppercase tracking-widest mb-0.5 font-semibold">${label}</p>
+                    <p class="text-sm font-bold text-white truncate">${value}</p>
+                </div>
+                <button class="pdf-copy-btn flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-all hover:scale-110"
+                    data-value="${escapedValue}"
+                    style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);"
+                    title="Copy to clipboard">
+                    <i class="ph-fill ph-copy ${textColor} text-sm"></i>
+                </button>
+            </div>
+        </div>`;
+    }
+
+    function makeSectionHeader(label, iconClass = 'ph-fill ph-list') {
+        return `<p class="text-[10px] text-text-muted uppercase tracking-widest font-bold mt-3 mb-1.5 px-1 flex items-center gap-1.5"><i class="${iconClass} text-xs"></i>${label}</p>`;
+    }
+
+    function renderAutofillPanel(selectedMonthStr) {
+        if (!pdfAutofillPanel) return;
+
+        const [year, month] = selectedMonthStr.split('-').map(Number);
+        const monthEntries = allEntries.filter(e => {
+            const d = dayjs(e.date);
+            return d.year() === year && (d.month() + 1) === month;
+        });
+
+        const data = calculateSummaryData(monthEntries);
+        const monthLabel = dayjs(`${year}-${String(month).padStart(2,'0')}-01`).format('MMMM YYYY');
+        const pct = data.percentage.toFixed(2);
+
+        // Count unique supervisors this month
+        const supervisorHoursMap = {};
+        monthEntries.forEach(e => {
+            if (e.supervisorName && e.supervisionType !== 'No Supervision') {
+                const h = calculateHours(e.startTime, e.endTime);
+                supervisorHoursMap[e.supervisorName] = (supervisorHoursMap[e.supervisorName] || 0) + h;
+            }
+        });
+
+        const supervisorCards = Object.entries(supervisorHoursMap)
+            .map(([name, hrs]) => makeCopyCard(`Supervisor — ${fmtHrsMin(hrs)} Supervised`, name, 'teal', 'ph-fill ph-user-circle'))
+            .join('');
+
+        // Profile info
+        const name = profileData.name || '';
+        const bacbId = profileData.rbtNumber || '';
+        const today = dayjs().format('MMMM YYYY');
+
+        // State / country — from entries if stored, else unknown
+        const stateEntry = monthEntries.find(e => e.state);
+        const state = stateEntry?.state || '';
+        const countryEntry = monthEntries.find(e => e.country);
+        const country = countryEntry?.country || 'United States';
+
+        let html = '';
+
+        // Identity section
+        html += makeSectionHeader('Your Identity', 'ph-fill ph-identification-card');
+        html += makeCopyCard('Trainee Name', name, 'blue');
+        html += makeCopyCard('BACB ID / RBT Number', bacbId, 'blue');
+        html += makeCopyCard('Month / Year', monthLabel, 'blue');
+
+        // Hours section
+        html += makeSectionHeader('Fieldwork Hours', 'ph-fill ph-clock');
+        html += makeCopyCard('A. Independent Hours (supervisor NOT present)', fmtBacb(data.unsupervised), 'orange');
+        html += makeCopyCard('B. Supervised Hours (supervisor present)', fmtBacb(data.supervised), 'green');
+        html += makeCopyCard('Total Fieldwork Hours (A + B)', fmtBacb(data.total), 'purple');
+        html += makeCopyCard('Percentage of Hours Supervised', `${pct}%`, data.percentage >= 5 ? 'green' : 'red');
+        if (data.observationHours > 0) {
+            html += makeCopyCard('Observation Duration', fmtBacb(data.observationHours), 'teal');
+        }
+
+        // Supervision breakdown
+        html += makeSectionHeader('Supervision Detail', 'ph-fill ph-users-three');
+        html += makeCopyCard('Individual Supervision Hours', fmtBacb(data.individualSupervision), 'teal');
+        html += makeCopyCard('Group Supervision Hours', fmtBacb(data.groupSupervision), 'purple');
+
+        // Supervisor names
+        if (Object.keys(supervisorHoursMap).length > 0) {
+            html += makeSectionHeader('Supervisor Name(s)', 'ph-fill ph-user-circle');
+            html += supervisorCards;
+        }
+
+        // Location (only show if no entries this month)
+        if (monthEntries.length === 0) {
+            html += `
+            <div class="mt-4 rounded-xl p-4 border border-yellow-500/20 text-center" style="background: rgba(234,179,8,0.06);">
+                <i class="ph-fill ph-calendar-x text-yellow-400 text-xl mb-2 block"></i>
+                <p class="text-xs text-yellow-400 font-semibold">No entries found for ${monthLabel}</p>
+                <p class="text-[10px] text-text-muted mt-1">Log your activities first, then come back here to fill the form.</p>
+            </div>`;
+        }
+
+        // BACB note at bottom
+        html += `
+        <div class="mt-3 rounded-xl p-3 border border-white/5" style="background: rgba(255,255,255,0.02);">
+            <p class="text-[10px] text-text-muted leading-relaxed">
+                <i class="ph-fill ph-info text-blue-400 mr-1"></i>
+                Per BACB 2027 requirements: supervised hours must be ≥5% of total (or ≥7.5% for Concentrated). Group supervision ≤50% of supervised hours. Form must be signed by last day of following month.
+            </p>
+        </div>`;
+
+        pdfAutofillPanel.innerHTML = html;
+
+        // Wire up copy buttons
+        pdfAutofillPanel.querySelectorAll('.pdf-copy-btn').forEach(btn => {
+            btn.addEventListener('click', () => copyToClipboard(btn.dataset.value, btn));
+        });
+    }
+
+    function populatePdfMonthSelector() {
+        if (!pdfMonthSelector || !monthSelector) return;
+        // Mirror the main month selector options
+        pdfMonthSelector.innerHTML = monthSelector.innerHTML;
+        // Default to currently selected month
+        pdfMonthSelector.value = monthSelector.value;
+    }
 
     function openPdfViewer() {
         if (!pdfPreviewModal || !pdfIframe) return;
-        // Reset state
+
+        // Populate month picker & auto-fill panel
+        populatePdfMonthSelector();
+        renderAutofillPanel(pdfMonthSelector.value || monthSelector.value);
+
+        // Reset iframe state
         pdfIframe.classList.remove('hidden');
         if (pdfFallback) pdfFallback.classList.add('hidden');
-        // Load the PDF — use Google Docs viewer as a proxy to bypass X-Frame-Options
-        // Try direct first, fall back to Google's viewer on error
         pdfIframe.src = BACB_PDF_URL;
-        // Show the modal
+
+        // Show modal
         pdfPreviewModal.classList.remove('hidden');
         pdfPreviewModal.classList.add('flex');
         document.body.style.overflow = 'hidden';
 
-        // Detect if iframe failed to load (cross-origin restriction)
+        // Detect iframe load issues
         let loadTimer = setTimeout(() => {
-            // If the iframe content is inaccessible, switch to Google Docs viewer
-            try {
-                // This will throw a cross-origin error if blocked
-                const _ = pdfIframe.contentWindow.location.href;
-            } catch (e) {
-                // Cross-origin means it loaded fine (PDF served by bacb.com)
-            }
+            try { const _ = pdfIframe.contentWindow.location.href; } catch (e) { /* cross-origin fine */ }
         }, 3000);
 
         pdfIframe.onload = () => {
             clearTimeout(loadTimer);
-            // Try accessing content; if blank page, show fallback
             try {
                 const doc = pdfIframe.contentDocument || pdfIframe.contentWindow.document;
                 if (doc && doc.body && doc.body.innerHTML.trim() === '') {
-                    // Blank = blocked; switch to Google Docs viewer
                     pdfIframe.src = `https://docs.google.com/viewer?url=${encodeURIComponent(BACB_PDF_URL)}&embedded=true`;
                 }
-            } catch (e) {
-                // Cross-origin success — PDF is showing fine
-            }
+            } catch (e) { /* cross-origin success */ }
         };
-
         pdfIframe.onerror = () => {
             clearTimeout(loadTimer);
             pdfIframe.classList.add('hidden');
@@ -2039,7 +2218,14 @@ function init() {
         pdfPreviewModal.classList.add('hidden');
         pdfPreviewModal.classList.remove('flex');
         document.body.style.overflow = '';
-        if (pdfIframe) pdfIframe.src = ''; // unload the PDF to free resources
+        if (pdfIframe) pdfIframe.src = '';
+    }
+
+    // Month change → re-render panel
+    if (pdfMonthSelector) {
+        pdfMonthSelector.addEventListener('change', () => {
+            renderAutofillPanel(pdfMonthSelector.value);
+        });
     }
 
     if (generateMfvfBtn) generateMfvfBtn.addEventListener('click', openPdfViewer);
@@ -2051,7 +2237,6 @@ function init() {
             closePdfViewer();
         }
     });
-
 
 
     if (exportMonthlyCsvBtn) exportMonthlyCsvBtn.addEventListener('click', () => {
