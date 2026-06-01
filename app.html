@@ -44,7 +44,7 @@
 
     <script src="tailwind-config.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="style.css?v=antigravity_particles">
+    <link rel="stylesheet" href="style.css?v=antigravity_v2">
 </head>
 
 <body class="bg-background text-text antialiased h-screen overflow-hidden flex flex-col md:flex-row">
@@ -52,20 +52,16 @@
     <!-- Login View (Full Screen) -->
     <div id="login-view"
         class="fixed inset-0 z-50 flex items-center justify-center bg-[url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop')] bg-cover bg-center">
-        <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm"></div>
+        <div class="absolute inset-0 bg-slate-950/75 backdrop-blur-md"></div>
         <canvas id="login-particles-canvas" class="absolute inset-0 w-full h-full pointer-events-none z-0"></canvas>
 
         <div
             class="relative glass-panel p-8 rounded-2xl max-w-md w-full mx-4 animate-fade-in shadow-2xl border border-white/10">
             <div class="text-center mb-8">
                 <div class="flex items-center justify-center mb-6">
-                    <img src="fieldly-logo.png" alt="Fieldly" class="h-24">
+                    <img src="fieldly-logo.png" alt="Fieldly" class="h-24 drop-shadow-[0_0_20px_rgba(139,92,246,0.35)] hover:scale-105 transition-transform duration-300">
                 </div>
-                <p class="text-text-muted">Professional tracking for your ABA fieldwork hours.</p>
-                <div
-                    class="mt-2 inline-block px-3 py-1 rounded-full bg-yellow-500/20 text-yellow-500 text-xs font-mono border border-yellow-500/30">
-                    Debug Mode: v4 (Server 9000)
-                </div>
+                <p class="text-slate-200 text-sm font-medium tracking-wide leading-relaxed max-w-xs mx-auto mt-2">Professional tracking for your ABA fieldwork hours.</p>
             </div>
 
             <div class="space-y-4">
@@ -841,7 +837,7 @@
     <!-- We are removing the old edit modal and using the slide-over for both add and edit -->
     <div id="edit-modal" class="hidden"></div>
 
-    <script type="module" src="app.js?v=antigravity_particles"></script>
+    <script type="module" src="app.js?v=antigravity_v2"></script>
 </body>
 
 </html>
