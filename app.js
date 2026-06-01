@@ -1983,9 +1983,76 @@ function init() {
     }
 
     // Exports & PDF
-    if (generateMfvfBtn) generateMfvfBtn.addEventListener('click', () => {
-        window.open('https://www.bacb.com/wp-content/uploads/2025/03/2027-Monthly-Fieldwork-Verification-Form-Individual_260213-2-a.pdf', '_blank');
+    const BACB_PDF_URL = 'https://www.bacb.com/wp-content/uploads/2025/03/2027-Monthly-Fieldwork-Verification-Form-Individual_260213-2-a.pdf';
+    const pdfPreviewModal = document.getElementById('pdf-preview-modal');
+    const pdfIframe = document.getElementById('pdf-iframe');
+    const pdfFallback = document.getElementById('pdf-fallback');
+    const pdfCloseBtn = document.getElementById('pdf-close-btn');
+
+    function openPdfViewer() {
+        if (!pdfPreviewModal || !pdfIframe) return;
+        // Reset state
+        pdfIframe.classList.remove('hidden');
+        if (pdfFallback) pdfFallback.classList.add('hidden');
+        // Load the PDF — use Google Docs viewer as a proxy to bypass X-Frame-Options
+        // Try direct first, fall back to Google's viewer on error
+        pdfIframe.src = BACB_PDF_URL;
+        // Show the modal
+        pdfPreviewModal.classList.remove('hidden');
+        pdfPreviewModal.classList.add('flex');
+        document.body.style.overflow = 'hidden';
+
+        // Detect if iframe failed to load (cross-origin restriction)
+        let loadTimer = setTimeout(() => {
+            // If the iframe content is inaccessible, switch to Google Docs viewer
+            try {
+                // This will throw a cross-origin error if blocked
+                const _ = pdfIframe.contentWindow.location.href;
+            } catch (e) {
+                // Cross-origin means it loaded fine (PDF served by bacb.com)
+            }
+        }, 3000);
+
+        pdfIframe.onload = () => {
+            clearTimeout(loadTimer);
+            // Try accessing content; if blank page, show fallback
+            try {
+                const doc = pdfIframe.contentDocument || pdfIframe.contentWindow.document;
+                if (doc && doc.body && doc.body.innerHTML.trim() === '') {
+                    // Blank = blocked; switch to Google Docs viewer
+                    pdfIframe.src = `https://docs.google.com/viewer?url=${encodeURIComponent(BACB_PDF_URL)}&embedded=true`;
+                }
+            } catch (e) {
+                // Cross-origin success — PDF is showing fine
+            }
+        };
+
+        pdfIframe.onerror = () => {
+            clearTimeout(loadTimer);
+            pdfIframe.classList.add('hidden');
+            if (pdfFallback) pdfFallback.classList.remove('hidden');
+        };
+    }
+
+    function closePdfViewer() {
+        if (!pdfPreviewModal) return;
+        pdfPreviewModal.classList.add('hidden');
+        pdfPreviewModal.classList.remove('flex');
+        document.body.style.overflow = '';
+        if (pdfIframe) pdfIframe.src = ''; // unload the PDF to free resources
+    }
+
+    if (generateMfvfBtn) generateMfvfBtn.addEventListener('click', openPdfViewer);
+    if (pdfCloseBtn) pdfCloseBtn.addEventListener('click', closePdfViewer);
+
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && pdfPreviewModal && !pdfPreviewModal.classList.contains('hidden')) {
+            closePdfViewer();
+        }
     });
+
+
 
     if (exportMonthlyCsvBtn) exportMonthlyCsvBtn.addEventListener('click', () => {
         const selectedMonth = monthSelector.value;
