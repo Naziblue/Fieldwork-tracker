@@ -804,3 +804,27 @@ select.bg-transparent {
 #main-sidebar {
     background-color: rgb(var(--color-sidebar)) !important;
 }
+
+/* Magenta row styling for supervisor feedback */
+.magenta-row {
+    background-color: rgba(236, 72, 153, 0.08) !important; /* pink-500/8 */
+    border-left: 3px solid rgb(236, 72, 153) !important; /* pink-500 */
+}
+.magenta-row:hover {
+    background-color: rgba(236, 72, 153, 0.14) !important; /* pink-500/14 */
+}
+.light-mode .magenta-row {
+    background-color: rgba(236, 72, 153, 0.05) !important;
+    border-left: 3px solid rgb(219, 39, 119) !important; /* pink-600 */
+}
+.light-mode .magenta-row:hover {
+    background-color: rgba(236, 72, 153, 0.09) !important;
+}
+
+@keyframes bounceSlow {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+}
+.animate-bounce-slow {
+    animation: bounceSlow 2s ease-in-out infinite;
+}

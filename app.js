@@ -680,7 +680,10 @@ const renderTable = (entries, tableBodyElement) => {
     sortedEntries.forEach(entry => {
         const totalHours = calculateHours(entry.startTime, entry.endTime);
         const row = document.createElement('tr');
-        row.className = 'hover:bg-surface-hover transition-colors group';
+        const hasSupervisorNote = !!entry.supervisorNote;
+        row.className = hasSupervisorNote 
+            ? 'magenta-row transition-all duration-200 group' 
+            : 'hover:bg-surface-hover transition-colors group';
 
         let notesDisplay = entry.notes || '';
         if (entry.activityType === 'Unrestricted' && entry.unrestrictedActivityType) {
@@ -688,11 +691,20 @@ const renderTable = (entries, tableBodyElement) => {
         }
 
         let combinedNotes = notesDisplay;
-        if (entry.supervisorNote) {
+        if (hasSupervisorNote) {
             combinedNotes += `\n\n💬 [Supervisor Note]: ${entry.supervisorNote}`;
         }
 
         const typeBadgeClass = entry.activityType === 'Unrestricted' ? 'badge-purple' : 'badge-danger';
+
+        let notesCellContent = notesDisplay;
+        if (hasSupervisorNote) {
+            notesCellContent = `
+                <span class="inline-flex items-center gap-1.5 text-pink-500 font-bold mr-1.5" title="Supervisor Feedback Included">
+                    <i class="ph-fill ph-envelope text-sm animate-bounce-slow"></i>
+                </span>${notesDisplay}
+            `;
+        }
 
         row.innerHTML = `
             <td class="px-4 py-3 font-medium text-text">${dayjs(entry.date).format('MMM D, YYYY')}</td>
@@ -703,7 +715,7 @@ const renderTable = (entries, tableBodyElement) => {
             <td class="px-4 py-3 text-text-muted text-xs hidden sm:table-cell">${entry.activityType === 'Unrestricted' ? (entry.unrestrictedActivityType || 'General') : '-'}</td>
             <td class="px-4 py-3 text-text-muted text-xs max-w-[150px] truncate" title="${entry.supervisionType}">${entry.supervisionType}</td>
             <td class="px-4 py-3 text-text-muted">${entry.supervisorName || '-'}</td>
-            <td class="note-cell px-4 py-3 text-text-muted text-xs hidden md:table-cell max-w-xs truncate cursor-pointer hover:text-white transition-all duration-200" data-notes="${combinedNotes.replace(/"/g, '&quot;')}" title="Click to view full note">${entry.supervisorNote ? '💬 ' : ''}${notesDisplay}</td>
+            <td class="note-cell px-4 py-3 text-text-muted text-xs hidden md:table-cell max-w-xs truncate cursor-pointer hover:text-white transition-all duration-200" data-has-feedback="${hasSupervisorNote}" data-feedback="${(entry.supervisorNote || '').replace(/"/g, '&quot;')}" data-notes="${notesDisplay.replace(/"/g, '&quot;')}" title="${hasSupervisorNote ? 'Click to read supervisor note' : 'Click to view full note'}">${notesCellContent}</td>
             <td class="px-4 py-3 text-right flex justify-end gap-1">
                 <button class="duplicate-btn p-2 rounded-lg hover:bg-surface-hover text-text-muted hover:text-text transition-colors" data-id="${entry.id}" title="Duplicate">
                     <i class="ph-bold ph-copy"></i>
@@ -901,9 +913,18 @@ const handleTableClick = async (e) => {
     // Handle Click on Note Cell
     const noteCell = e.target.closest('.note-cell');
     if (noteCell) {
-        const fullNote = noteCell.dataset.notes || noteCell.textContent;
-        if (fullNote && fullNote.trim()) {
-            CustomModal.alert(fullNote, "Activity Notes", "ph-note-blank");
+        const hasFeedback = noteCell.dataset.hasFeedback === 'true';
+        const feedback = noteCell.dataset.feedback || '';
+        const traineeNote = noteCell.dataset.notes || noteCell.textContent;
+
+        if (hasFeedback && feedback.trim()) {
+            const message = `💬 **Supervisor Feedback:**\n${feedback}\n\n---\n📝 **Your Activity Notes:**\n${traineeNote}`;
+            CustomModal.alert(message, "Supervisor Feedback Received", "ph-envelope-simple-open");
+        } else {
+            const fullNote = traineeNote || noteCell.textContent;
+            if (fullNote && fullNote.trim()) {
+                CustomModal.alert(fullNote, "Activity Notes", "ph-note-blank");
+            }
         }
         return;
     }
@@ -1663,13 +1684,23 @@ const renderTraineeReview = async (entries) => {
                     notesDisplay = `[${entry.unrestrictedActivityType}] ${notesDisplay}`;
                 }
 
+                const hasSupervisorNote = !!entry.supervisorNote;
                 let combinedNotes = notesDisplay;
-                if (entry.supervisorNote) {
+                if (hasSupervisorNote) {
                     combinedNotes += `\n\n💬 [Supervisor Note]: ${entry.supervisorNote}`;
                 }
 
+                let notesCellContent = notesDisplay;
+                if (hasSupervisorNote) {
+                    notesCellContent = `
+                        <span class="inline-flex items-center gap-1.5 text-pink-500 font-bold mr-1.5" title="Supervisor Feedback Included">
+                            <i class="ph-fill ph-envelope text-sm animate-bounce-slow"></i>
+                        </span>${notesDisplay}
+                    `;
+                }
+
                 return `
-                    <tr class="hover:bg-surface-hover transition-colors">
+                    <tr class="${hasSupervisorNote ? 'magenta-row' : ''} hover:bg-surface-hover transition-colors">
                         <td class="px-4 py-3 text-white">${dayjs(entry.date).format('MMM D')}</td>
                         <td class="px-4 py-3 text-text-muted text-xs">${entry.startTime} - ${entry.endTime}</td>
                         <td class="px-4 py-3 text-white font-medium">${calculateHours(entry.startTime, entry.endTime).toFixed(2)}</td>
@@ -1684,7 +1715,7 @@ const renderTraineeReview = async (entries) => {
                             ${entry.supervisionType}
                         </td>
                         <td class="px-4 py-3 text-text-muted text-xs">${entry.supervisorName || '-'}</td>
-                        <td class="note-cell px-4 py-3 text-text-muted text-xs hidden md:table-cell max-w-xs truncate cursor-pointer hover:text-white transition-all duration-200" data-notes="${combinedNotes.replace(/"/g, '&quot;')}" title="Click to view full note">${entry.supervisorNote ? '💬 ' : ''}${notesDisplay}</td>
+                        <td class="note-cell px-4 py-3 text-text-muted text-xs hidden md:table-cell max-w-xs truncate cursor-pointer hover:text-white transition-all duration-200" data-has-feedback="${hasSupervisorNote}" data-feedback="${(entry.supervisorNote || '').replace(/"/g, '&quot;')}" data-notes="${notesDisplay.replace(/"/g, '&quot;')}" title="${hasSupervisorNote ? 'Click to read supervisor note' : 'Click to view full note'}">${notesCellContent}</td>
                         <td class="px-4 py-3 text-right">
                             <button class="add-supervisor-note-btn p-2 rounded-lg hover:bg-surface-hover text-primary hover:text-white transition-all duration-200" data-id="${entry.id}" data-supervisor-note="${(entry.supervisorNote || '').replace(/"/g, '&quot;')}" title="Add/Edit Supervisor Note">
                                 <i class="ph-bold ph-note-pencil"></i>
