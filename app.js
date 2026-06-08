@@ -1944,7 +1944,7 @@ const selectChatContact = (contactId, name, email) => {
         unsubscribeChatMessages();
     }
 
-    const traineeUid = profileData.role === 'trainee' ? userId : activeChatContactId;
+    const traineeUid = (profileData.role === 'trainee' || profileData.role === 'admin') ? userId : activeChatContactId;
     const supervisorUid = profileData.role === 'supervisor' ? userId : activeChatContactId;
     
     const messagesContainer = document.getElementById('chat-messages-container');
@@ -2000,7 +2000,7 @@ const sendChatMessage = async (e) => {
     const text = input.value.trim();
     input.value = ''; // Clear input immediately for responsive UI
 
-    const traineeUid = profileData.role === 'trainee' ? userId : activeChatContactId;
+    const traineeUid = (profileData.role === 'trainee' || profileData.role === 'admin') ? userId : activeChatContactId;
     const supervisorUid = profileData.role === 'supervisor' ? userId : activeChatContactId;
 
     const messagesRef = collection(db, `users/${traineeUid}/chats/${supervisorUid}/messages`);
