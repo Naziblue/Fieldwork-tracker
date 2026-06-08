@@ -727,12 +727,9 @@ const renderTable = (entries, tableBodyElement) => {
         let feedbackCellContent = '';
         if (hasSupervisorNote) {
             feedbackCellContent = `
-                <div class="flex items-center justify-center gap-2" onclick="event.stopPropagation()">
-                    <input type="checkbox" class="feedback-fixed-checkbox rounded border-white/10 text-primary focus:ring-0 focus:ring-offset-0 bg-surface/50 h-4 w-4 cursor-pointer" ${isFixed ? 'checked' : ''} data-id="${entry.id}">
-                    <span class="inline-flex items-center justify-center ${isFixed ? 'text-white' : 'text-pink-500'} font-bold cursor-pointer hover:scale-110 transition-transform" title="${isFixed ? 'Feedback Resolved' : 'Feedback Pending'}">
-                        <i class="ph-fill ph-envelope text-sm ${isFixed ? '' : 'animate-bounce-slow'}"></i>
-                    </span>
-                </div>
+                <span class="inline-flex items-center justify-center ${isFixed ? 'text-white' : 'text-pink-500'} font-bold hover:scale-110 transition-transform" title="${isFixed ? 'Feedback Resolved' : 'Feedback Pending'}">
+                    <i class="ph-fill ph-envelope text-sm ${isFixed ? '' : 'animate-bounce-slow'}"></i>
+                </span>
             `;
         }
 
@@ -746,7 +743,7 @@ const renderTable = (entries, tableBodyElement) => {
             <td class="px-4 py-3 text-text-muted text-xs max-w-[150px] truncate" title="${entry.supervisionType}">${entry.supervisionType}</td>
             <td class="px-4 py-3 text-text-muted">${entry.supervisorName || '-'}</td>
             <td class="note-cell px-4 py-3 text-text-muted text-xs hidden md:table-cell max-w-xs truncate cursor-pointer hover:text-white transition-all duration-200" data-has-feedback="${hasSupervisorNote}" data-feedback="${(entry.supervisorNote || '').replace(/"/g, '&quot;')}" data-notes="${notesDisplay.replace(/"/g, '&quot;')}" title="${hasSupervisorNote ? 'Click to read supervisor note' : 'Click to view full note'}">${notesCellContent}</td>
-            <td class="feedback-cell px-4 py-3 text-center cursor-pointer" data-feedback="${(entry.supervisorNote || '').replace(/"/g, '&quot;')}">${feedbackCellContent}</td>
+            <td class="feedback-cell px-4 py-3 text-center cursor-pointer" data-id="${entry.id}" data-fixed="${isFixed}" data-feedback="${(entry.supervisorNote || '').replace(/"/g, '&quot;')}">${feedbackCellContent}</td>
             <td class="px-4 py-3 text-right flex justify-end gap-1">
                 <button class="duplicate-btn p-2 rounded-lg hover:bg-surface-hover text-text-muted hover:text-text transition-colors" data-id="${entry.id}" title="Duplicate">
                     <i class="ph-bold ph-copy"></i>
@@ -941,34 +938,28 @@ const handleDeleteEntry = async () => {
 };
 
 const handleTableClick = async (e) => {
-    // Handle Click on Feedback Fixed Checkbox
-    const checkbox = e.target.closest('.feedback-fixed-checkbox');
-    if (checkbox) {
-        const entryId = checkbox.dataset.id;
-        const isChecked = checkbox.checked;
-        const targetTraineeUid = selectedTraineeId || userId;
-        const entryRef = doc(db, `users/${targetTraineeUid}/entries/${entryId}`);
-        
-        try {
-            await updateDoc(entryRef, { feedbackFixed: isChecked });
-            if (selectedTraineeId) {
-                // Refresh supervisor view
-                selectTrainee(selectedTraineeId);
-            }
-        } catch (error) {
-            console.error("Error updating feedback fixed status:", error);
-            checkbox.checked = !isChecked; // revert checkbox UI
-            await CustomModal.alert("Failed to update status: " + error.message, "Error");
-        }
-        return;
-    }
-
     // Handle Click on Feedback Cell (Envelope)
     const feedbackCell = e.target.closest('.feedback-cell');
     if (feedbackCell) {
         const feedback = feedbackCell.dataset.feedback || '';
-        if (feedback.trim()) {
-            CustomModal.alert(feedback, "Supervisor Feedback", "ph-envelope-simple-open");
+        const entryId = feedbackCell.dataset.id;
+        const isFixed = feedbackCell.dataset.fixed === 'true';
+        
+        if (feedback.trim() && entryId) {
+            if (profileData.role === 'supervisor') {
+                CustomModal.alert(feedback, "Supervisor Feedback", "ph-envelope-simple-open");
+            } else {
+                await CustomModal.feedback(feedback, isFixed, async (isChecked) => {
+                    const entryRef = doc(db, `users/${userId}/entries/${entryId}`);
+                    try {
+                        await updateDoc(entryRef, { feedbackFixed: isChecked });
+                        feedbackCell.dataset.fixed = isChecked ? 'true' : 'false';
+                    } catch (error) {
+                        console.error("Error updating feedback fixed status:", error);
+                        await CustomModal.alert("Failed to update status: " + error.message, "Error");
+                    }
+                });
+            }
         }
         return;
     }
@@ -1785,12 +1776,9 @@ const renderTraineeReview = async (entries) => {
                 let feedbackCellContent = '';
                 if (hasSupervisorNote) {
                     feedbackCellContent = `
-                        <div class="flex items-center justify-center gap-2" onclick="event.stopPropagation()">
-                            <input type="checkbox" class="feedback-fixed-checkbox rounded border-white/10 text-primary focus:ring-0 focus:ring-offset-0 bg-surface/50 h-4 w-4 cursor-pointer" ${isFixed ? 'checked' : ''} data-id="${entry.id}">
-                            <span class="inline-flex items-center justify-center ${isFixed ? 'text-white' : 'text-pink-500'} font-bold cursor-pointer hover:scale-110 transition-transform" title="${isFixed ? 'Feedback Resolved' : 'Feedback Pending'}">
-                                <i class="ph-fill ph-envelope text-sm ${isFixed ? '' : 'animate-bounce-slow'}"></i>
-                            </span>
-                        </div>
+                        <span class="inline-flex items-center justify-center ${isFixed ? 'text-white' : 'text-pink-500'} font-bold hover:scale-110 transition-transform" title="${isFixed ? 'Feedback Resolved' : 'Feedback Pending'}">
+                            <i class="ph-fill ph-envelope text-sm ${isFixed ? '' : 'animate-bounce-slow'}"></i>
+                        </span>
                     `;
                 }
 
@@ -1811,7 +1799,7 @@ const renderTraineeReview = async (entries) => {
                         </td>
                         <td class="px-4 py-3 text-text-muted text-xs">${entry.supervisorName || '-'}</td>
                         <td class="note-cell px-4 py-3 text-text-muted text-xs hidden md:table-cell max-w-xs truncate cursor-pointer hover:text-white transition-all duration-200" data-has-feedback="${hasSupervisorNote}" data-feedback="${(entry.supervisorNote || '').replace(/"/g, '&quot;')}" data-notes="${notesDisplay.replace(/"/g, '&quot;')}" title="${hasSupervisorNote ? 'Click to read supervisor note' : 'Click to view full note'}">${notesCellContent}</td>
-                        <td class="feedback-cell px-4 py-3 text-center cursor-pointer" data-feedback="${(entry.supervisorNote || '').replace(/"/g, '&quot;')}">${feedbackCellContent}</td>
+                        <td class="feedback-cell px-4 py-3 text-center cursor-pointer" data-id="${entry.id}" data-fixed="${isFixed}" data-feedback="${(entry.supervisorNote || '').replace(/"/g, '&quot;')}">${feedbackCellContent}</td>
                         <td class="px-4 py-3 text-right">
                             <div class="flex justify-end gap-1">
                                 <button class="add-supervisor-note-btn p-2 rounded-lg hover:bg-surface-hover text-primary hover:text-white transition-all duration-200" data-id="${entry.id}" data-supervisor-note="${(entry.supervisorNote || '').replace(/"/g, '&quot;')}" title="Add/Edit Supervisor Note">
@@ -2415,6 +2403,60 @@ const CustomModal = {
             `;
             document.body.appendChild(modal);
             const closeBtn = modal.querySelector('.modal-close-btn');
+            closeBtn.focus();
+            closeBtn.addEventListener('click', () => {
+                modal.classList.replace('modal-fade-in', 'modal-fade-out');
+                modal.querySelector('.transform').classList.replace('modal-scale-up', 'modal-scale-down');
+                setTimeout(() => {
+                    modal.remove();
+                    resolve();
+                }, 200);
+            });
+        });
+    },
+
+    feedback(feedbackText, isFixed, onToggleFixed) {
+        return new Promise((resolve) => {
+            const isLight = document.body.classList.contains('light-mode');
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/65 backdrop-blur-md modal-fade-in p-4';
+            
+            const cardBg = isLight ? 'bg-white' : 'rgba(15, 23, 42, 0.75)';
+            const borderCol = isLight ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255, 255, 255, 0.1)';
+            const textTitle = isLight ? 'text-slate-900' : 'text-white';
+            const textBody = isLight ? 'text-slate-600' : 'text-slate-300';
+            const btnBg = 'bg-primary hover:bg-primary-hover';
+            const btnText = 'text-white';
+            const shadow = isLight ? 'box-shadow: 0 25px 50px -12px rgba(99, 102, 241, 0.1)' : 'box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5)';
+            const glassBlur = isLight ? 'backdrop-filter: blur(25px);' : 'backdrop-filter: blur(25px);';
+
+            modal.innerHTML = `
+                <div class="p-6 rounded-2xl max-w-sm w-full border transform modal-scale-up text-center"
+                     style="background: ${cardBg}; border-color: ${borderCol}; ${shadow}; ${glassBlur}">
+                    <div class="w-12 h-12 rounded-full bg-pink-500/10 flex items-center justify-center mx-auto mb-4 text-pink-500 text-xl">
+                        <i class="ph-fill ph-envelope-open"></i>
+                    </div>
+                    <h3 class="text-lg font-bold ${textTitle} mb-2">Supervisor Feedback</h3>
+                    <div class="max-h-[35vh] overflow-y-auto pr-1 mb-6 text-left border-b ${isLight ? 'border-slate-100' : 'border-white/5'} pb-4">
+                        <p class="text-sm ${textBody} whitespace-pre-line leading-relaxed">${feedbackText}</p>
+                    </div>
+                    <div class="flex items-center justify-between mb-6 px-1">
+                        <span class="text-xs font-semibold ${isLight ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-wider">Mark as Resolved / Fixed</span>
+                        <input type="checkbox" id="modal-feedback-fixed-checkbox" class="rounded border-white/10 text-primary focus:ring-0 focus:ring-offset-0 bg-surface/50 h-5 w-5 cursor-pointer" ${isFixed ? 'checked' : ''}>
+                    </div>
+                    <button class="modal-close-btn w-full ${btnBg} ${btnText} font-semibold py-2.5 px-4 rounded-xl transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5">
+                        Dismiss
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            const closeBtn = modal.querySelector('.modal-close-btn');
+            const checkbox = modal.querySelector('#modal-feedback-fixed-checkbox');
+            
+            checkbox.addEventListener('change', () => {
+                onToggleFixed(checkbox.checked);
+            });
+            
             closeBtn.focus();
             closeBtn.addEventListener('click', () => {
                 modal.classList.replace('modal-fade-in', 'modal-fade-out');
