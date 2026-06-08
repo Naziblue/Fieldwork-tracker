@@ -138,9 +138,9 @@
         <!-- Sidebar Navigation -->
         <aside id="main-sidebar"
             class="w-64 bg-sidebar/95 text-sidebar-text border-r border-sidebar-text/10 flex flex-col z-20 fixed lg:relative inset-y-0 left-0 transition-transform duration-300 ease-in-out">
-            <div class="p-4 flex items-center justify-between border-b border-white/5">
-                <img src="fieldly-logo.png" alt="Fieldly" class="w-[75%]">
-                <button onclick="closeSidebar()" class="lg:hidden p-1.5 text-sidebar-muted hover:text-sidebar-text hover:bg-white/10 rounded-lg transition-colors flex-shrink-0" title="Close sidebar">
+            <div class="p-4 flex items-center justify-center border-b border-white/5 relative">
+                <img src="fieldly-logo.png" alt="Fieldly" class="w-[85%]">
+                <button onclick="closeSidebar()" class="lg:hidden absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-sidebar-muted hover:text-sidebar-text hover:bg-white/10 rounded-lg transition-colors" title="Close sidebar">
                     <i class="ph ph-x text-lg"></i>
                 </button>
             </div>
@@ -226,12 +226,12 @@
 
         <!-- Main Content -->
         <main id="main-content" class="flex-1 flex flex-col h-full overflow-hidden bg-background relative transition-all duration-300">
-            <!-- Top Header (always visible, shows toggle button when sidebar is closed) -->
+            <!-- Top Header (mobile only — hamburger to open sidebar) -->
             <header
                 class="h-14 border-b border-white/5 flex items-center justify-between px-4 bg-sidebar/95 backdrop-blur-md z-10 lg:hidden">
-                <img src="fieldly-logo.png" alt="Fieldly" class="h-9">
-                <button id="mobile-menu-btn" onclick="openSidebar()" class="p-2 text-text-muted hover:text-white rounded-lg hover:bg-white/5 transition-colors">
+                <button id="mobile-menu-btn" onclick="openSidebar()" class="p-2 text-text-muted hover:text-white rounded-lg hover:bg-white/5 transition-colors flex items-center gap-2">
                     <i class="ph ph-list text-2xl"></i>
+                    <span class="text-sm font-semibold text-sidebar-text">Menu</span>
                 </button>
             </header>
 
