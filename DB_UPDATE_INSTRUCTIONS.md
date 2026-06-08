@@ -24,14 +24,7 @@ service cloud.firestore {
     // Admins can read all profiles.
     match /users/{userId} {
       allow write: if request.auth != null && request.auth.uid == userId;
-      allow read: if request.auth != null && (
-        request.auth.uid == userId ||
-        (resource != null && 'supervisorEmails' in resource.data && request.auth.token.email in resource.data.supervisorEmails) ||
-        (resource != null && 'email' in resource.data && 
-         'supervisorEmails' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data &&
-         resource.data.email in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.supervisorEmails) ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
-      );
+      allow read: if request.auth != null;
     }
 
     // --- 2. Fieldwork Entries Subcollection ---
