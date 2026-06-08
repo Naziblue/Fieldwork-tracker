@@ -956,6 +956,31 @@ const handleTableClick = async (e) => {
         return;
     }
 
+    // Handle Click on Delete Supervisor Note button
+    const deleteSupNoteBtn = e.target.closest('.delete-supervisor-note-btn');
+    if (deleteSupNoteBtn) {
+        const entryId = deleteSupNoteBtn.dataset.id;
+        
+        if (selectedTraineeId) {
+            const confirmed = await CustomModal.confirm(
+                "Are you sure you want to delete your feedback/note for this entry? This will also remove it from the trainee's page.",
+                "Delete Supervisor Note"
+            );
+            if (confirmed) {
+                const entryRef = doc(db, `users/${selectedTraineeId}/entries/${entryId}`);
+                try {
+                    await updateDoc(entryRef, { supervisorNote: "" });
+                    await CustomModal.alert("Supervisor note deleted successfully!", "Note Deleted", "ph-trash");
+                    selectTrainee(selectedTraineeId);
+                } catch (error) {
+                    console.error("Error deleting supervisor note:", error);
+                    await CustomModal.alert("Failed to delete note: " + error.message, "Error");
+                }
+            }
+        }
+        return;
+    }
+
     // Handle Duplicate
     const dupBtn = e.target.closest('.duplicate-btn');
     if (dupBtn) {
@@ -1692,10 +1717,11 @@ const renderTraineeReview = async (entries) => {
 
                 // In supervisor dashboard, we do not show the magenta row or envelope icon 
                 // since this is the supervisor view, not the trainee recipient view.
+                // Instead, we show a mustard yellow row so she can see which rows already have notes on them.
                 let notesCellContent = notesDisplay;
 
                 return `
-                    <tr class="hover:bg-surface-hover transition-colors">
+                    <tr class="${hasSupervisorNote ? 'mustard-row' : ''} hover:bg-surface-hover transition-colors">
                         <td class="px-4 py-3 text-white">${dayjs(entry.date).format('MMM D')}</td>
                         <td class="px-4 py-3 text-text-muted text-xs">${entry.startTime} - ${entry.endTime}</td>
                         <td class="px-4 py-3 text-white font-medium">${calculateHours(entry.startTime, entry.endTime).toFixed(2)}</td>
@@ -1712,9 +1738,16 @@ const renderTraineeReview = async (entries) => {
                         <td class="px-4 py-3 text-text-muted text-xs">${entry.supervisorName || '-'}</td>
                         <td class="note-cell px-4 py-3 text-text-muted text-xs hidden md:table-cell max-w-xs truncate cursor-pointer hover:text-white transition-all duration-200" data-has-feedback="${hasSupervisorNote}" data-feedback="${(entry.supervisorNote || '').replace(/"/g, '&quot;')}" data-notes="${notesDisplay.replace(/"/g, '&quot;')}" title="${hasSupervisorNote ? 'Click to read supervisor note' : 'Click to view full note'}">${notesCellContent}</td>
                         <td class="px-4 py-3 text-right">
-                            <button class="add-supervisor-note-btn p-2 rounded-lg hover:bg-surface-hover text-primary hover:text-white transition-all duration-200" data-id="${entry.id}" data-supervisor-note="${(entry.supervisorNote || '').replace(/"/g, '&quot;')}" title="Add/Edit Supervisor Note">
-                                <i class="ph-bold ph-note-pencil"></i>
-                            </button>
+                            <div class="flex justify-end gap-1">
+                                <button class="add-supervisor-note-btn p-2 rounded-lg hover:bg-surface-hover text-primary hover:text-white transition-all duration-200" data-id="${entry.id}" data-supervisor-note="${(entry.supervisorNote || '').replace(/"/g, '&quot;')}" title="Add/Edit Supervisor Note">
+                                    <i class="ph-bold ph-note-pencil"></i>
+                                </button>
+                                ${hasSupervisorNote ? `
+                                <button class="delete-supervisor-note-btn p-2 rounded-lg hover:bg-surface-hover text-red-400 hover:text-red-500 transition-all duration-200" data-id="${entry.id}" title="Delete Supervisor Note">
+                                    <i class="ph-bold ph-trash"></i>
+                                </button>
+                                ` : ''}
+                            </div>
                         </td>
                     </tr>
                 `;

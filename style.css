@@ -828,3 +828,19 @@ select.bg-transparent {
 .animate-bounce-slow {
     animation: bounceSlow 2s ease-in-out infinite;
 }
+
+/* Mustard yellow row styling for supervisor dashboard entries with notes */
+.mustard-row {
+    background-color: rgba(234, 179, 8, 0.08) !important; /* yellow-500/8 */
+    border-left: 3px solid rgb(234, 179, 8) !important; /* yellow-500 */
+}
+.mustard-row:hover {
+    background-color: rgba(234, 179, 8, 0.14) !important; /* yellow-500/14 */
+}
+.light-mode .mustard-row {
+    background-color: rgba(202, 138, 4, 0.05) !important; /* yellow-600/5 */
+    border-left: 3px solid rgb(202, 138, 4) !important; /* yellow-600 */
+}
+.light-mode .mustard-row:hover {
+    background-color: rgba(202, 138, 4, 0.09) !important;
+}
