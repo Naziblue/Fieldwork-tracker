@@ -1876,13 +1876,22 @@ const updateChatView = async () => {
             
             const resolvedSupervisors = [];
             for (const sup of supervisors) {
-                const q = query(collection(db, 'users'), where('email', '==', sup.email), where('role', '==', 'supervisor'));
-                const querySnapshot = await getDocs(q);
-                if (!querySnapshot.empty) {
-                    const docSnap = querySnapshot.docs[0];
-                    resolvedSupervisors.push({ id: docSnap.id, name: sup.name || docSnap.data().name || 'Supervisor', email: sup.email });
-                } else {
-                    // Fallback to email if not yet registered in Firestore
+                if (!sup || !sup.email || typeof sup.email !== 'string' || !sup.email.trim()) {
+                    resolvedSupervisors.push({ id: null, name: sup ? sup.name || 'Supervisor' : 'Supervisor', email: sup ? sup.email || '' : '', notRegistered: true });
+                    continue;
+                }
+                
+                try {
+                    const q = query(collection(db, 'users'), where('email', '==', sup.email.trim()), where('role', '==', 'supervisor'));
+                    const querySnapshot = await getDocs(q);
+                    if (!querySnapshot.empty) {
+                        const docSnap = querySnapshot.docs[0];
+                        resolvedSupervisors.push({ id: docSnap.id, name: sup.name || docSnap.data().name || 'Supervisor', email: sup.email });
+                    } else {
+                        resolvedSupervisors.push({ id: null, name: sup.name || 'Supervisor', email: sup.email, notRegistered: true });
+                    }
+                } catch (err) {
+                    console.error("Error resolving supervisor:", sup.email, err);
                     resolvedSupervisors.push({ id: null, name: sup.name || 'Supervisor', email: sup.email, notRegistered: true });
                 }
             }
@@ -1917,7 +1926,7 @@ const updateChatView = async () => {
 
     } catch (error) {
         console.error("Error loading chat contacts:", error);
-        contactsList.innerHTML = '<div class="p-4 text-center text-red-400 text-xs">Error loading contacts.</div>';
+        contactsList.innerHTML = `<div class="p-4 text-center text-red-400 text-xs">Error loading contacts: ${error.message}</div>`;
     }
 };
 
