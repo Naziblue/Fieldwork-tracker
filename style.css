@@ -761,3 +761,42 @@ select.bg-transparent {
 .modal-scale-down {
     animation: modalScaleDown 0.18s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
 }
+
+/* ==========================================================================
+   📱 RESPONSIVE SIDEBAR
+   ========================================================================== */
+
+/* Sidebar shadow when overlaying content (mobile) */
+#main-sidebar {
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.25);
+    height: 100dvh; /* Use dynamic viewport height */
+}
+
+/* On lg+ the sidebar is in the normal flow, no external shadow needed */
+@media (min-width: 1024px) {
+    #main-sidebar {
+        box-shadow: none;
+        position: relative;
+        transform: translateX(0) !important;
+    }
+
+    #main-content {
+        margin-left: 0;
+    }
+}
+
+/* Smooth sidebar slide animation */
+#main-sidebar {
+    will-change: transform;
+}
+
+/* Mobile header hamburger button pulse on first load hint */
+@keyframes menuHint {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.12); }
+}
+
+#mobile-menu-btn {
+    animation: menuHint 1.8s ease-in-out 1s 2;
+}
+

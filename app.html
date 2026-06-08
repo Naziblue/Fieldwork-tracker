@@ -132,11 +132,17 @@
     <!-- App Layout (Hidden by default) -->
     <div id="app-container" class="hidden w-full h-full flex flex-col md:flex-row relative">
 
+        <!-- Sidebar Overlay Backdrop (mobile/collapsed) -->
+        <div id="sidebar-backdrop" class="fixed inset-0 z-10 bg-slate-900/60 backdrop-blur-sm hidden transition-opacity duration-300 lg:hidden" onclick="closeSidebar()"></div>
+
         <!-- Sidebar Navigation -->
-        <aside
-            class="w-full md:w-64 bg-sidebar/95 text-sidebar-text border-r border-sidebar-text/10 flex flex-col z-20 md:relative transition-colors duration-300">
-            <div class="p-4 flex items-center justify-center border-b border-white/5">
-                <img src="fieldly-logo.png" alt="Fieldly" class="w-[85%]">
+        <aside id="main-sidebar"
+            class="w-64 bg-sidebar/95 text-sidebar-text border-r border-sidebar-text/10 flex flex-col z-20 fixed lg:relative inset-y-0 left-0 transition-transform duration-300 ease-in-out">
+            <div class="p-4 flex items-center justify-between border-b border-white/5">
+                <img src="fieldly-logo.png" alt="Fieldly" class="w-[75%]">
+                <button onclick="closeSidebar()" class="lg:hidden p-1.5 text-sidebar-muted hover:text-sidebar-text hover:bg-white/10 rounded-lg transition-colors flex-shrink-0" title="Close sidebar">
+                    <i class="ph ph-x text-lg"></i>
+                </button>
             </div>
 
             <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
@@ -219,12 +225,12 @@
         </aside>
 
         <!-- Main Content -->
-        <main class="flex-1 flex flex-col h-full overflow-hidden bg-background relative">
-            <!-- Top Header (Mobile Only / Context) -->
+        <main id="main-content" class="flex-1 flex flex-col h-full overflow-hidden bg-background relative transition-all duration-300">
+            <!-- Top Header (always visible, shows toggle button when sidebar is closed) -->
             <header
-                class="md:hidden h-16 border-b border-white/5 flex items-center justify-between px-4 bg-slate-900/90 backdrop-blur-md z-10">
-                <img src="fieldly-logo.png" alt="Fieldly" class="h-10">
-                <button id="mobile-menu-btn" class="p-2 text-text-muted hover:text-white">
+                class="h-14 border-b border-white/5 flex items-center justify-between px-4 bg-sidebar/95 backdrop-blur-md z-10 lg:hidden">
+                <img src="fieldly-logo.png" alt="Fieldly" class="h-9">
+                <button id="mobile-menu-btn" onclick="openSidebar()" class="p-2 text-text-muted hover:text-white rounded-lg hover:bg-white/5 transition-colors">
                     <i class="ph ph-list text-2xl"></i>
                 </button>
             </header>
@@ -937,6 +943,51 @@
     <div id="edit-modal" class="hidden"></div>
 
     <script type="module" src="app.js?v=pdf_smart_panel"></script>
+
+    <!-- Responsive Sidebar Script -->
+    <script>
+        const SIDEBAR_BREAKPOINT = 1024; // px — matches Tailwind's `lg`
+        const sidebar = document.getElementById('main-sidebar');
+        const backdrop = document.getElementById('sidebar-backdrop');
+        const mainContent = document.getElementById('main-content');
+
+        function openSidebar() {
+            sidebar.classList.remove('-translate-x-full');
+            if (window.innerWidth < SIDEBAR_BREAKPOINT) {
+                backdrop.classList.remove('hidden');
+            }
+        }
+
+        function closeSidebar() {
+            sidebar.classList.add('-translate-x-full');
+            backdrop.classList.add('hidden');
+        }
+
+        function handleResize() {
+            if (window.innerWidth >= SIDEBAR_BREAKPOINT) {
+                // Desktop: always show sidebar, no backdrop
+                sidebar.classList.remove('-translate-x-full');
+                backdrop.classList.add('hidden');
+            } else {
+                // Mobile/tablet: collapse sidebar by default
+                sidebar.classList.add('-translate-x-full');
+                backdrop.classList.add('hidden');
+            }
+        }
+
+        // Init on load
+        handleResize();
+        window.addEventListener('resize', handleResize);
+
+        // Close sidebar when a nav item is clicked on mobile
+        document.querySelectorAll('.view-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (window.innerWidth < SIDEBAR_BREAKPOINT) {
+                    closeSidebar();
+                }
+            });
+        });
+    </script>
 </body>
 
 </html>
