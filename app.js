@@ -515,6 +515,7 @@ const switchView = async (viewId) => {
             case 'monthly': updateMonthlyView(); break;
             case 'yearly': updateYearlyView(); break;
             case 'all-time': updateAllTimeView(); break;
+            case 'supervisor-dashboard': showTraineeList(); break;
         }
     } catch (e) {
         console.error("Error in switchView:", e);
@@ -1478,7 +1479,7 @@ const renderTraineesList = () => {
 
     if (myTrainees.length === 0) {
         traineesList.innerHTML = `
-            <div class="p-4 rounded-xl bg-white/5 border border-white/5 text-center py-10">
+            <div class="col-span-full p-4 rounded-xl bg-white/5 border border-white/5 text-center py-10">
                 <i class="ph ph-users text-3xl text-text-muted mb-2"></i>
                 <p class="text-sm text-text-muted">No trainees linked yet.</p>
             </div>`;
@@ -1503,9 +1504,17 @@ const renderTraineesList = () => {
     });
 };
 
+const showTraineeList = () => {
+    const listContainer = document.getElementById('trainee-list-container');
+    const reviewContainer = document.getElementById('trainee-review-container');
+    if (listContainer) listContainer.classList.remove('hidden');
+    if (reviewContainer) reviewContainer.classList.add('hidden');
+    selectedTraineeId = null;
+};
+
 const selectTrainee = async (traineeId) => {
-    const traineeReviewPlaceholder = document.getElementById('trainee-review-placeholder');
-    const traineeReviewContent = document.getElementById('trainee-review-content');
+    const listContainer = document.getElementById('trainee-list-container');
+    const reviewContainer = document.getElementById('trainee-review-container');
     const reviewTraineeName = document.getElementById('review-trainee-name');
     const reviewTraineeEmail = document.getElementById('review-trainee-email');
 
@@ -1513,8 +1522,8 @@ const selectTrainee = async (traineeId) => {
     const trainee = myTrainees.find(t => t.id === traineeId);
     if (!trainee) return;
 
-    if (traineeReviewPlaceholder) traineeReviewPlaceholder.classList.add('hidden');
-    if (traineeReviewContent) traineeReviewContent.classList.remove('hidden');
+    if (listContainer) listContainer.classList.add('hidden');
+    if (reviewContainer) reviewContainer.classList.remove('hidden');
     if (reviewTraineeName) reviewTraineeName.textContent = trainee.name || 'Unknown Trainee';
     if (reviewTraineeEmail) reviewTraineeEmail.textContent = trainee.email;
 
@@ -1633,12 +1642,17 @@ const setupSupervisorListeners = () => {
 
     const addTraineeBtn = document.getElementById('add-trainee-btn');
     const signMonthBtn = document.getElementById('sign-month-btn');
+    const backToTraineesBtn = document.getElementById('back-to-trainees-btn');
 
     if (addTraineeBtn) {
         addTraineeBtn.addEventListener('click', async () => {
             await CustomModal.alert("Trainees must add your email in their Settings > Profile to link with you.", "Link Trainee");
             updateSupervisorDashboard();
         });
+    }
+
+    if (backToTraineesBtn) {
+        backToTraineesBtn.addEventListener('click', showTraineeList);
     }
 
     if (signMonthBtn) {
@@ -1665,7 +1679,7 @@ const setupSupervisorListeners = () => {
                 console.error("Error signing month:", error);
             }
         });
-    };
+    }
 };
 
 // --- Custom Dialogue Modal System ---

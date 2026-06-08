@@ -440,89 +440,80 @@
                         <p class="text-text-muted mt-1">Manage your trainees and review their fieldwork logs.</p>
                     </div>
 
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <!-- Trainee List -->
-                        <div class="lg:col-span-1 space-y-4">
-                            <div class="flex items-center justify-between mb-2">
-                                <h3 class="text-sm font-semibold text-primary uppercase tracking-wider">My Trainees
-                                </h3>
-                                <button id="add-trainee-btn"
-                                    class="text-xs text-text-muted hover:text-white flex items-center gap-1">
-                                    <i class="ph ph-plus"></i> Add by Email
-                                </button>
-                            </div>
-                            <div id="trainees-list" class="space-y-3">
-                                <!-- Populated by JS -->
-                                <div class="p-4 rounded-xl bg-white/5 border border-white/5 text-center py-10">
-                                    <i class="ph ph-users text-3xl text-text-muted mb-2"></i>
-                                    <p class="text-sm text-text-muted">No trainees linked yet.</p>
-                                </div>
+                    <!-- Trainee List Container -->
+                    <div id="trainee-list-container" class="space-y-4 max-w-4xl mx-auto">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-sm font-semibold text-primary uppercase tracking-wider">My Trainees</h3>
+                            <button id="add-trainee-btn"
+                                class="px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary hover:text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all">
+                                <i class="ph ph-plus text-sm"></i> Add Trainee by Email
+                            </button>
+                        </div>
+                        <div id="trainees-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Populated by JS -->
+                            <div class="col-span-full p-4 rounded-xl bg-white/5 border border-white/5 text-center py-10">
+                                <i class="ph ph-users text-3xl text-text-muted mb-2"></i>
+                                <p class="text-sm text-text-muted">No trainees linked yet.</p>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Trainee Detail / Review Area -->
-                        <div class="lg:col-span-2">
-                            <div id="trainee-review-placeholder"
-                                class="glass-panel rounded-2xl p-12 text-center flex flex-col items-center justify-center h-full min-h-[400px]">
-                                <div class="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mb-6">
-                                    <i class="ph ph-magnifying-glass text-4xl text-text-muted"></i>
+                    <!-- Trainee Review Container (hidden by default) -->
+                    <div id="trainee-review-container" class="hidden space-y-6 max-w-7xl mx-auto animate-fade-in">
+                        <!-- Back button and title info -->
+                        <div class="flex items-center justify-between">
+                            <button id="back-to-trainees-btn"
+                                class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-300 bg-white/5 hover:bg-white/10 hover:text-white border border-white/5 rounded-xl transition-all shadow-sm">
+                                <i class="ph-bold ph-arrow-left"></i> Back to Trainees List
+                            </button>
+                        </div>
+
+                        <div id="trainee-review-content" class="space-y-6">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-4">
+                                    <div
+                                        class="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+                                        <i class="ph-fill ph-user text-2xl"></i>
+                                    </div>
+                                    <div>
+                                        <h3 id="review-trainee-name" class="text-xl font-bold text-white">Jane Doe</h3>
+                                        <p id="review-trainee-email" class="text-sm text-text-muted">jane@example.com</p>
+                                    </div>
                                 </div>
-                                <h3 class="text-xl font-bold text-white mb-2">Select a Trainee</h3>
-                                <p class="text-text-muted max-w-xs">Choose a trainee from the list to review their
-                                    hours
-                                    and provide digital signatures.</p>
+                                <div class="flex gap-2">
+                                    <select id="review-month-selector"
+                                        class="input-field rounded-lg px-3 py-1.5 text-sm bg-surface">
+                                        <!-- Populated by JS -->
+                                    </select>
+                                </div>
                             </div>
 
-                            <div id="trainee-review-content" class="hidden space-y-6">
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center gap-4">
-                                        <div
-                                            class="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary">
-                                            <i class="ph-fill ph-user text-2xl"></i>
-                                        </div>
-                                        <div>
-                                            <h3 id="review-trainee-name" class="text-xl font-bold text-white">Jane
-                                                Doe
-                                            </h3>
-                                            <p id="review-trainee-email" class="text-sm text-text-muted">
-                                                jane@example.com</p>
-                                        </div>
-                                    </div>
-                                    <div class="flex gap-2">
-                                        <select id="review-month-selector"
-                                            class="input-field rounded-lg px-3 py-1.5 text-sm bg-surface">
-                                            <!-- Populated by JS -->
-                                        </select>
-                                    </div>
-                                </div>
+                            <div id="review-stats-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                <!-- Populated by JS -->
+                            </div>
 
-                                <div id="review-stats-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                                    <!-- Populated by JS -->
+                            <div class="glass-panel rounded-2xl overflow-hidden flex flex-col h-[400px]">
+                                <div class="overflow-auto flex-1">
+                                    <table class="w-full text-sm text-left">
+                                        <thead
+                                            class="text-xs text-sidebar-text uppercase table-header-theme sticky top-0 z-10 backdrop-blur-md">
+                                            <tr id="review-table-header">
+                                                <!-- Headers injected by JS -->
+                                            </tr>
+                                        </thead>
+                                        <tbody id="review-table-body" class="divide-y divide-white/5">
+                                            <!-- Rows injected by JS -->
+                                        </tbody>
+                                    </table>
                                 </div>
+                            </div>
 
-                                <div class="glass-panel rounded-2xl overflow-hidden flex flex-col h-[400px]">
-                                    <div class="overflow-auto flex-1">
-                                        <table class="w-full text-sm text-left">
-                                            <thead
-                                                class="text-xs text-sidebar-text uppercase table-header-theme sticky top-0 z-10 backdrop-blur-md">
-                                                <tr id="review-table-header">
-                                                    <!-- Headers injected by JS -->
-                                                </tr>
-                                            </thead>
-                                            <tbody id="review-table-body" class="divide-y divide-white/5">
-                                                <!-- Rows injected by JS -->
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-
-                                <div class="flex justify-end gap-4">
-                                    <button id="sign-month-btn"
-                                        class="px-6 py-3 bg-primary hover:bg-primary-hover text-white font-bold rounded-xl shadow-glow transition-all flex items-center gap-2">
-                                        <i class="ph-fill ph-pencil-line"></i>
-                                        Digitally Sign Month
-                                    </button>
-                                </div>
+                            <div class="flex justify-end gap-4">
+                                <button id="sign-month-btn"
+                                    class="px-6 py-3 bg-primary hover:bg-primary-hover text-white font-bold rounded-xl shadow-glow transition-all flex items-center gap-2">
+                                    <i class="ph-fill ph-pencil-line"></i>
+                                    Digitally Sign Month
+                                </button>
                             </div>
                         </div>
                     </div>
