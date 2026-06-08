@@ -414,66 +414,130 @@
             const ctx = canvas.getContext('2d');
             let W, H, particles = [];
 
+            // Mouse tracking
+            const mouse = { x: -9999, y: -9999 };
+            window.addEventListener('mousemove', e => {
+                mouse.x = e.clientX;
+                mouse.y = e.clientY;
+            });
+            window.addEventListener('mouseleave', () => {
+                mouse.x = -9999;
+                mouse.y = -9999;
+            });
+
             const COLORS = [
-                '#6366f1', '#818cf8', '#a5b4fc',   // indigo
-                '#ec4899', '#f472b6', '#fbcfe8',   // pink
-                '#06b6d4', '#22d3ee', '#67e8f9',   // cyan
-                '#f59e0b', '#fbbf24',               // amber
-                '#ef4444',                          // red
+                '#6366f1', '#818cf8', '#a5b4fc',
+                '#ec4899', '#f472b6', '#fbcfe8',
+                '#06b6d4', '#22d3ee', '#67e8f9',
+                '#f59e0b', '#fbbf24',
+                '#ef4444',
             ];
+
+            const REPEL_RADIUS = 120;   // px — how close before repulsion kicks in
+            const REPEL_FORCE  = 6.5;   // strength of push
+            const RETURN_EASE  = 0.045; // how fast they drift back (0=instant, 1=never)
+            const FRICTION     = 0.82;  // velocity damping each frame
+
+            function rnd(a, b) { return a + Math.random() * (b - a); }
 
             function resize() {
                 W = canvas.width  = window.innerWidth;
                 H = canvas.height = window.innerHeight;
             }
 
-            function randomBetween(a, b) { return a + Math.random() * (b - a); }
-
             function createParticle() {
+                const ox = rnd(0, W);
+                const oy = rnd(0, H * 2.5);
                 return {
-                    x: randomBetween(0, W),
-                    y: randomBetween(-H, H * 2),
-                    w: randomBetween(2, 5),
-                    h: randomBetween(6, 14),
+                    // Origin (home position for gravity-return)
+                    ox, oy,
+                    // Current position
+                    x: ox, y: oy,
+                    // Velocity
+                    vx: rnd(-0.15, 0.15),
+                    vy: rnd(0.15, 0.55),
+                    // Visual
+                    w:     rnd(2, 5),
+                    h:     rnd(6, 15),
                     color: COLORS[Math.floor(Math.random() * COLORS.length)],
-                    speed: randomBetween(0.2, 0.7),
-                    drift: randomBetween(-0.3, 0.3),
-                    angle: randomBetween(0, Math.PI * 2),
-                    spin:  randomBetween(-0.02, 0.02),
-                    opacity: randomBetween(0.35, 0.75),
+                    angle: rnd(0, Math.PI * 2),
+                    spin:  rnd(-0.018, 0.018),
+                    opacity: rnd(0.3, 0.72),
+                    // Per-particle repel radius variation
+                    repelR: REPEL_RADIUS * rnd(0.7, 1.3),
                 };
             }
 
             function init() {
                 resize();
                 particles = [];
-                const count = Math.min(160, Math.floor((W * H) / 8000));
+                const count = Math.min(180, Math.floor((W * H) / 7500));
                 for (let i = 0; i < count; i++) particles.push(createParticle());
             }
 
             function draw() {
                 ctx.clearRect(0, 0, W, H);
+
                 for (const p of particles) {
+                    // ── Mouse repulsion ──
+                    const dx = p.x - mouse.x;
+                    const dy = p.y - mouse.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < p.repelR && dist > 0) {
+                        const force = (1 - dist / p.repelR) * REPEL_FORCE;
+                        p.vx += (dx / dist) * force;
+                        p.vy += (dy / dist) * force;
+                        // Speed up spin on interaction
+                        p.spin = Math.sign(p.spin) * Math.min(Math.abs(p.spin) + 0.005, 0.12);
+                    } else {
+                        // Dampen spin back toward original slow spin
+                        p.spin *= 0.97;
+                    }
+
+                    // ── Friction ──
+                    p.vx *= FRICTION;
+                    p.vy *= FRICTION;
+
+                    // ── Apply velocity ──
+                    p.x += p.vx;
+                    p.y += p.vy;
+
+                    // ── Drift the origin downward (normal float) ──
+                    p.oy += rnd(0.1, 0.45);
+
+                    // ── Soft return toward origin (elastic / gravity) ──
+                    p.x += (p.ox - p.x) * RETURN_EASE;
+                    p.y += (p.oy - p.y) * RETURN_EASE;
+
+                    // ── Wrap vertical ──
+                    if (p.oy > H + 30) {
+                        p.oy = -30;
+                        p.y  = p.oy;
+                        p.ox = rnd(0, W);
+                        p.x  = p.ox;
+                        p.vx = 0; p.vy = 0;
+                    }
+
+                    // ── Wrap horizontal ──
+                    if (p.ox < -30)  { p.ox = W + 30; p.x = p.ox; }
+                    if (p.ox > W+30) { p.ox = -30;   p.x = p.ox; }
+
+                    // ── Spin ──
+                    p.angle += p.spin;
+
+                    // ── Draw ──
                     ctx.save();
                     ctx.globalAlpha = p.opacity;
                     ctx.translate(p.x, p.y);
                     ctx.rotate(p.angle);
                     ctx.fillStyle = p.color;
-                    // Rounded rectangle dash
                     ctx.beginPath();
                     ctx.roundRect(-p.w / 2, -p.h / 2, p.w, p.h, p.w / 2);
                     ctx.fill();
                     ctx.restore();
-
-                    p.y += p.speed;
-                    p.x += p.drift;
-                    p.angle += p.spin;
-
-                    // Wrap around
-                    if (p.y > H + 20) { p.y = -20; p.x = randomBetween(0, W); }
-                    if (p.x < -20)  p.x = W + 20;
-                    if (p.x > W+20) p.x = -20;
                 }
+
                 requestAnimationFrame(draw);
             }
 
