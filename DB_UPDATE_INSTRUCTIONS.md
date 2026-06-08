@@ -55,13 +55,22 @@ service cloud.firestore {
       );
     }
 
-    // --- 4. Admin & Requested Collections (Unchanged/Kept safe) ---
+    // --- 4. Chat Messages Subcollection ---
+    // Trainees and their linked supervisors can read/write chat messages.
+    match /users/{userId}/chats/{supervisorUid}/messages/{messageId} {
+      allow read, write: if request.auth != null && (
+        request.auth.uid == userId ||
+        request.auth.token.email in get(/databases/$(database)/documents/users/$(userId)).data.supervisorEmails
+      );
+    }
+
+    // --- 5. Admin & Requested Collections (Unchanged/Kept safe) ---
     match /admin/{docId} { allow read, write: if true; } 
     match /adminLogs/{docId} { allow read, write: if true; }
     match /settings/{docId} { allow read, write: if true; }
     match /invitations/{docId} { allow read, write: if true; }
     
-    // --- 5. Future/Placeholder Collections (Unchanged/Kept safe) ---
+    // --- 6. Future/Placeholder Collections (Unchanged/Kept safe) ---
     match /blocks/{docId} { allow read, write: if true; }
     match /history/{docId} { allow read, write: if true; }
     match /metrics/{docId} { allow read, write: if true; }
@@ -69,7 +78,7 @@ service cloud.firestore {
     match /pages/{docId} { allow read, write: if true; }
     match /workspaces/{docId} { allow read, write: if true; }
 
-    // --- 6. Legacy Backup Collections (Unchanged/Kept safe) ---
+    // --- 7. Legacy Backup Collections (Unchanged/Kept safe) ---
     match /artifacts/{appId}/{document=**} {
       allow read, write: if true;
     }

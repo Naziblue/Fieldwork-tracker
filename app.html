@@ -169,6 +169,12 @@
                         <i class="ph ph-chart-line-up text-lg group-hover:text-accent transition-colors"></i>
                         <span>All Time Stats</span>
                     </button>
+                    <button
+                        class="view-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-muted hover:text-sidebar-text hover:bg-sidebar-text/5 transition-all group"
+                        data-view="chat">
+                        <i class="ph ph-chat-centered-text text-lg group-hover:text-primary transition-colors"></i>
+                        <span>Messages</span>
+                    </button>
                 </div>
 
                 <!-- Supervisor Navigation -->
@@ -180,6 +186,12 @@
                         data-view="supervisor-dashboard">
                         <i class="ph ph-users-three text-lg group-hover:text-primary transition-colors"></i>
                         <span>My Trainees</span>
+                    </button>
+                    <button
+                        class="view-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-muted hover:text-sidebar-text hover:bg-sidebar-text/5 transition-all group"
+                        data-view="chat">
+                        <i class="ph ph-chat-centered-text text-lg group-hover:text-primary transition-colors"></i>
+                        <span>Messages</span>
                     </button>
                 </div>
 
@@ -514,6 +526,63 @@
                                     <i class="ph-fill ph-pencil-line"></i>
                                     Digitally Sign Month
                                 </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CHAT/MESSAGES VIEW -->
+                <div id="chat-view" class="view-container hidden animate-fade-in max-w-6xl mx-auto h-[calc(100vh-140px)] flex flex-col">
+                    <div class="mb-4">
+                        <h2 class="text-3xl font-bold text-white tracking-tight">Messages</h2>
+                        <p class="text-text-muted mt-1">Communicate directly with your linked trainees or supervisors.</p>
+                    </div>
+
+                    <div class="flex-1 glass-panel rounded-2xl overflow-hidden flex divide-x divide-white/5 h-0 min-h-[450px]">
+                        <!-- Left pane: Contacts/Conversations list -->
+                        <div class="w-64 sm:w-80 flex flex-col h-full bg-sidebar/20">
+                            <div class="p-4 border-b border-white/5">
+                                <h3 id="chat-contacts-title" class="text-xs font-semibold text-primary uppercase tracking-wider">Conversations</h3>
+                            </div>
+                            <div id="chat-contacts-list" class="flex-1 overflow-y-auto p-2 space-y-1">
+                                <!-- Populated by JS: Trainees or Supervisors -->
+                            </div>
+                        </div>
+
+                        <!-- Right pane: Active Chat Area -->
+                        <div id="chat-active-area" class="flex-1 flex flex-col h-full bg-surface/5 relative">
+                            <!-- Placeholder when no conversation is selected -->
+                            <div id="chat-placeholder" class="flex-1 flex flex-col items-center justify-center text-center p-8">
+                                <i class="ph ph-chat-centered-text text-5xl mb-4 text-text-muted opacity-30"></i>
+                                <h4 class="text-white font-medium mb-1">Your Inbox</h4>
+                                <p class="text-text-muted text-sm max-w-xs">Select a supervisor or trainee from the list on the left to start messaging.</p>
+                            </div>
+
+                            <!-- Chat conversation window -->
+                            <div id="chat-window" class="flex-1 flex flex-col h-full hidden">
+                                <!-- Active contact header -->
+                                <div class="p-4 border-b border-white/5 bg-sidebar/10 flex items-center justify-between">
+                                    <div>
+                                        <h4 id="chat-active-name" class="text-white font-medium text-sm">Active Contact</h4>
+                                        <p id="chat-active-email" class="text-xs text-text-muted">contact@example.com</p>
+                                    </div>
+                                </div>
+
+                                <!-- Messages history -->
+                                <div id="chat-messages-container" class="flex-1 overflow-y-auto p-4 space-y-4 flex flex-col">
+                                    <!-- Populated by JS, scrollable -->
+                                </div>
+
+                                <!-- Message Input Box -->
+                                <form id="chat-input-form" class="p-4 border-t border-white/5 bg-sidebar/5 flex gap-2 items-center">
+                                    <input type="text" id="chat-message-input" autocomplete="off"
+                                        class="flex-1 input-field rounded-xl px-4 py-3 text-sm bg-surface border border-white/5 text-white focus:outline-none focus:border-primary/50"
+                                        placeholder="Type your message here...">
+                                    <button type="submit"
+                                        class="p-3 bg-primary hover:bg-primary-hover text-white rounded-xl shadow-glow transition-all flex items-center justify-center">
+                                        <i class="ph-bold ph-paper-plane-tilt text-lg"></i>
+                                    </button>
+                                </form>
                             </div>
                         </div>
                     </div>

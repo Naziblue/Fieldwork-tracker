@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, setDoc, getDoc, query, where, getDocs, collectionGroup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, setDoc, getDoc, query, where, getDocs, collectionGroup, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // --- Config & State ---
 let firebaseConfig;
@@ -30,6 +30,8 @@ let allEntries = [];
 let profileData = { name: '', rbtNumber: '', supervisors: [], fieldworkType: 'Supervised' }; // Default to Supervised
 let unsubscribeEntries = null;
 let unsubscribeProfile = null;
+let activeChatContactId = null;
+let unsubscribeChatMessages = null;
 let chartInstances = {};
 let currentPdfDoc = null;
 let currentPdfFilename = "report.pdf";
@@ -529,6 +531,7 @@ const switchView = async (viewId) => {
             case 'yearly': updateYearlyView(); break;
             case 'all-time': updateAllTimeView(); break;
             case 'supervisor-dashboard': showTraineeList(); break;
+            case 'chat': updateChatView(); break;
         }
     } catch (e) {
         console.error("Error in switchView:", e);
@@ -1821,6 +1824,191 @@ const setupSupervisorListeners = () => {
     }
 };
 
+// --- Chat / Messages System ---
+
+const updateChatView = async () => {
+    const contactsList = document.getElementById('chat-contacts-list');
+    const contactsTitle = document.getElementById('chat-contacts-title');
+    if (!contactsList || !userId) return;
+
+    contactsList.innerHTML = '<div class="p-4 text-center text-text-muted text-xs"><i class="ph ph-circle-notch animate-spin"></i> Loading...</div>';
+
+    // Reset active chat pane when loading the list
+    document.getElementById('chat-window').classList.add('hidden');
+    document.getElementById('chat-placeholder').classList.remove('hidden');
+    activeChatContactId = null;
+    if (unsubscribeChatMessages) {
+        unsubscribeChatMessages();
+        unsubscribeChatMessages = null;
+    }
+
+    try {
+        if (profileData.role === 'supervisor') {
+            contactsTitle.textContent = "Trainees";
+            const userEmail = auth.currentUser.email;
+            
+            // Query for trainees linked to this supervisor
+            const q = query(collection(db, 'users'), where('supervisorEmails', 'array-contains', userEmail));
+            const querySnapshot = await getDocs(q);
+            myTrainees = querySnapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+
+            if (myTrainees.length === 0) {
+                contactsList.innerHTML = '<div class="p-4 text-center text-text-muted text-xs">No trainees linked.</div>';
+                return;
+            }
+
+            contactsList.innerHTML = myTrainees.map(trainee => `
+                <div class="chat-contact-item" data-id="${trainee.id}" data-name="${trainee.name || 'Unknown Trainee'}" data-email="${trainee.email}">
+                    <span class="text-white font-medium text-sm truncate">${trainee.name || 'Unknown Trainee'}</span>
+                    <span class="text-text-muted text-xs truncate">${trainee.email}</span>
+                </div>
+            `).join('');
+        } else {
+            contactsTitle.textContent = "Supervisors";
+            const supervisors = profileData.supervisors || [];
+
+            if (supervisors.length === 0) {
+                contactsList.innerHTML = '<div class="p-4 text-center text-text-muted text-xs">No supervisors linked.</div>';
+                return;
+            }
+
+            contactsList.innerHTML = '<div class="p-4 text-center text-text-muted text-xs"><i class="ph ph-circle-notch animate-spin"></i> Resolving...</div>';
+            
+            const resolvedSupervisors = [];
+            for (const sup of supervisors) {
+                const q = query(collection(db, 'users'), where('email', '==', sup.email), where('role', '==', 'supervisor'));
+                const querySnapshot = await getDocs(q);
+                if (!querySnapshot.empty) {
+                    const docSnap = querySnapshot.docs[0];
+                    resolvedSupervisors.push({ id: docSnap.id, name: sup.name || docSnap.data().name || 'Supervisor', email: sup.email });
+                } else {
+                    // Fallback to email if not yet registered in Firestore
+                    resolvedSupervisors.push({ id: null, name: sup.name || 'Supervisor', email: sup.email, notRegistered: true });
+                }
+            }
+
+            contactsList.innerHTML = resolvedSupervisors.map(sup => {
+                if (sup.notRegistered) {
+                    return `
+                        <div class="chat-contact-item opacity-50 cursor-not-allowed" title="This supervisor has not registered an account yet.">
+                            <span class="text-white font-medium text-sm truncate">${sup.name}</span>
+                            <span class="text-text-muted text-xs truncate">${sup.email} (Pending)</span>
+                        </div>
+                    `;
+                }
+                return `
+                    <div class="chat-contact-item" data-id="${sup.id}" data-name="${sup.name}" data-email="${sup.email}">
+                        <span class="text-white font-medium text-sm truncate">${sup.name}</span>
+                        <span class="text-text-muted text-xs truncate">${sup.email}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Add Click listener to the contact items
+        const contactItems = contactsList.querySelectorAll('.chat-contact-item[data-id]');
+        contactItems.forEach(item => {
+            item.addEventListener('click', () => {
+                contactItems.forEach(c => c.classList.remove('active'));
+                item.classList.add('active');
+                selectChatContact(item.dataset.id, item.dataset.name, item.dataset.email);
+            });
+        });
+
+    } catch (error) {
+        console.error("Error loading chat contacts:", error);
+        contactsList.innerHTML = '<div class="p-4 text-center text-red-400 text-xs">Error loading contacts.</div>';
+    }
+};
+
+const selectChatContact = (contactId, name, email) => {
+    activeChatContactId = contactId;
+    
+    document.getElementById('chat-placeholder').classList.add('hidden');
+    document.getElementById('chat-window').classList.remove('hidden');
+    
+    document.getElementById('chat-active-name').textContent = name;
+    document.getElementById('chat-active-email').textContent = email;
+
+    // Reset and rebuild the real-time messages listener
+    if (unsubscribeChatMessages) {
+        unsubscribeChatMessages();
+    }
+
+    const traineeUid = profileData.role === 'trainee' ? userId : activeChatContactId;
+    const supervisorUid = profileData.role === 'supervisor' ? userId : activeChatContactId;
+    
+    const messagesContainer = document.getElementById('chat-messages-container');
+    messagesContainer.innerHTML = '<div class="p-4 text-center text-text-muted text-xs"><i class="ph ph-circle-notch animate-spin"></i> Loading messages...</div>';
+
+    const messagesRef = collection(db, `users/${traineeUid}/chats/${supervisorUid}/messages`);
+    const q = query(messagesRef, orderBy('timestamp', 'asc'));
+
+    unsubscribeChatMessages = onSnapshot(q, (snapshot) => {
+        messagesContainer.innerHTML = '';
+        
+        if (snapshot.empty) {
+            messagesContainer.innerHTML = `
+                <div class="flex-1 flex flex-col items-center justify-center text-center p-8 opacity-40">
+                    <i class="ph ph-chat-centered text-3xl mb-2"></i>
+                    <p class="text-xs">No messages yet. Send a message to start the conversation!</p>
+                </div>
+            `;
+            return;
+        }
+
+        snapshot.docs.forEach(docSnap => {
+            const data = docSnap.data();
+            const isMe = data.senderId === userId;
+            const timeStr = data.timestamp ? dayjs(data.timestamp.toDate()).format('h:mm A') : dayjs().format('h:mm A');
+
+            const messageBubble = document.createElement('div');
+            messageBubble.className = `chat-message-bubble ${isMe ? 'sent' : 'received'}`;
+            messageBubble.innerHTML = `
+                <div>${data.text}</div>
+                <div class="chat-message-meta">
+                    <span>${timeStr}</span>
+                </div>
+            `;
+            messagesContainer.appendChild(messageBubble);
+        });
+
+        // Scroll to the bottom of the message container
+        setTimeout(() => {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }, 50);
+    }, (error) => {
+        console.error("Error listening to chat messages:", error);
+        messagesContainer.innerHTML = '<div class="p-4 text-center text-red-400 text-xs">Permission denied or error loading messages.</div>';
+    });
+};
+
+const sendChatMessage = async (e) => {
+    if (e) e.preventDefault();
+    const input = document.getElementById('chat-message-input');
+    if (!input || !input.value.trim() || !activeChatContactId || !userId) return;
+
+    const text = input.value.trim();
+    input.value = ''; // Clear input immediately for responsive UI
+
+    const traineeUid = profileData.role === 'trainee' ? userId : activeChatContactId;
+    const supervisorUid = profileData.role === 'supervisor' ? userId : activeChatContactId;
+
+    const messagesRef = collection(db, `users/${traineeUid}/chats/${supervisorUid}/messages`);
+
+    try {
+        await addDoc(messagesRef, {
+            text: text,
+            senderId: userId,
+            senderName: profileData.name || auth.currentUser.displayName || auth.currentUser.email,
+            timestamp: serverTimestamp()
+        });
+    } catch (error) {
+        console.error("Error sending message:", error);
+        await CustomModal.alert("Failed to send message: " + error.message, "Send Error");
+    }
+};
+
 // --- Custom Dialogue Modal System ---
 const CustomModal = {
     alert(message, title = "Notification", icon = "ph-bell") {
@@ -2084,6 +2272,10 @@ function init() {
     if (settingsBackdrop) settingsBackdrop.addEventListener('click', closeSettingsPanel);
     if (profileForm) profileForm.addEventListener('submit', saveProfile);
     if (supervisorForm) supervisorForm.addEventListener('submit', addOrUpdateSupervisor);
+
+    // Chat Form Submission
+    const chatInputForm = document.getElementById('chat-input-form');
+    if (chatInputForm) chatInputForm.addEventListener('submit', sendChatMessage);
 
     // AI Note Assistant Event Listeners
     if (saveAiSettingsBtn) {

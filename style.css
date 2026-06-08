@@ -844,3 +844,74 @@ select.bg-transparent {
 .light-mode .mustard-row:hover {
     background-color: rgba(202, 138, 4, 0.09) !important;
 }
+
+/* Chat View Styling */
+.chat-contact-item {
+    display: flex;
+    flex-direction: column;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+.chat-contact-item:hover {
+    background-color: rgba(255, 255, 255, 0.03);
+}
+.chat-contact-item.active {
+    background-color: rgba(99, 102, 241, 0.1) !important; /* Indigo accent background */
+    border-color: rgba(99, 102, 241, 0.2);
+}
+
+.chat-message-bubble {
+    max-w-[70%];
+    padding: 0.75rem 1rem;
+    border-radius: 1.25rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    position: relative;
+    word-break: break-word;
+}
+.chat-message-bubble.sent {
+    background-color: rgb(var(--color-primary));
+    color: white;
+    align-self: flex-end;
+    border-bottom-right-radius: 0.25rem;
+}
+.chat-message-bubble.received {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.9);
+    align-self: flex-start;
+    border-bottom-left-radius: 0.25rem;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.chat-message-meta {
+    font-size: 0.65rem;
+    color: rgba(255, 255, 255, 0.4);
+    margin-top: 0.25rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+.chat-message-bubble.received .chat-message-meta {
+    justify-content: flex-start;
+}
+
+.light-mode .chat-message-bubble.received {
+    background-color: rgba(0, 0, 0, 0.03);
+    color: #1e293b;
+    border: 1px solid rgba(0, 0, 0, 0.03);
+}
+.light-mode .chat-message-bubble.received .chat-message-meta {
+    color: #64748b;
+}
+.light-mode .chat-message-bubble.sent .chat-message-meta {
+    color: rgba(255, 255, 255, 0.7);
+}
+.light-mode .chat-contact-item:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+.light-mode .chat-contact-item.active {
+    background-color: rgba(99, 102, 241, 0.08) !important;
+}
