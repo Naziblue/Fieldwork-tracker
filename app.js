@@ -1690,17 +1690,12 @@ const renderTraineeReview = async (entries) => {
                     combinedNotes += `\n\n💬 [Supervisor Note]: ${entry.supervisorNote}`;
                 }
 
+                // In supervisor dashboard, we do not show the magenta row or envelope icon 
+                // since this is the supervisor view, not the trainee recipient view.
                 let notesCellContent = notesDisplay;
-                if (hasSupervisorNote) {
-                    notesCellContent = `
-                        <span class="inline-flex items-center gap-1.5 text-pink-500 font-bold mr-1.5" title="Supervisor Feedback Included">
-                            <i class="ph-fill ph-envelope text-sm animate-bounce-slow"></i>
-                        </span>${notesDisplay}
-                    `;
-                }
 
                 return `
-                    <tr class="${hasSupervisorNote ? 'magenta-row' : ''} hover:bg-surface-hover transition-colors">
+                    <tr class="hover:bg-surface-hover transition-colors">
                         <td class="px-4 py-3 text-white">${dayjs(entry.date).format('MMM D')}</td>
                         <td class="px-4 py-3 text-text-muted text-xs">${entry.startTime} - ${entry.endTime}</td>
                         <td class="px-4 py-3 text-white font-medium">${calculateHours(entry.startTime, entry.endTime).toFixed(2)}</td>
