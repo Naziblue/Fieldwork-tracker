@@ -14,7 +14,14 @@
         body { font-family: 'Inter', sans-serif; background: #fff; color: #0f172a; overflow-x: hidden; }
 
         /* ── Confetti ── */
-        #confetti-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+        #confetti-canvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
 
         /* ── Navbar ── */
         .navbar {
@@ -245,6 +252,7 @@
             align-items: center;
             justify-content: center;
             z-index: 10;
+            overflow: hidden;
         }
         .splash-logo {
             animation: fadeUp 1s cubic-bezier(0.22,1,0.36,1) 0.15s both;
@@ -271,8 +279,7 @@
 
 <body>
 
-<!-- ── Confetti canvas ── -->
-<canvas id="confetti-canvas"></canvas>
+<!-- ── Confetti canvas (lives inside splash only) ── -->
 
 <!-- ══════════════════════════════════
      NAVBAR
@@ -325,6 +332,9 @@
      SPLASH — first screen (Antigravity style)
 ══════════════════════════════════ -->
 <section id="splash">
+    <!-- Confetti canvas lives here — physically contained to this section -->
+    <canvas id="confetti-canvas"></canvas>
+
     <!-- Logo -->
     <div class="splash-logo mb-8">
         <img src="fieldly-logo.png" alt="Fieldly" style="height:112px;">
@@ -706,24 +716,42 @@ const counterObs = new IntersectionObserver(entries => {
 }, { threshold: 0.5 });
 document.querySelectorAll('.counter').forEach(el => counterObs.observe(el));
 
-// ── Mouse-interactive confetti particles ──
+// ── Mouse-interactive confetti — splash section only ──
 (function () {
     const canvas = document.getElementById('confetti-canvas');
+    const splash = document.getElementById('splash');
     const ctx = canvas.getContext('2d');
     let W, H, particles = [];
 
+    // Mouse: correct for canvas position within the page
     const mouse = { x: -9999, y: -9999 };
-    window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+    window.addEventListener('mousemove', e => {
+        const rect = canvas.getBoundingClientRect();
+        mouse.x = e.clientX - rect.left;
+        mouse.y = e.clientY - rect.top;
+    });
     window.addEventListener('mouseleave', () => { mouse.x = -9999; mouse.y = -9999; });
+
+    // Scroll velocity tracking
+    let lastScrollY = window.scrollY, scrollVel = 0;
+    window.addEventListener('scroll', () => {
+        scrollVel = window.scrollY - lastScrollY;
+        lastScrollY = window.scrollY;
+    }, { passive: true });
 
     const COLORS = ['#6366f1','#818cf8','#a5b4fc','#ec4899','#f472b6','#fbcfe8','#06b6d4','#22d3ee','#67e8f9','#f59e0b','#fbbf24','#ef4444'];
     const REPEL_RADIUS = 120, REPEL_FORCE = 6.5, RETURN_EASE = 0.045, FRICTION = 0.82;
 
     function rnd(a, b) { return a + Math.random() * (b - a); }
-    function resize() { W = canvas.width = innerWidth; H = canvas.height = innerHeight; }
+
+    function resize() {
+        // Size canvas to match the splash section exactly
+        W = canvas.width  = splash.offsetWidth;
+        H = canvas.height = splash.offsetHeight;
+    }
 
     function createParticle() {
-        const ox = rnd(0, W), oy = rnd(0, H * 2.5);
+        const ox = rnd(0, W), oy = rnd(0, H);
         return {
             ox, oy, x: ox, y: oy,
             vx: rnd(-0.15, 0.15), vy: rnd(0.15, 0.55),
@@ -742,23 +770,63 @@ document.querySelectorAll('.counter').forEach(el => counterObs.observe(el));
 
     function draw() {
         ctx.clearRect(0, 0, W, H);
-        for (const p of particles) {
+
+        // Convert scroll velocity to upward impulse applied this frame
+        const kick = scrollVel * 0.6;
+        scrollVel *= 0.55; // decay so it doesn't linger
+
+        for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
+
+            // ── Scroll kick: blast particles upward + scatter sideways ──
+            if (Math.abs(kick) > 0.1) {
+                p.vy  -= kick;
+                p.vx  += rnd(-kick * 0.35, kick * 0.35);
+                p.spin += rnd(-0.06, 0.06);  // spin wilder on kick
+            }
+
+            // ── Mouse repulsion ──
             const dx = p.x - mouse.x, dy = p.y - mouse.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
             if (dist < p.repelR && dist > 0) {
                 const force = (1 - dist / p.repelR) * REPEL_FORCE;
-                p.vx += (dx / dist) * force; p.vy += (dy / dist) * force;
+                p.vx += (dx / dist) * force;
+                p.vy += (dy / dist) * force;
                 p.spin = Math.sign(p.spin) * Math.min(Math.abs(p.spin) + 0.005, 0.12);
             } else { p.spin *= 0.97; }
+
             p.vx *= FRICTION; p.vy *= FRICTION;
-            p.x += p.vx; p.y += p.vy;
-            p.oy += rnd(0.1, 0.45);
-            p.x += (p.ox - p.x) * RETURN_EASE;
-            p.y += (p.oy - p.y) * RETURN_EASE;
-            if (p.oy > H + 30) { p.oy = -30; p.y = p.oy; p.ox = rnd(0, W); p.x = p.ox; p.vx = 0; p.vy = 0; }
-            if (p.ox < -30) { p.ox = W + 30; p.x = p.ox; }
-            if (p.ox > W + 30) { p.ox = -30; p.x = p.ox; }
+            p.x  += p.vx;    p.y  += p.vy;
+            p.oy += rnd(0.08, 0.38);
+            p.x  += (p.ox - p.x) * RETURN_EASE;
+            p.y  += (p.oy - p.y) * RETURN_EASE;
+
+            // ── Out-of-bounds handling ──
+            const atTop = window.scrollY < 30;
+
+            // Flew off the TOP of the canvas (scroll-kicked): gone forever
+            if (p.y < -80 || p.oy < -80) {
+                particles.splice(i, 1);
+                continue;
+            }
+            // Drifted off the BOTTOM
+            if (p.oy > H + 30) {
+                if (atTop) {
+                    // Normal gentle respawn at the top
+                    p.oy = -20; p.y = p.oy;
+                    p.ox = rnd(0, W); p.x = p.ox;
+                    p.vx = 0; p.vy = rnd(0.15, 0.45);
+                } else {
+                    particles.splice(i, 1);
+                    continue;
+                }
+            }
+            // Horizontal wrap
+            if (p.ox < -30)  { p.ox = W + 30; p.x = p.ox; }
+            if (p.ox > W+30) { p.ox = -30;    p.x = p.ox; }
+
             p.angle += p.spin;
+
             ctx.save();
             ctx.globalAlpha = p.opacity;
             ctx.translate(p.x, p.y);
@@ -769,11 +837,13 @@ document.querySelectorAll('.counter').forEach(el => counterObs.observe(el));
             ctx.fill();
             ctx.restore();
         }
+
         requestAnimationFrame(draw);
     }
 
     window.addEventListener('resize', init);
-    init(); draw();
+    init();
+    draw();
 })();
 </script>
 </body>
