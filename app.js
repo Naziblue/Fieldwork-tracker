@@ -203,6 +203,7 @@ function setupTableHeaders() {
         <th class="px-4 py-3 font-medium text-text-muted">Supervision</th>
         <th class="px-4 py-3 font-medium text-text-muted">Supervisor</th>
         <th class="px-4 py-3 font-medium text-text-muted hidden md:table-cell">Notes</th>
+        <th class="px-4 py-3 font-medium text-text-muted text-center">Feedback</th>
         <th class="px-4 py-3 font-medium text-text-muted text-right">Actions</th>
     `;
     const reviewTableHeaderHTML = `
@@ -215,6 +216,7 @@ function setupTableHeaders() {
         <th class="px-4 py-3 font-medium text-text-muted">Supervision</th>
         <th class="px-4 py-3 font-medium text-text-muted">Supervisor</th>
         <th class="px-4 py-3 font-medium text-text-muted hidden md:table-cell">Notes</th>
+        <th class="px-4 py-3 font-medium text-text-muted text-center">Feedback</th>
         <th class="px-4 py-3 font-medium text-text-muted text-right">Note</th>
     `;
     if (tableHeaders.monthly) tableHeaders.monthly.innerHTML = tableHeaderHTML;
@@ -690,7 +692,7 @@ const updateAlerts = (data, containerId) => {
 const renderTable = (entries, tableBodyElement) => {
     tableBodyElement.innerHTML = '';
     if (entries.length === 0) {
-        tableBodyElement.innerHTML = `<tr><td colspan="10" class="text-center py-12 text-text-muted">No activities logged for this period.</td></tr>`;
+        tableBodyElement.innerHTML = `<tr><td colspan="11" class="text-center py-12 text-text-muted">No activities logged for this period.</td></tr>`;
         return;
     }
     const sortedEntries = [...entries].sort((a, b) => new Date(b.date) - new Date(a.date)); // Descending
@@ -715,11 +717,13 @@ const renderTable = (entries, tableBodyElement) => {
         const typeBadgeClass = entry.activityType === 'Unrestricted' ? 'badge-purple' : 'badge-danger';
 
         let notesCellContent = notesDisplay;
+
+        let feedbackCellContent = '';
         if (hasSupervisorNote) {
-            notesCellContent = `
-                <span class="inline-flex items-center gap-1.5 text-pink-500 font-bold mr-1.5" title="Supervisor Feedback Included">
+            feedbackCellContent = `
+                <span class="inline-flex items-center justify-center text-pink-500 font-bold" title="Supervisor Feedback Included">
                     <i class="ph-fill ph-envelope text-sm animate-bounce-slow"></i>
-                </span>${notesDisplay}
+                </span>
             `;
         }
 
@@ -733,6 +737,7 @@ const renderTable = (entries, tableBodyElement) => {
             <td class="px-4 py-3 text-text-muted text-xs max-w-[150px] truncate" title="${entry.supervisionType}">${entry.supervisionType}</td>
             <td class="px-4 py-3 text-text-muted">${entry.supervisorName || '-'}</td>
             <td class="note-cell px-4 py-3 text-text-muted text-xs hidden md:table-cell max-w-xs truncate cursor-pointer hover:text-white transition-all duration-200" data-has-feedback="${hasSupervisorNote}" data-feedback="${(entry.supervisorNote || '').replace(/"/g, '&quot;')}" data-notes="${notesDisplay.replace(/"/g, '&quot;')}" title="${hasSupervisorNote ? 'Click to read supervisor note' : 'Click to view full note'}">${notesCellContent}</td>
+            <td class="px-4 py-3 text-center">${feedbackCellContent}</td>
             <td class="px-4 py-3 text-right flex justify-end gap-1">
                 <button class="duplicate-btn p-2 rounded-lg hover:bg-surface-hover text-text-muted hover:text-text transition-colors" data-id="${entry.id}" title="Duplicate">
                     <i class="ph-bold ph-copy"></i>
@@ -1669,7 +1674,7 @@ const renderTraineeReview = async (entries) => {
         if (reviewTableBody) {
             reviewTableBody.innerHTML = `
                 <tr>
-                    <td colspan="10" class="px-4 py-8 text-center text-text-muted">
+                    <td colspan="11" class="px-4 py-8 text-center text-text-muted">
                         <i class="ph ph-note-blank text-3xl mb-2 block mx-auto opacity-30"></i>
                         No activities logged by this trainee in the cloud yet.
                     </td>
@@ -1737,6 +1742,15 @@ const renderTraineeReview = async (entries) => {
                 // Instead, we show a mustard yellow row so she can see which rows already have notes on them.
                 let notesCellContent = notesDisplay;
 
+                let feedbackCellContent = '';
+                if (hasSupervisorNote) {
+                    feedbackCellContent = `
+                        <span class="inline-flex items-center justify-center text-pink-500 font-bold" title="Feedback Provided">
+                            <i class="ph-fill ph-envelope text-sm animate-bounce-slow"></i>
+                        </span>
+                    `;
+                }
+
                 return `
                     <tr class="${hasSupervisorNote ? 'mustard-row' : ''} hover:bg-surface-hover transition-colors">
                         <td class="px-4 py-3 text-white">${dayjs(entry.date).format('MMM D')}</td>
@@ -1754,6 +1768,7 @@ const renderTraineeReview = async (entries) => {
                         </td>
                         <td class="px-4 py-3 text-text-muted text-xs">${entry.supervisorName || '-'}</td>
                         <td class="note-cell px-4 py-3 text-text-muted text-xs hidden md:table-cell max-w-xs truncate cursor-pointer hover:text-white transition-all duration-200" data-has-feedback="${hasSupervisorNote}" data-feedback="${(entry.supervisorNote || '').replace(/"/g, '&quot;')}" data-notes="${notesDisplay.replace(/"/g, '&quot;')}" title="${hasSupervisorNote ? 'Click to read supervisor note' : 'Click to view full note'}">${notesCellContent}</td>
+                        <td class="px-4 py-3 text-center">${feedbackCellContent}</td>
                         <td class="px-4 py-3 text-right">
                             <div class="flex justify-end gap-1">
                                 <button class="add-supervisor-note-btn p-2 rounded-lg hover:bg-surface-hover text-primary hover:text-white transition-all duration-200" data-id="${entry.id}" data-supervisor-note="${(entry.supervisorNote || '').replace(/"/g, '&quot;')}" title="Add/Edit Supervisor Note">
