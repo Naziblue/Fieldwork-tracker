@@ -721,7 +721,7 @@ const renderTable = (entries, tableBodyElement) => {
         let feedbackCellContent = '';
         if (hasSupervisorNote) {
             feedbackCellContent = `
-                <span class="inline-flex items-center justify-center text-pink-500 font-bold" title="Supervisor Feedback Included">
+                <span class="inline-flex items-center justify-center text-pink-500 font-bold cursor-pointer hover:scale-110 transition-transform" title="Supervisor Feedback Included">
                     <i class="ph-fill ph-envelope text-sm animate-bounce-slow"></i>
                 </span>
             `;
@@ -737,7 +737,7 @@ const renderTable = (entries, tableBodyElement) => {
             <td class="px-4 py-3 text-text-muted text-xs max-w-[150px] truncate" title="${entry.supervisionType}">${entry.supervisionType}</td>
             <td class="px-4 py-3 text-text-muted">${entry.supervisorName || '-'}</td>
             <td class="note-cell px-4 py-3 text-text-muted text-xs hidden md:table-cell max-w-xs truncate cursor-pointer hover:text-white transition-all duration-200" data-has-feedback="${hasSupervisorNote}" data-feedback="${(entry.supervisorNote || '').replace(/"/g, '&quot;')}" data-notes="${notesDisplay.replace(/"/g, '&quot;')}" title="${hasSupervisorNote ? 'Click to read supervisor note' : 'Click to view full note'}">${notesCellContent}</td>
-            <td class="px-4 py-3 text-center">${feedbackCellContent}</td>
+            <td class="feedback-cell px-4 py-3 text-center cursor-pointer" data-feedback="${(entry.supervisorNote || '').replace(/"/g, '&quot;')}">${feedbackCellContent}</td>
             <td class="px-4 py-3 text-right flex justify-end gap-1">
                 <button class="duplicate-btn p-2 rounded-lg hover:bg-surface-hover text-text-muted hover:text-text transition-colors" data-id="${entry.id}" title="Duplicate">
                     <i class="ph-bold ph-copy"></i>
@@ -932,21 +932,22 @@ const handleDeleteEntry = async () => {
 };
 
 const handleTableClick = async (e) => {
+    // Handle Click on Feedback Cell (Envelope)
+    const feedbackCell = e.target.closest('.feedback-cell');
+    if (feedbackCell) {
+        const feedback = feedbackCell.dataset.feedback || '';
+        if (feedback.trim()) {
+            CustomModal.alert(feedback, "Supervisor Feedback", "ph-envelope-simple-open");
+        }
+        return;
+    }
+
     // Handle Click on Note Cell
     const noteCell = e.target.closest('.note-cell');
     if (noteCell) {
-        const hasFeedback = noteCell.dataset.hasFeedback === 'true';
-        const feedback = noteCell.dataset.feedback || '';
         const traineeNote = noteCell.dataset.notes || noteCell.textContent;
-
-        if (hasFeedback && feedback.trim()) {
-            const message = `💬 **Supervisor Feedback:**\n${feedback}\n\n---\n📝 **Your Activity Notes:**\n${traineeNote}`;
-            CustomModal.alert(message, "Supervisor Feedback Received", "ph-envelope-simple-open");
-        } else {
-            const fullNote = traineeNote || noteCell.textContent;
-            if (fullNote && fullNote.trim()) {
-                CustomModal.alert(fullNote, "Activity Notes", "ph-note-blank");
-            }
+        if (traineeNote && traineeNote.trim()) {
+            CustomModal.alert(traineeNote, "Activity Notes", "ph-note-blank");
         }
         return;
     }
@@ -1745,7 +1746,7 @@ const renderTraineeReview = async (entries) => {
                 let feedbackCellContent = '';
                 if (hasSupervisorNote) {
                     feedbackCellContent = `
-                        <span class="inline-flex items-center justify-center text-pink-500 font-bold" title="Feedback Provided">
+                        <span class="inline-flex items-center justify-center text-pink-500 font-bold cursor-pointer hover:scale-110 transition-transform" title="Feedback Provided">
                             <i class="ph-fill ph-envelope text-sm animate-bounce-slow"></i>
                         </span>
                     `;
@@ -1768,7 +1769,7 @@ const renderTraineeReview = async (entries) => {
                         </td>
                         <td class="px-4 py-3 text-text-muted text-xs">${entry.supervisorName || '-'}</td>
                         <td class="note-cell px-4 py-3 text-text-muted text-xs hidden md:table-cell max-w-xs truncate cursor-pointer hover:text-white transition-all duration-200" data-has-feedback="${hasSupervisorNote}" data-feedback="${(entry.supervisorNote || '').replace(/"/g, '&quot;')}" data-notes="${notesDisplay.replace(/"/g, '&quot;')}" title="${hasSupervisorNote ? 'Click to read supervisor note' : 'Click to view full note'}">${notesCellContent}</td>
-                        <td class="px-4 py-3 text-center">${feedbackCellContent}</td>
+                        <td class="feedback-cell px-4 py-3 text-center cursor-pointer" data-feedback="${(entry.supervisorNote || '').replace(/"/g, '&quot;')}">${feedbackCellContent}</td>
                         <td class="px-4 py-3 text-right">
                             <div class="flex justify-end gap-1">
                                 <button class="add-supervisor-note-btn p-2 rounded-lg hover:bg-surface-hover text-primary hover:text-white transition-all duration-200" data-id="${entry.id}" data-supervisor-note="${(entry.supervisorNote || '').replace(/"/g, '&quot;')}" title="Add/Edit Supervisor Note">
