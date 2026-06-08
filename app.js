@@ -1988,7 +1988,7 @@ const selectChatContact = (contactId, name, email) => {
         }, 50);
     }, (error) => {
         console.error("Error listening to chat messages:", error);
-        messagesContainer.innerHTML = '<div class="p-4 text-center text-red-400 text-xs">Permission denied or error loading messages.</div>';
+        messagesContainer.innerHTML = `<div class="p-4 text-center text-red-400 text-xs">Error loading messages: ${error.message}</div>`;
     });
 };
 
