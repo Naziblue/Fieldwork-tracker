@@ -34,10 +34,9 @@ service cloud.firestore {
 
     // 2. Entries Subcollection
     // Allow users to read/write ONLY their own entries.
-    // Allow Supervisors to read their trainees' entries if their email is in the trainee's profile supervisorEmails array.
+    // Allow Supervisors to read/write their trainees' entries if their email is in the trainee's profile supervisorEmails array.
     match /users/{userId}/entries/{entryId} {
-      allow write: if request.auth != null && request.auth.uid == userId;
-      allow read: if request.auth != null && (
+      allow read, write: if request.auth != null && (
         request.auth.uid == userId ||
         request.auth.token.email in get(/databases/$(database)/documents/users/$(userId)).data.supervisorEmails
       );
