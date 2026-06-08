@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, setDoc, getDoc, query, where, getDocs, collectionGroup, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, setDoc, getDoc, query, where, getDocs, collectionGroup, serverTimestamp, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // --- Config & State ---
 let firebaseConfig;
@@ -32,6 +32,8 @@ let unsubscribeEntries = null;
 let unsubscribeProfile = null;
 let activeChatContactId = null;
 let unsubscribeChatMessages = null;
+let unsubscribeChats = null;
+let supervisorChatsUnsubscribes = [];
 let chartInstances = {};
 let currentPdfDoc = null;
 let currentPdfFilename = "report.pdf";
@@ -1837,6 +1839,15 @@ const updateChatView = async () => {
     document.getElementById('chat-window').classList.add('hidden');
     document.getElementById('chat-placeholder').classList.remove('hidden');
     activeChatContactId = null;
+
+    if (unsubscribeChats) {
+        unsubscribeChats();
+        unsubscribeChats = null;
+    }
+    if (supervisorChatsUnsubscribes) {
+        supervisorChatsUnsubscribes.forEach(unsub => unsub());
+        supervisorChatsUnsubscribes = [];
+    }
     if (unsubscribeChatMessages) {
         unsubscribeChatMessages();
         unsubscribeChatMessages = null;
@@ -1857,77 +1868,135 @@ const updateChatView = async () => {
                 return;
             }
 
-            contactsList.innerHTML = myTrainees.map(trainee => `
-                <div class="chat-contact-item" data-id="${trainee.id}" data-name="${trainee.name || 'Unknown Trainee'}" data-email="${trainee.email}">
-                    <span class="text-white font-medium text-sm truncate">${trainee.name || 'Unknown Trainee'}</span>
-                    <span class="text-text-muted text-xs truncate">${trainee.email}</span>
-                </div>
-            `).join('');
+            const activeChatsMap = {};
+            myTrainees.forEach(trainee => {
+                const chatDocRef = doc(db, `users/${trainee.id}/chats/${userId}`);
+                const unsub = onSnapshot(chatDocRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        activeChatsMap[trainee.id] = {
+                            traineeId: trainee.id,
+                            traineeName: trainee.name || 'Unknown Trainee',
+                            traineeEmail: trainee.email,
+                            ...docSnap.data()
+                        };
+                    } else {
+                        delete activeChatsMap[trainee.id];
+                    }
+                    renderSupervisorChatsList(activeChatsMap);
+                }, (err) => {
+                    console.error("Error listening to supervisor chat:", trainee.id, err);
+                });
+                supervisorChatsUnsubscribes.push(unsub);
+            });
         } else {
             contactsTitle.textContent = "Supervisors";
-            const supervisors = profileData.supervisors || [];
-
-            if (supervisors.length === 0) {
-                contactsList.innerHTML = '<div class="p-4 text-center text-text-muted text-xs">No supervisors linked.</div>';
-                return;
-            }
-
-            contactsList.innerHTML = '<div class="p-4 text-center text-text-muted text-xs"><i class="ph ph-circle-notch animate-spin"></i> Resolving...</div>';
             
-            const resolvedSupervisors = [];
-            for (const sup of supervisors) {
-                if (!sup || !sup.email || typeof sup.email !== 'string' || !sup.email.trim()) {
-                    resolvedSupervisors.push({ id: null, name: sup ? sup.name || 'Supervisor' : 'Supervisor', email: sup ? sup.email || '' : '', notRegistered: true });
-                    continue;
-                }
-                
-                try {
-                    const q = query(collection(db, 'users'), where('email', '==', sup.email.trim()), where('role', '==', 'supervisor'));
-                    const querySnapshot = await getDocs(q);
-                    if (!querySnapshot.empty) {
-                        const docSnap = querySnapshot.docs[0];
-                        resolvedSupervisors.push({ id: docSnap.id, name: sup.name || docSnap.data().name || 'Supervisor', email: sup.email });
-                    } else {
-                        resolvedSupervisors.push({ id: null, name: sup.name || 'Supervisor', email: sup.email, notRegistered: true });
-                    }
-                } catch (err) {
-                    console.error("Error resolving supervisor:", sup.email, err);
-                    resolvedSupervisors.push({ id: null, name: sup.name || 'Supervisor', email: sup.email, notRegistered: true });
-                }
-            }
-
-            contactsList.innerHTML = resolvedSupervisors.map(sup => {
-                if (sup.notRegistered) {
-                    return `
-                        <div class="chat-contact-item opacity-50 cursor-not-allowed" title="This supervisor has not registered an account yet.">
-                            <span class="text-white font-medium text-sm truncate">${sup.name}</span>
-                            <span class="text-text-muted text-xs truncate">${sup.email} (Pending)</span>
-                        </div>
-                    `;
-                }
-                return `
-                    <div class="chat-contact-item" data-id="${sup.id}" data-name="${sup.name}" data-email="${sup.email}">
-                        <span class="text-white font-medium text-sm truncate">${sup.name}</span>
-                        <span class="text-text-muted text-xs truncate">${sup.email}</span>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        // Add Click listener to the contact items
-        const contactItems = contactsList.querySelectorAll('.chat-contact-item[data-id]');
-        contactItems.forEach(item => {
-            item.addEventListener('click', () => {
-                contactItems.forEach(c => c.classList.remove('active'));
-                item.classList.add('active');
-                selectChatContact(item.dataset.id, item.dataset.name, item.dataset.email);
+            const chatsRef = collection(db, `users/${userId}/chats`);
+            unsubscribeChats = onSnapshot(chatsRef, (snapshot) => {
+                renderTraineeChatsList(snapshot);
+            }, (error) => {
+                console.error("Error listening to trainee chats:", error);
+                contactsList.innerHTML = `<div class="p-4 text-center text-red-400 text-xs">Error loading chats: ${error.message}</div>`;
             });
-        });
-
+        }
     } catch (error) {
         console.error("Error loading chat contacts:", error);
         contactsList.innerHTML = `<div class="p-4 text-center text-red-400 text-xs">Error loading contacts: ${error.message}</div>`;
     }
+};
+
+const renderSupervisorChatsList = (activeChatsMap) => {
+    const contactsList = document.getElementById('chat-contacts-list');
+    if (!contactsList) return;
+    
+    const activeChats = Object.values(activeChatsMap);
+    
+    // Sort activeChats by lastMessageAt descending
+    activeChats.sort((a, b) => {
+        const timeA = a.lastMessageAt ? (a.lastMessageAt.toDate ? a.lastMessageAt.toDate() : new Date(a.lastMessageAt)) : 0;
+        const timeB = b.lastMessageAt ? (b.lastMessageAt.toDate ? b.lastMessageAt.toDate() : new Date(b.lastMessageAt)) : 0;
+        return timeB - timeA;
+    });
+    
+    if (activeChats.length === 0) {
+        contactsList.innerHTML = '<div class="p-4 text-center text-text-muted text-xs">No active chats. Click "+ Start New Chat" to begin.</div>';
+        return;
+    }
+    
+    contactsList.innerHTML = activeChats.map(chat => {
+        const lastMsg = chat.lastMessageText || 'No messages yet';
+        const lastTime = chat.lastMessageAt ? dayjs(chat.lastMessageAt.toDate ? chat.lastMessageAt.toDate() : chat.lastMessageAt).format('h:mm A') : '';
+        const activeClass = activeChatContactId === chat.traineeId ? 'active' : '';
+        return `
+            <div class="chat-contact-item ${activeClass}" data-id="${chat.traineeId}" data-name="${chat.traineeName}" data-email="${chat.traineeEmail}">
+                <div class="flex items-center justify-between gap-2">
+                    <span class="text-white font-medium text-sm truncate">${chat.traineeName}</span>
+                    <span class="text-[10px] text-text-muted flex-shrink-0">${lastTime}</span>
+                </div>
+                <span class="chat-contact-preview text-text-muted text-xs truncate mt-0.5">${lastMsg}</span>
+            </div>
+        `;
+    }).join('');
+    
+    // Add click listeners to items
+    const contactItems = contactsList.querySelectorAll('.chat-contact-item[data-id]');
+    contactItems.forEach(item => {
+        item.addEventListener('click', () => {
+            contactItems.forEach(c => c.classList.remove('active'));
+            item.classList.add('active');
+            selectChatContact(item.dataset.id, item.dataset.name, item.dataset.email);
+        });
+    });
+};
+
+const renderTraineeChatsList = (snapshot) => {
+    const contactsList = document.getElementById('chat-contacts-list');
+    if (!contactsList) return;
+    
+    if (snapshot.empty) {
+        contactsList.innerHTML = '<div class="p-4 text-center text-text-muted text-xs">No active chats. Click "+ Start New Chat" to begin.</div>';
+        return;
+    }
+    
+    const chats = [];
+    snapshot.forEach(docSnap => {
+        chats.push({
+            supervisorUid: docSnap.id,
+            ...docSnap.data()
+        });
+    });
+    
+    // Sort chats by lastMessageAt descending
+    chats.sort((a, b) => {
+        const timeA = a.lastMessageAt ? (a.lastMessageAt.toDate ? a.lastMessageAt.toDate() : new Date(a.lastMessageAt)) : 0;
+        const timeB = b.lastMessageAt ? (b.lastMessageAt.toDate ? b.lastMessageAt.toDate() : new Date(b.lastMessageAt)) : 0;
+        return timeB - timeA;
+    });
+    
+    contactsList.innerHTML = chats.map(chat => {
+        const lastMsg = chat.lastMessageText || 'No messages yet';
+        const lastTime = chat.lastMessageAt ? dayjs(chat.lastMessageAt.toDate ? chat.lastMessageAt.toDate() : chat.lastMessageAt).format('h:mm A') : '';
+        const activeClass = activeChatContactId === chat.supervisorUid ? 'active' : '';
+        return `
+            <div class="chat-contact-item ${activeClass}" data-id="${chat.supervisorUid}" data-name="${chat.supervisorName}" data-email="${chat.supervisorEmail}">
+                <div class="flex items-center justify-between gap-2">
+                    <span class="text-white font-medium text-sm truncate">${chat.supervisorName}</span>
+                    <span class="text-[10px] text-text-muted flex-shrink-0">${lastTime}</span>
+                </div>
+                <span class="chat-contact-preview text-text-muted text-xs truncate mt-0.5">${lastMsg}</span>
+            </div>
+        `;
+    }).join('');
+    
+    // Add click listeners to items
+    const contactItems = contactsList.querySelectorAll('.chat-contact-item[data-id]');
+    contactItems.forEach(item => {
+        item.addEventListener('click', () => {
+            contactItems.forEach(c => c.classList.remove('active'));
+            item.classList.add('active');
+            selectChatContact(item.dataset.id, item.dataset.name, item.dataset.email);
+        });
+    });
 };
 
 const selectChatContact = (contactId, name, email) => {
@@ -1969,17 +2038,37 @@ const selectChatContact = (contactId, name, email) => {
         snapshot.docs.forEach(docSnap => {
             const data = docSnap.data();
             const isMe = data.senderId === userId;
-            const timeStr = data.timestamp ? dayjs(data.timestamp.toDate()).format('h:mm A') : dayjs().format('h:mm A');
+            const time = data.timestamp ? (data.timestamp.toDate ? data.timestamp.toDate() : new Date(data.timestamp)) : new Date();
+            const timeStr = dayjs(time).format('h:mm A');
 
-            const messageBubble = document.createElement('div');
-            messageBubble.className = `chat-message-bubble ${isMe ? 'sent' : 'received'}`;
-            messageBubble.innerHTML = `
-                <div>${data.text}</div>
-                <div class="chat-message-meta">
-                    <span>${timeStr}</span>
+            const messageWrapper = document.createElement('div');
+            messageWrapper.className = `chat-message-wrapper ${isMe ? 'sent' : 'received'} group`;
+            messageWrapper.dataset.messageId = docSnap.id;
+            
+            let actionsHtml = '';
+            if (isMe) {
+                actionsHtml = `
+                    <div class="message-actions">
+                        <button class="edit-msg-btn text-text-muted hover:text-white transition-colors" title="Edit message">
+                            <i class="ph ph-pencil text-sm"></i>
+                        </button>
+                        <button class="delete-msg-btn text-red-400 hover:text-red-300 transition-colors" title="Delete message">
+                            <i class="ph ph-trash text-sm"></i>
+                        </button>
+                    </div>
+                `;
+            }
+            
+            messageWrapper.innerHTML = `
+                ${actionsHtml}
+                <div class="chat-message-bubble ${isMe ? 'sent' : 'received'}">
+                    <div class="message-text">${data.text}</div>
+                    <div class="chat-message-meta">
+                        <span>${timeStr}${data.edited ? ' • Edited' : ''}</span>
+                    </div>
                 </div>
             `;
-            messagesContainer.appendChild(messageBubble);
+            messagesContainer.appendChild(messageWrapper);
         });
 
         // Scroll to the bottom of the message container
@@ -2004,6 +2093,7 @@ const sendChatMessage = async (e) => {
     const supervisorUid = profileData.role === 'supervisor' ? userId : activeChatContactId;
 
     const messagesRef = collection(db, `users/${traineeUid}/chats/${supervisorUid}/messages`);
+    const summaryDocRef = doc(db, `users/${traineeUid}/chats/${supervisorUid}`);
 
     try {
         await addDoc(messagesRef, {
@@ -2012,9 +2102,224 @@ const sendChatMessage = async (e) => {
             senderName: profileData.name || auth.currentUser.displayName || auth.currentUser.email,
             timestamp: serverTimestamp()
         });
+
+        await setDoc(summaryDocRef, {
+            lastMessageText: text,
+            lastMessageAt: serverTimestamp()
+        }, { merge: true });
     } catch (error) {
         console.error("Error sending message:", error);
         await CustomModal.alert("Failed to send message: " + error.message, "Send Error");
+    }
+};
+
+const editChatMessage = async (messageId, currentText) => {
+    const newText = await CustomModal.prompt("Edit your message:", currentText, "Edit Message");
+    if (newText === null) return;
+    if (!newText.trim()) {
+        await CustomModal.alert("Message cannot be empty.", "Edit Error");
+        return;
+    }
+    
+    const traineeUid = (profileData.role === 'trainee' || profileData.role === 'admin') ? userId : activeChatContactId;
+    const supervisorUid = profileData.role === 'supervisor' ? userId : activeChatContactId;
+    const messageDocRef = doc(db, `users/${traineeUid}/chats/${supervisorUid}/messages/${messageId}`);
+    
+    try {
+        await updateDoc(messageDocRef, {
+            text: newText.trim(),
+            edited: true
+        });
+        
+        const summaryDocRef = doc(db, `users/${traineeUid}/chats/${supervisorUid}`);
+        const summarySnap = await getDoc(summaryDocRef);
+        if (summarySnap.exists()) {
+            const summaryData = summarySnap.data();
+            if (summaryData.lastMessageText === currentText) {
+                await updateDoc(summaryDocRef, {
+                    lastMessageText: newText.trim()
+                });
+            }
+        }
+    } catch (error) {
+        console.error("Error updating message:", error);
+        await CustomModal.alert("Failed to edit message: " + error.message, "Edit Error");
+    }
+};
+
+const deleteChatMessage = async (messageId) => {
+    const confirmed = await CustomModal.confirm("Are you sure you want to delete this message? This cannot be undone.", "Delete Message");
+    if (!confirmed) return;
+    
+    const traineeUid = (profileData.role === 'trainee' || profileData.role === 'admin') ? userId : activeChatContactId;
+    const supervisorUid = profileData.role === 'supervisor' ? userId : activeChatContactId;
+    const messageDocRef = doc(db, `users/${traineeUid}/chats/${supervisorUid}/messages/${messageId}`);
+    
+    try {
+        await deleteDoc(messageDocRef);
+        
+        const summaryDocRef = doc(db, `users/${traineeUid}/chats/${supervisorUid}`);
+        const messagesRef = collection(db, `users/${traineeUid}/chats/${supervisorUid}/messages`);
+        const q = query(messagesRef, orderBy('timestamp', 'desc'), limit(1));
+        const qSnap = await getDocs(q);
+        
+        let lastMsg = 'No messages yet';
+        let lastTime = serverTimestamp();
+        if (!qSnap.empty) {
+            const lastDoc = qSnap.docs[0].data();
+            lastMsg = lastDoc.text;
+            lastTime = lastDoc.timestamp || serverTimestamp();
+        }
+        
+        await updateDoc(summaryDocRef, {
+            lastMessageText: lastMsg,
+            lastMessageAt: lastTime
+        });
+    } catch (error) {
+        console.error("Error deleting message:", error);
+        await CustomModal.alert("Failed to delete message: " + error.message, "Delete Error");
+    }
+};
+
+const deleteActiveConversation = async () => {
+    if (!activeChatContactId) return;
+    
+    const confirmed = await CustomModal.confirm(
+        "Are you sure you want to delete this entire conversation? All messages will be permanently deleted and the chat will be removed from your active list.",
+        "Delete Entire Conversation"
+    );
+    if (!confirmed) return;
+    
+    const traineeUid = (profileData.role === 'trainee' || profileData.role === 'admin') ? userId : activeChatContactId;
+    const supervisorUid = profileData.role === 'supervisor' ? userId : activeChatContactId;
+    
+    const messagesRef = collection(db, `users/${traineeUid}/chats/${supervisorUid}/messages`);
+    const summaryDocRef = doc(db, `users/${traineeUid}/chats/${supervisorUid}`);
+    
+    try {
+        const querySnapshot = await getDocs(messagesRef);
+        const deletePromises = querySnapshot.docs.map(docSnap => deleteDoc(docSnap.ref));
+        await Promise.all(deletePromises);
+        
+        await deleteDoc(summaryDocRef);
+        
+        document.getElementById('chat-window').classList.add('hidden');
+        document.getElementById('chat-placeholder').classList.remove('hidden');
+        activeChatContactId = null;
+        if (unsubscribeChatMessages) {
+            unsubscribeChatMessages();
+            unsubscribeChatMessages = null;
+        }
+        
+        await CustomModal.alert("Conversation deleted successfully.", "Conversation Deleted", "ph-trash");
+    } catch (error) {
+        console.error("Error deleting conversation:", error);
+        await CustomModal.alert("Failed to delete conversation: " + error.message, "Delete Error");
+    }
+};
+
+const openStartChatModal = async () => {
+    const modal = document.getElementById('start-chat-modal');
+    const selectEl = document.getElementById('chat-contact-select');
+    if (!modal || !selectEl || !userId) return;
+    
+    selectEl.innerHTML = '<option value="" disabled selected>Loading contacts...</option>';
+    modal.classList.remove('hidden');
+    
+    try {
+        if (profileData.role === 'supervisor') {
+            const userEmail = auth.currentUser.email;
+            const q = query(collection(db, 'users'), where('supervisorEmails', 'array-contains', userEmail));
+            const querySnapshot = await getDocs(q);
+            const myTraineesList = querySnapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+            
+            const eligibleTrainees = [];
+            for (const trainee of myTraineesList) {
+                const chatDocRef = doc(db, `users/${trainee.id}/chats/${userId}`);
+                const chatSnap = await getDoc(chatDocRef);
+                if (!chatSnap.exists()) {
+                    eligibleTrainees.push(trainee);
+                }
+            }
+            
+            if (eligibleTrainees.length === 0) {
+                selectEl.innerHTML = '<option value="" disabled selected>No new trainees to chat with</option>';
+            } else {
+                selectEl.innerHTML = '<option value="" disabled selected>Select a trainee</option>' + eligibleTrainees.map(trainee => `
+                    <option value="${trainee.id}" data-name="${trainee.name || 'Trainee'}" data-email="${trainee.email}">${trainee.name || 'Trainee'} (${trainee.email})</option>
+                `).join('');
+            }
+        } else {
+            const supervisors = profileData.supervisors || [];
+            const resolvedSupervisors = [];
+            for (const sup of supervisors) {
+                if (!sup || !sup.email) continue;
+                const q = query(collection(db, 'users'), where('email', '==', sup.email.trim()), where('role', '==', 'supervisor'));
+                const querySnapshot = await getDocs(q);
+                if (!querySnapshot.empty) {
+                    const docSnap = querySnapshot.docs[0];
+                    resolvedSupervisors.push({ id: docSnap.id, name: sup.name || docSnap.data().name || 'Supervisor', email: sup.email });
+                }
+            }
+            
+            const eligibleSupervisors = [];
+            for (const sup of resolvedSupervisors) {
+                const chatDocRef = doc(db, `users/${userId}/chats/${sup.id}`);
+                const chatSnap = await getDoc(chatDocRef);
+                if (!chatSnap.exists()) {
+                    eligibleSupervisors.push(sup);
+                }
+            }
+            
+            if (eligibleSupervisors.length === 0) {
+                selectEl.innerHTML = '<option value="" disabled selected>No new supervisors to chat with</option>';
+            } else {
+                selectEl.innerHTML = '<option value="" disabled selected>Select a supervisor</option>' + eligibleSupervisors.map(sup => `
+                    <option value="${sup.id}" data-name="${sup.name}" data-email="${sup.email}">${sup.name} (${sup.email})</option>
+                `).join('');
+            }
+        }
+    } catch (error) {
+        console.error("Error populating start chat select:", error);
+        selectEl.innerHTML = '<option value="" disabled selected>Error loading contacts</option>';
+    }
+};
+
+const handleStartChatConfirm = async () => {
+    const selectEl = document.getElementById('chat-contact-select');
+    if (!selectEl || !selectEl.value) {
+        await CustomModal.alert("Please select a valid contact to start chat.", "No Contact Selected");
+        return;
+    }
+    
+    const selectedOption = selectEl.options[selectEl.selectedIndex];
+    const selectedId = selectEl.value;
+    const selectedName = selectedOption.dataset.name;
+    const selectedEmail = selectedOption.dataset.email;
+    
+    const traineeUid = (profileData.role === 'trainee' || profileData.role === 'admin') ? userId : selectedId;
+    const supervisorUid = profileData.role === 'supervisor' ? userId : selectedId;
+    
+    const chatDocRef = doc(db, `users/${traineeUid}/chats/${supervisorUid}`);
+    
+    try {
+        await setDoc(chatDocRef, {
+            traineeName: (profileData.role === 'trainee' || profileData.role === 'admin') ? (profileData.name || 'Trainee') : selectedName,
+            traineeEmail: (profileData.role === 'trainee' || profileData.role === 'admin') ? auth.currentUser.email : selectedEmail,
+            supervisorName: profileData.role === 'supervisor' ? (profileData.name || 'Supervisor') : selectedName,
+            supervisorEmail: profileData.role === 'supervisor' ? auth.currentUser.email : selectedEmail,
+            lastMessageText: 'Chat started',
+            lastMessageAt: serverTimestamp(),
+            createdAt: serverTimestamp()
+        });
+        
+        document.getElementById('start-chat-modal').classList.add('hidden');
+        
+        // Automatically open the new chat
+        selectChatContact(selectedId, selectedName, selectedEmail);
+    } catch (error) {
+        console.error("Error starting chat:", error);
+        await CustomModal.alert("Failed to start chat: " + error.message, "Start Chat Error");
     }
 };
 
@@ -2285,6 +2590,46 @@ function init() {
     // Chat Form Submission
     const chatInputForm = document.getElementById('chat-input-form');
     if (chatInputForm) chatInputForm.addEventListener('submit', sendChatMessage);
+
+    // New Chat Event Listeners
+    const chatStartNewBtn = document.getElementById('chat-start-new-btn');
+    if (chatStartNewBtn) chatStartNewBtn.addEventListener('click', openStartChatModal);
+
+    const cancelStartChatBtn = document.getElementById('cancel-start-chat-btn');
+    if (cancelStartChatBtn) cancelStartChatBtn.addEventListener('click', () => {
+        document.getElementById('start-chat-modal').classList.add('hidden');
+    });
+
+    const closeStartChatBackdrop = document.getElementById('close-start-chat-backdrop');
+    if (closeStartChatBackdrop) closeStartChatBackdrop.addEventListener('click', () => {
+        document.getElementById('start-chat-modal').classList.add('hidden');
+    });
+
+    const confirmStartChatBtn = document.getElementById('confirm-start-chat-btn');
+    if (confirmStartChatBtn) confirmStartChatBtn.addEventListener('click', handleStartChatConfirm);
+
+    const deleteConversationBtn = document.getElementById('delete-conversation-btn');
+    if (deleteConversationBtn) deleteConversationBtn.addEventListener('click', deleteActiveConversation);
+
+    // Event delegation for message edit/delete actions inside chat-messages-container
+    const messagesContainer = document.getElementById('chat-messages-container');
+    if (messagesContainer) {
+        messagesContainer.addEventListener('click', async (e) => {
+            const editBtn = e.target.closest('.edit-msg-btn');
+            const deleteBtn = e.target.closest('.delete-msg-btn');
+            
+            if (editBtn) {
+                const wrapper = editBtn.closest('.chat-message-wrapper');
+                const messageId = wrapper.dataset.messageId;
+                const currentText = wrapper.querySelector('.message-text').textContent;
+                await editChatMessage(messageId, currentText);
+            } else if (deleteBtn) {
+                const wrapper = deleteBtn.closest('.chat-message-wrapper');
+                const messageId = wrapper.dataset.messageId;
+                await deleteChatMessage(messageId);
+            }
+        });
+    }
 
     // AI Note Assistant Event Listeners
     if (saveAiSettingsBtn) {

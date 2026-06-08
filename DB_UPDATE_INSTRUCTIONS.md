@@ -48,8 +48,14 @@ service cloud.firestore {
       );
     }
 
-    // --- 4. Chat Messages Subcollection ---
-    // Trainees and their linked supervisors can read/write chat messages.
+    // --- 4. Chat Rooms & Messages ---
+    // Trainees and their linked supervisors can read/write chat room summaries and messages.
+    match /users/{userId}/chats/{supervisorUid} {
+      allow read, write: if request.auth != null && (
+        request.auth.uid == userId ||
+        request.auth.token.email in get(/databases/$(database)/documents/users/$(userId)).data.supervisorEmails
+      );
+    }
     match /users/{userId}/chats/{supervisorUid}/messages/{messageId} {
       allow read, write: if request.auth != null && (
         request.auth.uid == userId ||

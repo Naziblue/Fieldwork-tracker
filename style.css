@@ -915,3 +915,62 @@ select.bg-transparent {
 .light-mode .chat-contact-item.active {
     background-color: rgba(99, 102, 241, 0.08) !important;
 }
+
+/* Chat Message Actions and Previews */
+.chat-message-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    max-width: 75%;
+}
+.chat-message-wrapper.sent {
+    align-self: flex-end;
+    flex-direction: row-reverse;
+}
+.chat-message-wrapper.received {
+    align-self: flex-start;
+    flex-direction: row;
+}
+.chat-message-wrapper .chat-message-bubble {
+    max-w: 100%;
+}
+
+.message-actions {
+    display: none;
+    align-items: center;
+    gap: 0.35rem;
+    background-color: rgba(15, 23, 42, 0.8);
+    backdrop-filter: blur(8px);
+    padding: 0.35rem 0.5rem;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+.chat-message-wrapper:hover .message-actions {
+    display: flex;
+}
+.light-mode .message-actions {
+    background-color: rgba(255, 255, 255, 0.9);
+    border-color: rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+.message-actions button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 0.375rem;
+    transition: all 0.2s ease;
+}
+.message-actions button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+.light-mode .message-actions button:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.chat-contact-preview {
+    display: block;
+    max-width: 100%;
+}
