@@ -17,24 +17,27 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- NEW: Professional User Collections ---
-    
-    // 1. Users Collection (Root Level)
-    // Allow users to read/write ONLY their own profile.
-    // Allow Supervisors to read a trainee's profile if their email is in the trainee's supervisorEmails array.
-    // Allow Admin to read all profiles (for the Admin Portal).
+    // --- 1. Users Profile Collection ---
+    // Trainees/supervisors can read and write their own profile document.
+    // Supervisors can read a trainee's profile if their email is in the trainee's supervisorEmails array.
+    // Trainees can read a supervisor's profile if the supervisor's email is in the trainee's supervisorEmails array.
+    // Admins can read all profiles.
     match /users/{userId} {
       allow write: if request.auth != null && request.auth.uid == userId;
       allow read: if request.auth != null && (
         request.auth.uid == userId ||
-        (resource != null && request.auth.token.email in resource.data.supervisorEmails) ||
+        (resource != null && 'supervisorEmails' in resource.data && request.auth.token.email in resource.data.supervisorEmails) ||
+        (resource != null && 'email' in resource.data && 
+         'supervisorEmails' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data &&
+         resource.data.email in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.supervisorEmails) ||
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
       );
     }
 
-    // 2. Entries Subcollection
-    // Allow users to read/write ONLY their own entries.
-    // Allow Supervisors to read/write their trainees' entries if their email is in the trainee's profile supervisorEmails array.
+    // --- 2. Fieldwork Entries Subcollection ---
+    // Trainees can read and write their own fieldwork entries.
+    // Linked supervisors can read and write entries (to add/edit/delete supervisorNote)
+    // if their email is listed in the trainee's profile supervisorEmails array.
     match /users/{userId}/entries/{entryId} {
       allow read, write: if request.auth != null && (
         request.auth.uid == userId ||
@@ -42,8 +45,9 @@ service cloud.firestore {
       );
     }
     
-    // 3. Verifications
-    // Allow trainees and their linked supervisors to read/write FVF digital signature verifications.
+    // --- 3. Digital Verifications Subcollection ---
+    // Trainees can read/write their own verifications.
+    // Linked supervisors can read and write (to sign months) verifications if listed in supervisorEmails.
     match /users/{userId}/verifications/{verifId} {
       allow read, write: if request.auth != null && (
         request.auth.uid == userId ||
@@ -51,13 +55,13 @@ service cloud.firestore {
       );
     }
 
-    // --- NEW: Requested Collections (Initialize & Admin Only) ---
+    // --- 4. Admin & Requested Collections (Unchanged/Kept safe) ---
     match /admin/{docId} { allow read, write: if true; } 
     match /adminLogs/{docId} { allow read, write: if true; }
     match /settings/{docId} { allow read, write: if true; }
     match /invitations/{docId} { allow read, write: if true; }
     
-    // Future Collections (Placeholder Access)
+    // --- 5. Future/Placeholder Collections (Unchanged/Kept safe) ---
     match /blocks/{docId} { allow read, write: if true; }
     match /history/{docId} { allow read, write: if true; }
     match /metrics/{docId} { allow read, write: if true; }
@@ -65,7 +69,7 @@ service cloud.firestore {
     match /pages/{docId} { allow read, write: if true; }
     match /workspaces/{docId} { allow read, write: if true; }
 
-    // --- OLD: Artifacts (Keep for safety/backups) ---
+    // --- 6. Legacy Backup Collections (Unchanged/Kept safe) ---
     match /artifacts/{appId}/{document=**} {
       allow read, write: if true;
     }
