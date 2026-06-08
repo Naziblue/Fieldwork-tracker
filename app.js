@@ -1613,23 +1613,31 @@ const renderTraineeReview = async (entries) => {
         }
 
         if (reviewTableBody) {
-            reviewTableBody.innerHTML = filtered.map(entry => `
-                <tr>
-                    <td class="px-4 py-3 text-white">${dayjs(entry.date).format('MMM D')}</td>
-                    <td class="px-4 py-3 text-text-muted text-xs">${entry.startTime} - ${entry.endTime}</td>
-                    <td class="px-4 py-3 text-white font-medium">${calculateHours(entry.startTime, entry.endTime).toFixed(2)}</td>
-                    <td class="px-4 py-3 text-text-muted">${entry.clientName || '-'}</td>
-                    <td class="px-4 py-3">
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${entry.activityType === 'Restricted' ? 'bg-pink-500/10 text-pink-400' : 'bg-purple-500/10 text-purple-400'}">
-                            ${entry.activityType}
-                        </span>
-                    </td>
-                    <td class="px-4 py-3 text-xs ${entry.supervisionType === 'No Supervision' ? 'text-text-muted' : 'text-teal-400 font-medium'}">
-                        ${entry.supervisionType}
-                    </td>
-                    <td class="px-4 py-3 text-text-muted text-xs">${entry.supervisorName || '-'}</td>
-                </tr>
-            `).join('');
+            reviewTableBody.innerHTML = filtered.map(entry => {
+                let notesDisplay = entry.notes || '';
+                if (entry.activityType === 'Unrestricted' && entry.unrestrictedActivityType) {
+                    notesDisplay = `[${entry.unrestrictedActivityType}] ${notesDisplay}`;
+                }
+                return `
+                    <tr class="hover:bg-surface-hover transition-colors">
+                        <td class="px-4 py-3 text-white">${dayjs(entry.date).format('MMM D')}</td>
+                        <td class="px-4 py-3 text-text-muted text-xs">${entry.startTime} - ${entry.endTime}</td>
+                        <td class="px-4 py-3 text-white font-medium">${calculateHours(entry.startTime, entry.endTime).toFixed(2)}</td>
+                        <td class="px-4 py-3 text-text-muted">${entry.clientName || '-'}</td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${entry.activityType === 'Restricted' ? 'bg-pink-500/10 text-pink-400' : 'bg-purple-500/10 text-purple-400'}">
+                                ${entry.activityType}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-xs ${entry.supervisionType === 'No Supervision' ? 'text-text-muted' : 'text-teal-400 font-medium'}">
+                            ${entry.supervisionType}
+                        </td>
+                        <td class="px-4 py-3 text-text-muted text-xs">${entry.supervisorName || '-'}</td>
+                        <td class="px-4 py-3 text-text-muted text-xs hidden md:table-cell max-w-xs truncate" title="${notesDisplay}">${notesDisplay}</td>
+                        <td class="px-4 py-3 text-right"></td>
+                    </tr>
+                `;
+            }).join('');
         }
     };
 
