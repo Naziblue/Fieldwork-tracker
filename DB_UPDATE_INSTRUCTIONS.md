@@ -53,13 +53,13 @@ service cloud.firestore {
     match /users/{userId}/chats/{supervisorUid} {
       allow read, write: if request.auth != null && (
         request.auth.uid == userId ||
-        request.auth.token.email in get(/databases/$(database)/documents/users/$(userId)).data.supervisorEmails
+        request.auth.uid == supervisorUid
       );
     }
     match /users/{userId}/chats/{supervisorUid}/messages/{messageId} {
       allow read, write: if request.auth != null && (
         request.auth.uid == userId ||
-        request.auth.token.email in get(/databases/$(database)/documents/users/$(userId)).data.supervisorEmails
+        request.auth.uid == supervisorUid
       );
     }
 
