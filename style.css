@@ -800,3 +800,7 @@ select.bg-transparent {
     animation: menuHint 1.8s ease-in-out 1s 2;
 }
 
+/* Sidebar is always fully solid — no transparency bleed-through */
+#main-sidebar {
+    background-color: rgb(var(--color-sidebar)) !important;
+}
