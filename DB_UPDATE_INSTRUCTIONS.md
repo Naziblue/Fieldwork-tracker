@@ -51,7 +51,8 @@ service cloud.firestore {
     // --- 4. Chat Rooms & Messages ---
     // Trainees and their linked supervisors can read/write chat room summaries and messages.
     match /users/{userId}/chats/{supervisorUid} {
-      allow read, write: if request.auth != null && (
+      allow list: if request.auth != null && request.auth.uid == userId;
+      allow get, write: if request.auth != null && (
         request.auth.uid == userId ||
         request.auth.uid == supervisorUid
       );
