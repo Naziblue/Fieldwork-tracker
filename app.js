@@ -1647,7 +1647,7 @@ const renderTraineeReview = async (entries) => {
         const filtered = entries.filter(e => {
             const d = dayjs(e.date);
             return d.year() == year && (d.month() + 1) == month;
-        });
+        }).sort((a, b) => new Date(b.date) - new Date(a.date));
 
         const verificationRef = doc(db, `users/${selectedTraineeId}/verifications/${selectedMonth}`);
         const verifSnap = await getDoc(verificationRef);
