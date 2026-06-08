@@ -195,6 +195,7 @@ function setupTableHeaders() {
         <th class="px-4 py-3 font-medium text-text-muted">Hrs</th>
         <th class="px-4 py-3 font-medium text-text-muted">Client</th>
         <th class="px-4 py-3 font-medium text-text-muted">Type</th>
+        <th class="px-4 py-3 font-medium text-text-muted hidden sm:table-cell">Unrestricted Type</th>
         <th class="px-4 py-3 font-medium text-text-muted">Supervision</th>
         <th class="px-4 py-3 font-medium text-text-muted">Supervisor</th>
         <th class="px-4 py-3 font-medium text-text-muted hidden md:table-cell">Notes</th>
@@ -672,7 +673,7 @@ const updateAlerts = (data, containerId) => {
 const renderTable = (entries, tableBodyElement) => {
     tableBodyElement.innerHTML = '';
     if (entries.length === 0) {
-        tableBodyElement.innerHTML = `<tr><td colspan="9" class="text-center py-12 text-text-muted">No activities logged for this period.</td></tr>`;
+        tableBodyElement.innerHTML = `<tr><td colspan="10" class="text-center py-12 text-text-muted">No activities logged for this period.</td></tr>`;
         return;
     }
     const sortedEntries = [...entries].sort((a, b) => new Date(b.date) - new Date(a.date)); // Descending
@@ -694,6 +695,7 @@ const renderTable = (entries, tableBodyElement) => {
             <td class="px-4 py-3 font-bold text-text">${totalHours.toFixed(2)}</td>
             <td class="px-4 py-3 text-text-muted">${entry.clientName || '-'}</td>
             <td class="px-4 py-3"><span class="badge ${typeBadgeClass}">${entry.activityType}</span></td>
+            <td class="px-4 py-3 text-text-muted text-xs hidden sm:table-cell">${entry.activityType === 'Unrestricted' ? (entry.unrestrictedActivityType || 'General') : '-'}</td>
             <td class="px-4 py-3 text-text-muted text-xs max-w-[150px] truncate" title="${entry.supervisionType}">${entry.supervisionType}</td>
             <td class="px-4 py-3 text-text-muted">${entry.supervisorName || '-'}</td>
             <td class="note-cell px-4 py-3 text-text-muted text-xs hidden md:table-cell max-w-xs truncate cursor-pointer hover:text-white transition-all duration-200" data-notes="${notesDisplay.replace(/"/g, '&quot;')}" title="Click to view full note">${notesDisplay}</td>
@@ -1572,7 +1574,7 @@ const renderTraineeReview = async (entries) => {
         if (reviewTableBody) {
             reviewTableBody.innerHTML = `
                 <tr>
-                    <td colspan="7" class="px-4 py-8 text-center text-text-muted">
+                    <td colspan="10" class="px-4 py-8 text-center text-text-muted">
                         <i class="ph ph-note-blank text-3xl mb-2 block mx-auto opacity-30"></i>
                         No activities logged by this trainee in the cloud yet.
                     </td>
@@ -1639,6 +1641,7 @@ const renderTraineeReview = async (entries) => {
                                 ${entry.activityType}
                             </span>
                         </td>
+                        <td class="px-4 py-3 text-text-muted text-xs hidden sm:table-cell">${entry.activityType === 'Unrestricted' ? (entry.unrestrictedActivityType || 'General') : '-'}</td>
                         <td class="px-4 py-3 text-xs ${entry.supervisionType === 'No Supervision' ? 'text-text-muted' : 'text-teal-400 font-medium'}">
                             ${entry.supervisionType}
                         </td>
