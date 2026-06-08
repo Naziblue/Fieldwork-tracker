@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,535 +10,708 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="tailwind-config.js"></script>
     <style>
-        * { box-sizing: border-box; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background: #fff; color: #0f172a; overflow-x: hidden; }
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background: #ffffff;
-            color: #0f172a;
-            overflow-x: hidden;
-        }
-
-        /* ── Confetti Canvas ── */
-        #confetti-canvas {
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            z-index: 0;
-        }
+        /* ── Confetti ── */
+        #confetti-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
 
         /* ── Navbar ── */
         .navbar {
-            position: fixed;
-            top: 0; left: 0; right: 0;
-            z-index: 100;
-            background: rgba(255,255,255,0.85);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
+            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+            background: rgba(255,255,255,0.88);
+            backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
             border-bottom: 1px solid rgba(0,0,0,0.06);
             transition: box-shadow 0.3s ease;
         }
-        .navbar.scrolled {
-            box-shadow: 0 2px 20px rgba(0,0,0,0.06);
-        }
+        .navbar.scrolled { box-shadow: 0 2px 24px rgba(0,0,0,0.07); }
 
-        /* ── Text Gradient ── */
+        /* ── Sticky CTA bar ── */
+        #sticky-cta {
+            position: fixed; bottom: 0; left: 0; right: 0; z-index: 90;
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.22,1,0.36,1);
+        }
+        #sticky-cta.visible { transform: translateY(0); }
+
+        /* ── Text gradient ── */
         .text-gradient {
-            background: linear-gradient(135deg, #6366f1 0%, #ec4899 50%, #06b6d4 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        /* ── Fade In ── */
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(24px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-        .fade-up { animation: fadeUp 0.7s cubic-bezier(0.22,1,0.36,1) both; }
-        .delay-1 { animation-delay: 0.1s; }
-        .delay-2 { animation-delay: 0.22s; }
-        .delay-3 { animation-delay: 0.36s; }
-        .delay-4 { animation-delay: 0.5s; }
-
-        /* ── Feature Card ── */
-        .feature-card {
-            background: #ffffff;
-            border: 1px solid rgba(0,0,0,0.07);
-            border-radius: 24px;
-            transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
-        }
-        .feature-card:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 16px 48px rgba(99,102,241,0.10);
-            border-color: rgba(99,102,241,0.18);
-        }
-
-        /* ── Badge pill ── */
-        .badge-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 6px 16px;
-            border-radius: 999px;
-            background: rgba(99,102,241,0.06);
-            border: 1px solid rgba(99,102,241,0.15);
-            font-size: 13px;
-            font-weight: 500;
-            color: #6366f1;
-        }
-
-        /* ── Ping dot ── */
-        @keyframes ping {
-            75%, 100% { transform: scale(1.8); opacity: 0; }
-        }
-        .ping-dot {
-            position: relative;
-            width: 8px; height: 8px;
-            display: inline-block;
-        }
-        .ping-dot::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            border-radius: 50%;
-            background: #6366f1;
-            animation: ping 1.4s cubic-bezier(0,0,0.2,1) infinite;
-        }
-        .ping-dot::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            border-radius: 50%;
-            background: #6366f1;
+            background: linear-gradient(135deg, #6366f1 0%, #ec4899 55%, #06b6d4 100%);
+            -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
         }
 
         /* ── Launch Button ── */
         .launch-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 22px;
-            background: #0f172a;
-            color: #ffffff;
-            font-weight: 600;
-            font-size: 14px;
-            border-radius: 999px;
-            transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 11px 24px; background: #0f172a; color: #fff;
+            font-weight: 600; font-size: 14px; border-radius: 999px;
             text-decoration: none;
+            transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
         }
-        .launch-btn:hover {
+        .launch-btn:hover { background: #1e293b; transform: translateY(-1px); box-shadow: 0 6px 22px rgba(15,23,42,0.22); }
+        .launch-btn-outline {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 11px 24px; background: transparent; color: #334155;
+            font-weight: 600; font-size: 14px; border-radius: 999px;
+            border: 2px solid #e2e8f0; text-decoration: none;
+            transition: border-color 0.2s, color 0.2s, transform 0.2s;
+        }
+        .launch-btn-outline:hover { border-color: #6366f1; color: #6366f1; transform: translateY(-1px); }
+
+        /* ── Scroll reveal ── */
+        .reveal {
+            opacity: 0; transform: translateY(32px);
+            transition: opacity 0.7s cubic-bezier(0.22,1,0.36,1), transform 0.7s cubic-bezier(0.22,1,0.36,1);
+        }
+        .reveal.visible { opacity: 1; transform: translateY(0); }
+        .reveal-delay-1 { transition-delay: 0.1s; }
+        .reveal-delay-2 { transition-delay: 0.2s; }
+        .reveal-delay-3 { transition-delay: 0.3s; }
+        .reveal-delay-4 { transition-delay: 0.4s; }
+
+        /* Hero entrance animations (immediate, no scroll trigger) */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(28px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .fade-up { animation: fadeUp 0.8s cubic-bezier(0.22,1,0.36,1) both; }
+        .d1 { animation-delay: 0.05s; }
+        .d2 { animation-delay: 0.18s; }
+        .d3 { animation-delay: 0.32s; }
+        .d4 { animation-delay: 0.48s; }
+        .d5 { animation-delay: 0.62s; }
+
+        /* ── App Mockup ── */
+        .mockup-wrapper {
+            position: relative;
+            perspective: 1200px;
+        }
+        .mockup-browser {
             background: #1e293b;
-            transform: translateY(-1px);
-            box-shadow: 0 6px 20px rgba(15,23,42,0.2);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow:
+                0 0 0 1px rgba(255,255,255,0.08),
+                0 40px 100px -20px rgba(99,102,241,0.25),
+                0 20px 60px -10px rgba(0,0,0,0.35);
+            transform: rotateX(4deg) rotateY(-4deg);
+            transform-style: preserve-3d;
+            transition: transform 0.5s ease;
+        }
+        .mockup-wrapper:hover .mockup-browser {
+            transform: rotateX(1deg) rotateY(-1deg) scale(1.02);
+        }
+        .mockup-titlebar {
+            background: #0f172a;
+            padding: 10px 16px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .mockup-dot {
+            width: 10px; height: 10px; border-radius: 50%;
+        }
+        .mockup-url {
+            flex: 1; background: #1e293b; border-radius: 6px;
+            padding: 4px 10px; font-size: 11px; color: #64748b;
+            font-family: monospace;
+        }
+        .mockup-content {
+            display: flex; background: #0f172a; min-height: 320px;
+        }
+        /* Sidebar */
+        .m-sidebar {
+            width: 180px; flex-shrink: 0;
+            background: #0f172a;
+            border-right: 1px solid rgba(255,255,255,0.06);
+            padding: 16px 12px;
+            display: flex; flex-direction: column; gap: 4px;
+        }
+        .m-logo { height: 28px; margin-bottom: 16px; opacity: 0.9; }
+        .m-label { font-size: 9px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.08em; padding: 0 8px; margin: 8px 0 4px; }
+        .m-nav-item {
+            display: flex; align-items: center; gap: 8px;
+            padding: 7px 10px; border-radius: 8px;
+            font-size: 11px; font-weight: 500; color: #94a3b8;
+            cursor: default;
+        }
+        .m-nav-item.active {
+            background: rgba(99,102,241,0.15);
+            color: #a5b4fc;
+        }
+        .m-nav-item i { font-size: 14px; }
+        .m-spacer { flex: 1; }
+        .m-user {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px; border-radius: 8px; background: rgba(255,255,255,0.04);
+            margin-top: 8px;
+        }
+        .m-avatar { width: 24px; height: 24px; border-radius: 50%; background: #6366f1; }
+        .m-uname { font-size: 10px; font-weight: 600; color: #e2e8f0; }
+        .m-urole { font-size: 9px; color: #64748b; }
+        /* Main area */
+        .m-main { flex: 1; padding: 20px; overflow: hidden; }
+        .m-heading { font-size: 16px; font-weight: 800; color: #f1f5f9; margin-bottom: 4px; }
+        .m-sub { font-size: 10px; color: #64748b; margin-bottom: 14px; }
+        .m-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+        .m-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 10px; padding: 10px;
+        }
+        .m-card-label { font-size: 9px; color: #64748b; margin-bottom: 4px; }
+        .m-card-val { font-size: 16px; font-weight: 800; }
+        .m-table-head {
+            display: flex; gap: 8px; padding: 6px 10px;
+            background: rgba(99,102,241,0.12); border-radius: 6px 6px 0 0;
+            font-size: 9px; font-weight: 700; color: #94a3b8; text-transform: uppercase;
+        }
+        .m-table-row {
+            display: flex; gap: 8px; padding: 7px 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            font-size: 10px; color: #cbd5e1;
+            background: rgba(255,255,255,0.02);
+        }
+        .m-table-row:last-child { border-bottom: none; }
+        .m-col-1 { width: 60px; flex-shrink: 0; }
+        .m-col-2 { flex: 1; }
+        .m-col-3 { width: 55px; flex-shrink: 0; }
+        .m-badge {
+            display: inline-block; padding: 2px 7px; border-radius: 999px;
+            font-size: 8px; font-weight: 600;
+        }
+        .m-badge-r { background: rgba(139,92,246,0.15); color: #a78bfa; }
+        .m-badge-u { background: rgba(16,185,129,0.15); color: #34d399; }
+        /* Glow ring behind mockup */
+        .mockup-glow {
+            position: absolute; inset: -30px;
+            background: radial-gradient(ellipse at center, rgba(99,102,241,0.18) 0%, transparent 70%);
+            pointer-events: none; z-index: -1;
         }
 
-        /* ── CTA Section ── */
-        .cta-section {
-            background: linear-gradient(135deg, #f8f7ff 0%, #fff0f9 50%, #f0fbff 100%);
-            border-radius: 32px;
-            border: 1px solid rgba(99,102,241,0.08);
-        }
-
-        /* ── Stat items ── */
+        /* ── Stat bar ── */
         .stat-item {
-            padding: 24px 32px;
-            border-right: 1px solid rgba(0,0,0,0.06);
+            padding: 28px 32px; text-align: center;
+            border-right: 1px solid rgba(0,0,0,0.05);
         }
         .stat-item:last-child { border-right: none; }
 
+        /* ── Feature cards ── */
+        .feature-card {
+            background: #fff;
+            border: 1px solid rgba(0,0,0,0.07);
+            border-radius: 24px; padding: 32px;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+        }
+        .feature-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 20px 60px rgba(99,102,241,0.10);
+            border-color: rgba(99,102,241,0.2);
+        }
+        .feature-icon-wrap {
+            width: 56px; height: 56px; border-radius: 16px;
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 20px; font-size: 26px;
+        }
+
+        /* ── CTA box ── */
+        .cta-box {
+            background: linear-gradient(135deg, #f5f3ff 0%, #fdf2f8 50%, #eff6ff 100%);
+            border: 1px solid rgba(99,102,241,0.1);
+            border-radius: 32px; padding: 72px 40px;
+            text-align: center;
+        }
+
+        /* ── Mobile nav ── */
+        #mobile-nav { display: none; }
+        #mobile-nav.open { display: flex; }
+
         /* ── Scrollbar ── */
-        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 3px; }
 
-        /* ── Mobile nav toggle ── */
-        #mobile-nav {
-            display: none;
-        }
-        #mobile-nav.open {
-            display: flex;
+        /* ── Step number ── */
+        .step-num {
+            width: 52px; height: 52px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 20px; font-weight: 900;
         }
     </style>
 </head>
 
 <body>
 
-    <!-- Confetti Canvas -->
-    <canvas id="confetti-canvas"></canvas>
+<!-- ── Confetti canvas ── -->
+<canvas id="confetti-canvas"></canvas>
 
-    <!-- ══════════════════════════════════════════
-         NAVBAR
-    ══════════════════════════════════════════ -->
-    <nav class="navbar" id="navbar">
-        <div class="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
-
-            <!-- Logo -->
-            <a href="#" class="flex items-center">
-                <img src="fieldly-logo.png" alt="Fieldly" class="h-10">
+<!-- ══════════════════════════════════
+     NAVBAR
+══════════════════════════════════ -->
+<nav class="navbar" id="navbar">
+    <div class="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
+        <a href="#" class="flex items-center">
+            <img src="fieldly-logo.png" alt="Fieldly" class="h-10">
+        </a>
+        <div class="hidden md:flex items-center gap-8">
+            <a href="#features"    class="text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors">Features</a>
+            <a href="#how-it-works" class="text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors">How it Works</a>
+            <a href="#pricing"     class="text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors">Pricing</a>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="app.html" class="launch-btn">
+                Launch App <i class="ph-bold ph-arrow-up-right text-xs"></i>
             </a>
+            <button class="md:hidden p-2 text-slate-500" onclick="toggleMobileNav()">
+                <i class="ph ph-list text-2xl"></i>
+            </button>
+        </div>
+    </div>
+    <div id="mobile-nav" class="flex-col px-5 pb-4 border-t border-slate-100 gap-1">
+        <a href="#features"     class="block py-2.5 text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors" onclick="toggleMobileNav()">Features</a>
+        <a href="#how-it-works" class="block py-2.5 text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors" onclick="toggleMobileNav()">How it Works</a>
+        <a href="#pricing"      class="block py-2.5 text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors" onclick="toggleMobileNav()">Pricing</a>
+    </div>
+</nav>
 
-            <!-- Desktop Nav Links -->
-            <div class="hidden md:flex items-center gap-8">
-                <a href="#features" class="text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors">Features</a>
-                <a href="#how-it-works" class="text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors">How it Works</a>
-                <a href="#pricing" class="text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors">Pricing</a>
-            </div>
-
-            <!-- CTA -->
+<!-- ══════════════════════════════════
+     STICKY CTA BAR
+══════════════════════════════════ -->
+<div id="sticky-cta">
+    <div style="background: rgba(15,23,42,0.97); backdrop-filter: blur(16px); border-top: 1px solid rgba(255,255,255,0.08);">
+        <div class="max-w-6xl mx-auto px-5 py-3 flex items-center justify-between gap-4">
             <div class="flex items-center gap-3">
-                <a href="app.html" class="launch-btn">
-                    Launch App
-                    <i class="ph-bold ph-arrow-up-right text-sm"></i>
-                </a>
-                <!-- Mobile hamburger -->
-                <button id="hamburger-btn" class="md:hidden p-2 text-slate-500 hover:text-slate-900" onclick="toggleMobileNav()">
-                    <i class="ph ph-list text-2xl"></i>
-                </button>
+                <img src="fieldly-logo.png" alt="Fieldly" class="h-7 brightness-0 invert opacity-80">
+                <p class="text-sm font-medium text-slate-300 hidden sm:block">Track your BCBA fieldwork hours — free forever.</p>
             </div>
+            <a href="app.html" class="flex-shrink-0 inline-flex items-center gap-2 px-5 py-2 text-sm font-bold text-white rounded-full transition-all hover:scale-105"
+               style="background: linear-gradient(135deg, #6366f1, #ec4899);">
+                Get Started Free <i class="ph-bold ph-arrow-right text-xs"></i>
+            </a>
         </div>
+    </div>
+</div>
 
-        <!-- Mobile Nav -->
-        <div id="mobile-nav" class="flex-col px-5 pb-4 border-t border-slate-100 gap-1">
-            <a href="#features" class="block py-2.5 text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors" onclick="toggleMobileNav()">Features</a>
-            <a href="#how-it-works" class="block py-2.5 text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors" onclick="toggleMobileNav()">How it Works</a>
-            <a href="#pricing" class="block py-2.5 text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors" onclick="toggleMobileNav()">Pricing</a>
-        </div>
-    </nav>
+<!-- ══════════════════════════════════
+     HERO
+══════════════════════════════════ -->
+<section id="hero" class="relative pt-28 pb-12 px-4 z-10 overflow-hidden">
+    <div class="max-w-6xl mx-auto">
+        <div class="grid lg:grid-cols-2 gap-12 items-center">
 
-    <!-- ══════════════════════════════════════════
-         HERO SECTION
-    ══════════════════════════════════════════ -->
-    <section class="relative min-h-screen flex items-center justify-center text-center pt-24 pb-16 px-4 z-10">
-        <div class="max-w-3xl mx-auto">
-
-
-            <!-- Headline -->
-            <h1 class="fade-up delay-2 text-5xl sm:text-6xl md:text-7xl font-black tracking-tight leading-[1.08] text-slate-900 mb-6">
-                Track Hours.<br>
-                <span class="text-gradient">Get Certified.</span>
-            </h1>
-
-            <!-- Subheadline -->
-            <p class="fade-up delay-3 text-lg sm:text-xl text-slate-500 font-normal max-w-xl mx-auto mb-10 leading-relaxed">
-                Everything you need to master your BCBA fieldwork — hour tracking, supervisor sign-offs, BACB-aligned reports, all in one place.
-            </p>
-
-            <!-- CTAs -->
-            <div class="fade-up delay-4 flex flex-col sm:flex-row items-center justify-center gap-4">
-                <a href="app.html" class="launch-btn text-base px-8 py-3.5">
-                    Get Started — it's free
-                    <i class="ph-bold ph-arrow-right text-sm"></i>
-                </a>
-                <a href="#features" class="inline-flex items-center gap-2 px-8 py-3.5 text-base font-semibold text-slate-600 border-2 border-slate-200 rounded-full hover:border-indigo-300 hover:text-indigo-600 transition-all">
-                    See Features
-                </a>
-            </div>
-
-            <!-- Social proof micro-line -->
-            <p class="fade-up delay-4 mt-8 text-sm text-slate-400 font-medium">
-                Trusted by ABA trainees • BACB-aligned • Free to use
-            </p>
-        </div>
-    </section>
-
-    <!-- ══════════════════════════════════════════
-         STATS BAR
-    ══════════════════════════════════════════ -->
-    <section class="relative z-10 border-y border-slate-100 bg-white/80 backdrop-blur">
-        <div class="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 divide-x divide-slate-100">
-            <div class="stat-item text-center py-8">
-                <p class="text-3xl font-black text-slate-900">1,500+</p>
-                <p class="text-sm text-slate-500 mt-1">Hours tracked</p>
-            </div>
-            <div class="stat-item text-center py-8">
-                <p class="text-3xl font-black text-slate-900">BACB</p>
-                <p class="text-sm text-slate-500 mt-1">Aligned format</p>
-            </div>
-            <div class="stat-item text-center py-8">
-                <p class="text-3xl font-black text-slate-900">100%</p>
-                <p class="text-sm text-slate-500 mt-1">Free forever</p>
-            </div>
-            <div class="stat-item text-center py-8">
-                <p class="text-3xl font-black text-slate-900">M-FVF</p>
-                <p class="text-sm text-slate-500 mt-1">Auto-generated</p>
-            </div>
-        </div>
-    </section>
-
-    <!-- ══════════════════════════════════════════
-         FEATURES
-    ══════════════════════════════════════════ -->
-    <section id="features" class="relative z-10 py-28 px-4">
-        <div class="max-w-6xl mx-auto">
-
-            <div class="text-center mb-16">
-                <p class="text-xs font-bold uppercase tracking-widest text-indigo-500 mb-3">Features</p>
-                <h2 class="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight mb-4">Everything you need to verify</h2>
-                <p class="text-lg text-slate-500 max-w-xl mx-auto">Built specifically for BACB fieldwork requirements, so you can focus on the work — not the paperwork.</p>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-                <!-- Feature 1 -->
-                <div class="feature-card p-8">
-                    <div class="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center mb-6">
-                        <i class="ph-fill ph-clock text-2xl text-indigo-500"></i>
-                    </div>
-                    <div class="mb-5 overflow-hidden rounded-2xl bg-slate-50">
-                        <img src="analytics-illustration.png" alt="Easy Tracking" class="w-full h-44 object-contain p-2 transition-transform duration-500 hover:scale-105">
-                    </div>
-                    <h3 class="text-xl font-bold text-slate-900 mb-2">Easy Tracking</h3>
-                    <p class="text-slate-500 text-sm leading-relaxed">Choose your fieldwork path and adjust as needed. Hours are flexibly organized and visually displayed so you always know where you stand.</p>
+            <!-- Left: Text -->
+            <div>
+                <h1 class="fade-up d1 text-5xl sm:text-6xl font-black tracking-tight leading-[1.06] text-slate-900 mb-6">
+                    Track Hours.<br>
+                    <span class="text-gradient">Get Certified.</span>
+                </h1>
+                <p class="fade-up d2 text-lg text-slate-500 max-w-md mb-8 leading-relaxed">
+                    Everything you need to master your BCBA fieldwork — hour logging, supervisor sign-offs, and BACB-aligned reports, all in one place.
+                </p>
+                <div class="fade-up d3 flex flex-wrap items-center gap-3 mb-10">
+                    <a href="app.html" class="launch-btn text-base px-7 py-3.5">
+                        Get Started — it's free
+                        <i class="ph-bold ph-arrow-right text-sm"></i>
+                    </a>
+                    <a href="#features" class="launch-btn-outline text-base px-7 py-3.5">
+                        See Features
+                    </a>
                 </div>
-
-                <!-- Feature 2 -->
-                <div class="feature-card p-8">
-                    <div class="w-12 h-12 rounded-2xl bg-pink-50 flex items-center justify-center mb-6">
-                        <i class="ph-fill ph-files text-2xl text-pink-500"></i>
-                    </div>
-                    <div class="mb-5 overflow-hidden rounded-2xl bg-slate-50">
-                        <img src="document-illustration.png" alt="All in One" class="w-full h-44 object-contain p-2 transition-transform duration-500 hover:scale-105">
-                    </div>
-                    <h3 class="text-xl font-bold text-slate-900 mb-2">All in One</h3>
-                    <p class="text-slate-500 text-sm leading-relaxed">Hours, supervision, and progress — all in one clear space. Fieldly reduces the overwhelm of fieldwork by bringing everything together seamlessly.</p>
+                <!-- Trust micro-line -->
+                <div class="fade-up d4 flex items-center gap-5 flex-wrap">
+                    <span class="flex items-center gap-1.5 text-xs font-semibold text-slate-400">
+                        <i class="ph-fill ph-check-circle text-green-500 text-base"></i> Free forever
+                    </span>
+                    <span class="flex items-center gap-1.5 text-xs font-semibold text-slate-400">
+                        <i class="ph-fill ph-check-circle text-green-500 text-base"></i> No credit card
+                    </span>
+                    <span class="flex items-center gap-1.5 text-xs font-semibold text-slate-400">
+                        <i class="ph-fill ph-check-circle text-green-500 text-base"></i> BACB-aligned
+                    </span>
                 </div>
-
-                <!-- Feature 3 -->
-                <div class="feature-card p-8">
-                    <div class="w-12 h-12 rounded-2xl bg-cyan-50 flex items-center justify-center mb-6">
-                        <i class="ph-fill ph-shield-check text-2xl text-cyan-500"></i>
-                    </div>
-                    <div class="mb-5 overflow-hidden rounded-2xl bg-slate-50">
-                        <img src="team-illustration.png" alt="BACB Aligned" class="w-full h-44 object-contain p-2 transition-transform duration-500 hover:scale-105">
-                    </div>
-                    <h3 class="text-xl font-bold text-slate-900 mb-2">BACB Aligned</h3>
-                    <p class="text-slate-500 text-sm leading-relaxed">Track restricted and unrestricted hours in line with current BACB requirements, with supervision and documentation always organized and ready.</p>
-                </div>
-
-            </div>
-        </div>
-    </section>
-
-    <!-- ══════════════════════════════════════════
-         HOW IT WORKS
-    ══════════════════════════════════════════ -->
-    <section id="how-it-works" class="relative z-10 py-28 px-4 bg-slate-50/60">
-        <div class="max-w-5xl mx-auto">
-
-            <div class="text-center mb-16">
-                <p class="text-xs font-bold uppercase tracking-widest text-pink-500 mb-3">How it Works</p>
-                <h2 class="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight">Three steps to clarity</h2>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div class="text-center">
-                    <div class="w-14 h-14 rounded-full bg-white border-2 border-indigo-100 flex items-center justify-center mx-auto mb-5 text-2xl font-black text-indigo-500 shadow-sm">1</div>
-                    <h3 class="text-lg font-bold text-slate-900 mb-2">Sign In</h3>
-                    <p class="text-slate-500 text-sm leading-relaxed">Log in with Google or continue as a guest. Select whether you're a trainee or supervisor.</p>
-                </div>
-                <div class="text-center">
-                    <div class="w-14 h-14 rounded-full bg-white border-2 border-pink-100 flex items-center justify-center mx-auto mb-5 text-2xl font-black text-pink-500 shadow-sm">2</div>
-                    <h3 class="text-lg font-bold text-slate-900 mb-2">Log Sessions</h3>
-                    <p class="text-slate-500 text-sm leading-relaxed">Add your fieldwork sessions — date, time, activity type, client, supervision details, and notes.</p>
-                </div>
-                <div class="text-center">
-                    <div class="w-14 h-14 rounded-full bg-white border-2 border-cyan-100 flex items-center justify-center mx-auto mb-5 text-2xl font-black text-cyan-500 shadow-sm">3</div>
-                    <h3 class="text-lg font-bold text-slate-900 mb-2">Generate Reports</h3>
-                    <p class="text-slate-500 text-sm leading-relaxed">Export your monthly M-FVF, yearly summaries, or full career CSVs — ready for BACB submission.</p>
+            <!-- Right: App Mockup -->
+            <div class="fade-up d5 mockup-wrapper hidden lg:block">
+                <div class="mockup-glow"></div>
+                <div class="mockup-browser">
+                    <!-- Title bar -->
+                    <div class="mockup-titlebar">
+                        <span class="mockup-dot" style="background:#ff5f56"></span>
+                        <span class="mockup-dot" style="background:#ffbd2e"></span>
+                        <span class="mockup-dot" style="background:#27c93f"></span>
+                        <span class="mockup-url">app.fieldly.io/monthly</span>
+                    </div>
+                    <!-- App content -->
+                    <div class="mockup-content">
+                        <!-- Sidebar -->
+                        <div class="m-sidebar">
+                            <img src="fieldly-logo.png" alt="Fieldly" class="m-logo">
+                            <span class="m-label">Analytics</span>
+                            <div class="m-nav-item active">
+                                <i class="ph ph-calendar-blank"></i> Monthly Overview
+                            </div>
+                            <div class="m-nav-item">
+                                <i class="ph ph-calendar"></i> Yearly Report
+                            </div>
+                            <div class="m-nav-item">
+                                <i class="ph ph-chart-line-up"></i> All Time Stats
+                            </div>
+                            <div class="m-spacer"></div>
+                            <div class="m-user">
+                                <div class="m-avatar"></div>
+                                <div>
+                                    <div class="m-uname">Naz B.</div>
+                                    <div class="m-urole">Trainee</div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Main -->
+                        <div class="m-main">
+                            <div class="m-heading">Monthly Overview</div>
+                            <div class="m-sub">June 2025 — Track your progress</div>
+                            <div class="m-cards">
+                                <div class="m-card">
+                                    <div class="m-card-label">Total Hours</div>
+                                    <div class="m-card-val" style="color:#a5b4fc">42.5h</div>
+                                </div>
+                                <div class="m-card">
+                                    <div class="m-card-label">Restricted</div>
+                                    <div class="m-card-val" style="color:#c084fc">28.0h</div>
+                                </div>
+                                <div class="m-card">
+                                    <div class="m-card-label">Unrestricted</div>
+                                    <div class="m-card-val" style="color:#34d399">14.5h</div>
+                                </div>
+                            </div>
+                            <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:10px; overflow:hidden;">
+                                <div class="m-table-head">
+                                    <span class="m-col-1">Date</span>
+                                    <span class="m-col-2">Activity</span>
+                                    <span class="m-col-3">Type</span>
+                                </div>
+                                <div class="m-table-row">
+                                    <span class="m-col-1">Jun 03</span>
+                                    <span class="m-col-2">Direct — School</span>
+                                    <span class="m-col-3"><span class="m-badge m-badge-r">Restricted</span></span>
+                                </div>
+                                <div class="m-table-row">
+                                    <span class="m-col-1">Jun 05</span>
+                                    <span class="m-col-2">Observation</span>
+                                    <span class="m-col-3"><span class="m-badge m-badge-u">Unrestricted</span></span>
+                                </div>
+                                <div class="m-table-row">
+                                    <span class="m-col-1">Jun 07</span>
+                                    <span class="m-col-2">Direct — Home</span>
+                                    <span class="m-col-3"><span class="m-badge m-badge-r">Restricted</span></span>
+                                </div>
+                                <div class="m-table-row">
+                                    <span class="m-col-1">Jun 10</span>
+                                    <span class="m-col-2">Group Supervision</span>
+                                    <span class="m-col-3"><span class="m-badge m-badge-u">Unrestricted</span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
         </div>
-    </section>
+    </div>
+</section>
 
-    <!-- ══════════════════════════════════════════
-         CTA SECTION
-    ══════════════════════════════════════════ -->
-    <section id="pricing" class="relative z-10 py-16 px-4">
-        <div class="max-w-4xl mx-auto">
-            <div class="cta-section py-20 px-8 text-center">
-                <p class="text-xs font-bold uppercase tracking-widest text-indigo-500 mb-4">Free Forever</p>
-                <h2 class="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight mb-4">Ready to certify<br>with confidence?</h2>
-                <p class="text-lg text-slate-500 mb-10 max-w-md mx-auto">Join trainees who've ditched their spreadsheets. No credit card needed.</p>
-                <a href="app.html" class="launch-btn text-base px-10 py-4 inline-flex">
+<!-- ══════════════════════════════════
+     STATS BAR
+══════════════════════════════════ -->
+<section class="relative z-10 border-y border-slate-100 bg-white/80 backdrop-blur">
+    <div class="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 divide-x divide-slate-100">
+        <div class="stat-item reveal">
+            <p class="text-3xl font-black text-slate-900 counter" data-target="1500" data-suffix="+">0</p>
+            <p class="text-sm text-slate-500 mt-1">Hours tracked</p>
+        </div>
+        <div class="stat-item reveal reveal-delay-1">
+            <p class="text-3xl font-black text-slate-900">BACB</p>
+            <p class="text-sm text-slate-500 mt-1">Aligned format</p>
+        </div>
+        <div class="stat-item reveal reveal-delay-2">
+            <p class="text-3xl font-black text-slate-900 counter" data-target="100" data-suffix="%">0</p>
+            <p class="text-sm text-slate-500 mt-1">Free forever</p>
+        </div>
+        <div class="stat-item reveal reveal-delay-3">
+            <p class="text-3xl font-black text-slate-900">M-FVF</p>
+            <p class="text-sm text-slate-500 mt-1">Auto-generated</p>
+        </div>
+    </div>
+</section>
+
+<!-- ══════════════════════════════════
+     FEATURES
+══════════════════════════════════ -->
+<section id="features" class="relative z-10 py-28 px-4">
+    <div class="max-w-6xl mx-auto">
+
+        <div class="text-center mb-16 reveal">
+            <p class="text-xs font-bold uppercase tracking-widest text-indigo-500 mb-3">Features</p>
+            <h2 class="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight mb-4">Everything you need to verify</h2>
+            <p class="text-lg text-slate-500 max-w-xl mx-auto">Built for BACB fieldwork — so you can focus on the work, not the paperwork.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+            <!-- Feature 1 -->
+            <div class="feature-card reveal reveal-delay-1">
+                <div class="feature-icon-wrap" style="background: rgba(99,102,241,0.08);">
+                    <i class="ph-fill ph-clock" style="color:#6366f1"></i>
+                </div>
+                <h3 class="text-xl font-bold text-slate-900 mb-3">Easy Hour Logging</h3>
+                <p class="text-slate-500 text-sm leading-relaxed mb-4">Log sessions in seconds — date, time, type, supervision, and client. Fieldly auto-calculates everything so your hours are always up to date.</p>
+                <div class="flex flex-wrap gap-2">
+                    <span class="text-xs font-semibold px-2.5 py-1 rounded-full" style="background:rgba(99,102,241,0.08);color:#6366f1">Restricted</span>
+                    <span class="text-xs font-semibold px-2.5 py-1 rounded-full" style="background:rgba(16,185,129,0.08);color:#059669">Unrestricted</span>
+                    <span class="text-xs font-semibold px-2.5 py-1 rounded-full" style="background:rgba(139,92,246,0.08);color:#7c3aed">Supervision</span>
+                </div>
+            </div>
+
+            <!-- Feature 2 -->
+            <div class="feature-card reveal reveal-delay-2">
+                <div class="feature-icon-wrap" style="background: rgba(236,72,153,0.08);">
+                    <i class="ph-fill ph-file-pdf" style="color:#ec4899"></i>
+                </div>
+                <h3 class="text-xl font-bold text-slate-900 mb-3">Auto M-FVF Reports</h3>
+                <p class="text-slate-500 text-sm leading-relaxed mb-4">Generate BACB 2027 Monthly Fieldwork Verification Forms with one click. Export as PDF or CSV — ready for your supervisor to sign.</p>
+                <div class="flex flex-wrap gap-2">
+                    <span class="text-xs font-semibold px-2.5 py-1 rounded-full" style="background:rgba(239,68,68,0.08);color:#dc2626">PDF Export</span>
+                    <span class="text-xs font-semibold px-2.5 py-1 rounded-full" style="background:rgba(16,185,129,0.08);color:#059669">CSV Export</span>
+                </div>
+            </div>
+
+            <!-- Feature 3 -->
+            <div class="feature-card reveal reveal-delay-3">
+                <div class="feature-icon-wrap" style="background: rgba(6,182,212,0.08);">
+                    <i class="ph-fill ph-users-three" style="color:#0891b2"></i>
+                </div>
+                <h3 class="text-xl font-bold text-slate-900 mb-3">Supervisor Collaboration</h3>
+                <p class="text-slate-500 text-sm leading-relaxed mb-4">Supervisors get their own dashboard to review trainee logs, digitally sign monthly reports, and stay compliant with BACB requirements.</p>
+                <div class="flex flex-wrap gap-2">
+                    <span class="text-xs font-semibold px-2.5 py-1 rounded-full" style="background:rgba(6,182,212,0.08);color:#0891b2">Digital Signatures</span>
+                    <span class="text-xs font-semibold px-2.5 py-1 rounded-full" style="background:rgba(99,102,241,0.08);color:#6366f1">Multi-Trainee</span>
+                </div>
+            </div>
+
+            <!-- Feature 4 -->
+            <div class="feature-card reveal reveal-delay-1">
+                <div class="feature-icon-wrap" style="background: rgba(245,158,11,0.08);">
+                    <i class="ph-fill ph-chart-line-up" style="color:#d97706"></i>
+                </div>
+                <h3 class="text-xl font-bold text-slate-900 mb-3">Progress Analytics</h3>
+                <p class="text-slate-500 text-sm leading-relaxed mb-4">Monthly, yearly, and all-time views with visual progress toward your 1,500-hour BACB certification goal. Always know exactly where you stand.</p>
+            </div>
+
+            <!-- Feature 5 -->
+            <div class="feature-card reveal reveal-delay-2">
+                <div class="feature-icon-wrap" style="background: rgba(139,92,246,0.08);">
+                    <i class="ph-fill ph-sparkle" style="color:#7c3aed"></i>
+                </div>
+                <h3 class="text-xl font-bold text-slate-900 mb-3">AI Note Assistant</h3>
+                <p class="text-slate-500 text-sm leading-relaxed mb-4">Stuck on session notes? Fieldly's AI assist generates professional, context-aware session notes from your session details in seconds.</p>
+            </div>
+
+            <!-- Feature 6 -->
+            <div class="feature-card reveal reveal-delay-3">
+                <div class="feature-icon-wrap" style="background: rgba(16,185,129,0.08);">
+                    <i class="ph-fill ph-shield-check" style="color:#059669"></i>
+                </div>
+                <h3 class="text-xl font-bold text-slate-900 mb-3">BACB-Aligned</h3>
+                <p class="text-slate-500 text-sm leading-relaxed mb-4">Built around the 2027 BACB fieldwork requirements — restricted vs unrestricted hours, supervision ratios, and official M-FVF format.</p>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- ══════════════════════════════════
+     HOW IT WORKS
+══════════════════════════════════ -->
+<section id="how-it-works" class="relative z-10 py-28 px-4" style="background: #fafafa;">
+    <div class="max-w-5xl mx-auto">
+        <div class="text-center mb-16 reveal">
+            <p class="text-xs font-bold uppercase tracking-widest text-pink-500 mb-3">How it Works</p>
+            <h2 class="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight">Three steps to clarity</h2>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="text-center reveal reveal-delay-1">
+                <div class="step-num" style="background:rgba(99,102,241,0.1);color:#6366f1;border:2px solid rgba(99,102,241,0.15);">1</div>
+                <h3 class="text-lg font-bold text-slate-900 mb-2">Sign In</h3>
+                <p class="text-slate-500 text-sm leading-relaxed">Log in with Google or continue as a guest. Select your role — trainee or supervisor — and you're ready to go.</p>
+            </div>
+            <div class="text-center reveal reveal-delay-2">
+                <div class="step-num" style="background:rgba(236,72,153,0.08);color:#ec4899;border:2px solid rgba(236,72,153,0.15);">2</div>
+                <h3 class="text-lg font-bold text-slate-900 mb-2">Log Sessions</h3>
+                <p class="text-slate-500 text-sm leading-relaxed">Add fieldwork sessions with date, time, activity type, client info, and supervision. AI can help write your session notes too.</p>
+            </div>
+            <div class="text-center reveal reveal-delay-3">
+                <div class="step-num" style="background:rgba(6,182,212,0.08);color:#0891b2;border:2px solid rgba(6,182,212,0.15);">3</div>
+                <h3 class="text-lg font-bold text-slate-900 mb-2">Generate Reports</h3>
+                <p class="text-slate-500 text-sm leading-relaxed">Export your monthly M-FVF, yearly summaries, or full career history — ready for BACB submission and supervisor signature.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ══════════════════════════════════
+     CTA
+══════════════════════════════════ -->
+<section id="pricing" class="relative z-10 py-16 px-4">
+    <div class="max-w-4xl mx-auto reveal">
+        <div class="cta-box">
+            <p class="text-xs font-bold uppercase tracking-widest text-indigo-500 mb-4">Free Forever</p>
+            <h2 class="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight mb-4">
+                Ready to certify<br>with confidence?
+            </h2>
+            <p class="text-lg text-slate-500 mb-10 max-w-md mx-auto">No spreadsheets, no stress. Join BCBA trainees who've made Fieldly their fieldwork home base.</p>
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <a href="app.html" class="launch-btn text-base px-9 py-4">
                     Start Tracking Today
                     <i class="ph-bold ph-arrow-right text-sm"></i>
                 </a>
+                <span class="text-sm text-slate-400">No sign-up required to explore</span>
             </div>
         </div>
-    </section>
+    </div>
+</section>
 
-    <!-- ══════════════════════════════════════════
-         FOOTER
-    ══════════════════════════════════════════ -->
-    <footer class="relative z-10 border-t border-slate-100 py-10 px-4">
-        <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-            <img src="fieldly-logo.png" alt="Fieldly" class="h-9">
-            <p class="text-sm text-slate-400">&copy; 2025 Fieldly. All rights reserved.</p>
-            <div class="flex gap-6 text-sm text-slate-400">
-                <a href="#features" class="hover:text-slate-700 transition-colors">Features</a>
-                <a href="#how-it-works" class="hover:text-slate-700 transition-colors">How it Works</a>
-                <a href="app.html" class="hover:text-slate-700 transition-colors">Launch App</a>
-            </div>
+<!-- ══════════════════════════════════
+     FOOTER
+══════════════════════════════════ -->
+<footer class="relative z-10 border-t border-slate-100 py-10 px-4">
+    <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+        <img src="fieldly-logo.png" alt="Fieldly" class="h-9">
+        <p class="text-sm text-slate-400">&copy; 2025 Fieldly. All rights reserved.</p>
+        <div class="flex gap-6 text-sm text-slate-400">
+            <a href="#features"     class="hover:text-slate-700 transition-colors">Features</a>
+            <a href="#how-it-works" class="hover:text-slate-700 transition-colors">How it Works</a>
+            <a href="app.html"      class="hover:text-slate-700 transition-colors">Launch App</a>
         </div>
-    </footer>
+    </div>
+</footer>
 
+<!-- ══════════════════════════════════
+     SCRIPTS
+══════════════════════════════════ -->
+<script>
+// ── Navbar scroll ──
+const navbar = document.getElementById('navbar');
+window.addEventListener('scroll', () => navbar.classList.toggle('scrolled', scrollY > 10));
 
-    <!-- ══════════════════════════════════════════
-         SCRIPTS
-    ══════════════════════════════════════════ -->
-    <script>
-        // ── Navbar scroll shadow ──
-        const navbar = document.getElementById('navbar');
-        window.addEventListener('scroll', () => {
-            navbar.classList.toggle('scrolled', window.scrollY > 10);
-        });
+// ── Mobile nav ──
+function toggleMobileNav() {
+    document.getElementById('mobile-nav').classList.toggle('open');
+}
 
-        // ── Mobile nav toggle ──
-        function toggleMobileNav() {
-            const nav = document.getElementById('mobile-nav');
-            nav.classList.toggle('open');
+// ── Sticky CTA bar ── appears after scrolling past hero
+const stickyCta  = document.getElementById('sticky-cta');
+const heroSection = document.getElementById('hero');
+const ctaObserver = new IntersectionObserver(entries => {
+    stickyCta.classList.toggle('visible', !entries[0].isIntersecting);
+}, { threshold: 0.1 });
+ctaObserver.observe(heroSection);
+
+// ── Scroll reveal ──
+const revealEls = document.querySelectorAll('.reveal');
+const revealObs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); revealObs.unobserve(e.target); } });
+}, { threshold: 0.12 });
+revealEls.forEach(el => revealObs.observe(el));
+
+// ── Animated counters ──
+function animateCounter(el) {
+    const target = parseInt(el.dataset.target);
+    const suffix = el.dataset.suffix || '';
+    const duration = 1800;
+    const start = performance.now();
+    function update(now) {
+        const progress = Math.min((now - start) / duration, 1);
+        // Ease out cubic
+        const eased = 1 - Math.pow(1 - progress, 3);
+        el.textContent = Math.floor(eased * target).toLocaleString() + suffix;
+        if (progress < 1) requestAnimationFrame(update);
+    }
+    requestAnimationFrame(update);
+}
+const counterObs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+        if (e.isIntersecting) { animateCounter(e.target); counterObs.unobserve(e.target); }
+    });
+}, { threshold: 0.5 });
+document.querySelectorAll('.counter').forEach(el => counterObs.observe(el));
+
+// ── Mouse-interactive confetti particles ──
+(function () {
+    const canvas = document.getElementById('confetti-canvas');
+    const ctx = canvas.getContext('2d');
+    let W, H, particles = [];
+
+    const mouse = { x: -9999, y: -9999 };
+    window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+    window.addEventListener('mouseleave', () => { mouse.x = -9999; mouse.y = -9999; });
+
+    const COLORS = ['#6366f1','#818cf8','#a5b4fc','#ec4899','#f472b6','#fbcfe8','#06b6d4','#22d3ee','#67e8f9','#f59e0b','#fbbf24','#ef4444'];
+    const REPEL_RADIUS = 120, REPEL_FORCE = 6.5, RETURN_EASE = 0.045, FRICTION = 0.82;
+
+    function rnd(a, b) { return a + Math.random() * (b - a); }
+    function resize() { W = canvas.width = innerWidth; H = canvas.height = innerHeight; }
+
+    function createParticle() {
+        const ox = rnd(0, W), oy = rnd(0, H * 2.5);
+        return {
+            ox, oy, x: ox, y: oy,
+            vx: rnd(-0.15, 0.15), vy: rnd(0.15, 0.55),
+            w: rnd(2, 5), h: rnd(6, 15),
+            color: COLORS[Math.floor(Math.random() * COLORS.length)],
+            angle: rnd(0, Math.PI * 2), spin: rnd(-0.018, 0.018),
+            opacity: rnd(0.3, 0.72), repelR: REPEL_RADIUS * rnd(0.7, 1.3),
+        };
+    }
+
+    function init() {
+        resize(); particles = [];
+        const count = Math.min(180, Math.floor((W * H) / 7500));
+        for (let i = 0; i < count; i++) particles.push(createParticle());
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, W, H);
+        for (const p of particles) {
+            const dx = p.x - mouse.x, dy = p.y - mouse.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < p.repelR && dist > 0) {
+                const force = (1 - dist / p.repelR) * REPEL_FORCE;
+                p.vx += (dx / dist) * force; p.vy += (dy / dist) * force;
+                p.spin = Math.sign(p.spin) * Math.min(Math.abs(p.spin) + 0.005, 0.12);
+            } else { p.spin *= 0.97; }
+            p.vx *= FRICTION; p.vy *= FRICTION;
+            p.x += p.vx; p.y += p.vy;
+            p.oy += rnd(0.1, 0.45);
+            p.x += (p.ox - p.x) * RETURN_EASE;
+            p.y += (p.oy - p.y) * RETURN_EASE;
+            if (p.oy > H + 30) { p.oy = -30; p.y = p.oy; p.ox = rnd(0, W); p.x = p.ox; p.vx = 0; p.vy = 0; }
+            if (p.ox < -30) { p.ox = W + 30; p.x = p.ox; }
+            if (p.ox > W + 30) { p.ox = -30; p.x = p.ox; }
+            p.angle += p.spin;
+            ctx.save();
+            ctx.globalAlpha = p.opacity;
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.angle);
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.roundRect(-p.w / 2, -p.h / 2, p.w, p.h, p.w / 2);
+            ctx.fill();
+            ctx.restore();
         }
+        requestAnimationFrame(draw);
+    }
 
-        // ── Confetti / floating particles (Antigravity style) ──
-        (function () {
-            const canvas = document.getElementById('confetti-canvas');
-            const ctx = canvas.getContext('2d');
-            let W, H, particles = [];
-
-            // Mouse tracking
-            const mouse = { x: -9999, y: -9999 };
-            window.addEventListener('mousemove', e => {
-                mouse.x = e.clientX;
-                mouse.y = e.clientY;
-            });
-            window.addEventListener('mouseleave', () => {
-                mouse.x = -9999;
-                mouse.y = -9999;
-            });
-
-            const COLORS = [
-                '#6366f1', '#818cf8', '#a5b4fc',
-                '#ec4899', '#f472b6', '#fbcfe8',
-                '#06b6d4', '#22d3ee', '#67e8f9',
-                '#f59e0b', '#fbbf24',
-                '#ef4444',
-            ];
-
-            const REPEL_RADIUS = 120;   // px — how close before repulsion kicks in
-            const REPEL_FORCE  = 6.5;   // strength of push
-            const RETURN_EASE  = 0.045; // how fast they drift back (0=instant, 1=never)
-            const FRICTION     = 0.82;  // velocity damping each frame
-
-            function rnd(a, b) { return a + Math.random() * (b - a); }
-
-            function resize() {
-                W = canvas.width  = window.innerWidth;
-                H = canvas.height = window.innerHeight;
-            }
-
-            function createParticle() {
-                const ox = rnd(0, W);
-                const oy = rnd(0, H * 2.5);
-                return {
-                    // Origin (home position for gravity-return)
-                    ox, oy,
-                    // Current position
-                    x: ox, y: oy,
-                    // Velocity
-                    vx: rnd(-0.15, 0.15),
-                    vy: rnd(0.15, 0.55),
-                    // Visual
-                    w:     rnd(2, 5),
-                    h:     rnd(6, 15),
-                    color: COLORS[Math.floor(Math.random() * COLORS.length)],
-                    angle: rnd(0, Math.PI * 2),
-                    spin:  rnd(-0.018, 0.018),
-                    opacity: rnd(0.3, 0.72),
-                    // Per-particle repel radius variation
-                    repelR: REPEL_RADIUS * rnd(0.7, 1.3),
-                };
-            }
-
-            function init() {
-                resize();
-                particles = [];
-                const count = Math.min(180, Math.floor((W * H) / 7500));
-                for (let i = 0; i < count; i++) particles.push(createParticle());
-            }
-
-            function draw() {
-                ctx.clearRect(0, 0, W, H);
-
-                for (const p of particles) {
-                    // ── Mouse repulsion ──
-                    const dx = p.x - mouse.x;
-                    const dy = p.y - mouse.y;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-
-                    if (dist < p.repelR && dist > 0) {
-                        const force = (1 - dist / p.repelR) * REPEL_FORCE;
-                        p.vx += (dx / dist) * force;
-                        p.vy += (dy / dist) * force;
-                        // Speed up spin on interaction
-                        p.spin = Math.sign(p.spin) * Math.min(Math.abs(p.spin) + 0.005, 0.12);
-                    } else {
-                        // Dampen spin back toward original slow spin
-                        p.spin *= 0.97;
-                    }
-
-                    // ── Friction ──
-                    p.vx *= FRICTION;
-                    p.vy *= FRICTION;
-
-                    // ── Apply velocity ──
-                    p.x += p.vx;
-                    p.y += p.vy;
-
-                    // ── Drift the origin downward (normal float) ──
-                    p.oy += rnd(0.1, 0.45);
-
-                    // ── Soft return toward origin (elastic / gravity) ──
-                    p.x += (p.ox - p.x) * RETURN_EASE;
-                    p.y += (p.oy - p.y) * RETURN_EASE;
-
-                    // ── Wrap vertical ──
-                    if (p.oy > H + 30) {
-                        p.oy = -30;
-                        p.y  = p.oy;
-                        p.ox = rnd(0, W);
-                        p.x  = p.ox;
-                        p.vx = 0; p.vy = 0;
-                    }
-
-                    // ── Wrap horizontal ──
-                    if (p.ox < -30)  { p.ox = W + 30; p.x = p.ox; }
-                    if (p.ox > W+30) { p.ox = -30;   p.x = p.ox; }
-
-                    // ── Spin ──
-                    p.angle += p.spin;
-
-                    // ── Draw ──
-                    ctx.save();
-                    ctx.globalAlpha = p.opacity;
-                    ctx.translate(p.x, p.y);
-                    ctx.rotate(p.angle);
-                    ctx.fillStyle = p.color;
-                    ctx.beginPath();
-                    ctx.roundRect(-p.w / 2, -p.h / 2, p.w, p.h, p.w / 2);
-                    ctx.fill();
-                    ctx.restore();
-                }
-
-                requestAnimationFrame(draw);
-            }
-
-            window.addEventListener('resize', init);
-            init();
-            draw();
-        })();
-    </script>
-
+    window.addEventListener('resize', init);
+    init(); draw();
+})();
+</script>
 </body>
-
 </html>
