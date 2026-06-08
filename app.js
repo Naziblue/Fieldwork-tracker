@@ -687,6 +687,11 @@ const renderTable = (entries, tableBodyElement) => {
             notesDisplay = `[${entry.unrestrictedActivityType}] ${notesDisplay}`;
         }
 
+        let combinedNotes = notesDisplay;
+        if (entry.supervisorNote) {
+            combinedNotes += `\n\n💬 [Supervisor Note]: ${entry.supervisorNote}`;
+        }
+
         const typeBadgeClass = entry.activityType === 'Unrestricted' ? 'badge-purple' : 'badge-danger';
 
         row.innerHTML = `
@@ -698,7 +703,7 @@ const renderTable = (entries, tableBodyElement) => {
             <td class="px-4 py-3 text-text-muted text-xs hidden sm:table-cell">${entry.activityType === 'Unrestricted' ? (entry.unrestrictedActivityType || 'General') : '-'}</td>
             <td class="px-4 py-3 text-text-muted text-xs max-w-[150px] truncate" title="${entry.supervisionType}">${entry.supervisionType}</td>
             <td class="px-4 py-3 text-text-muted">${entry.supervisorName || '-'}</td>
-            <td class="note-cell px-4 py-3 text-text-muted text-xs hidden md:table-cell max-w-xs truncate cursor-pointer hover:text-white transition-all duration-200" data-notes="${notesDisplay.replace(/"/g, '&quot;')}" title="Click to view full note">${notesDisplay}</td>
+            <td class="note-cell px-4 py-3 text-text-muted text-xs hidden md:table-cell max-w-xs truncate cursor-pointer hover:text-white transition-all duration-200" data-notes="${combinedNotes.replace(/"/g, '&quot;')}" title="Click to view full note">${entry.supervisorNote ? '💬 ' : ''}${notesDisplay}</td>
             <td class="px-4 py-3 text-right flex justify-end gap-1">
                 <button class="duplicate-btn p-2 rounded-lg hover:bg-surface-hover text-text-muted hover:text-text transition-colors" data-id="${entry.id}" title="Duplicate">
                     <i class="ph-bold ph-copy"></i>
@@ -892,13 +897,40 @@ const handleDeleteEntry = async () => {
     closeSlideOver();
 };
 
-const handleTableClick = (e) => {
+const handleTableClick = async (e) => {
     // Handle Click on Note Cell
     const noteCell = e.target.closest('.note-cell');
     if (noteCell) {
         const fullNote = noteCell.dataset.notes || noteCell.textContent;
         if (fullNote && fullNote.trim()) {
             CustomModal.alert(fullNote, "Activity Notes", "ph-note-blank");
+        }
+        return;
+    }
+
+    // Handle Click on Add/Edit Supervisor Note button
+    const addSupNoteBtn = e.target.closest('.add-supervisor-note-btn');
+    if (addSupNoteBtn) {
+        const entryId = addSupNoteBtn.dataset.id;
+        const existingNote = addSupNoteBtn.dataset.supervisorNote || '';
+        
+        if (selectedTraineeId) {
+            const newNote = await CustomModal.prompt(
+                "Enter your feedback or notes for this activity log entry:",
+                existingNote,
+                "Supervisor Feedback"
+            );
+            if (newNote !== null) {
+                const entryRef = doc(db, `users/${selectedTraineeId}/entries/${entryId}`);
+                try {
+                    await updateDoc(entryRef, { supervisorNote: newNote });
+                    await CustomModal.alert("Supervisor note saved successfully!", "Note Saved", "ph-check-circle");
+                    selectTrainee(selectedTraineeId);
+                } catch (error) {
+                    console.error("Error saving supervisor note:", error);
+                    await CustomModal.alert("Failed to save note: " + error.message, "Error");
+                }
+            }
         }
         return;
     }
@@ -1630,6 +1662,12 @@ const renderTraineeReview = async (entries) => {
                 if (entry.activityType === 'Unrestricted' && entry.unrestrictedActivityType) {
                     notesDisplay = `[${entry.unrestrictedActivityType}] ${notesDisplay}`;
                 }
+
+                let combinedNotes = notesDisplay;
+                if (entry.supervisorNote) {
+                    combinedNotes += `\n\n💬 [Supervisor Note]: ${entry.supervisorNote}`;
+                }
+
                 return `
                     <tr class="hover:bg-surface-hover transition-colors">
                         <td class="px-4 py-3 text-white">${dayjs(entry.date).format('MMM D')}</td>
@@ -1646,8 +1684,12 @@ const renderTraineeReview = async (entries) => {
                             ${entry.supervisionType}
                         </td>
                         <td class="px-4 py-3 text-text-muted text-xs">${entry.supervisorName || '-'}</td>
-                        <td class="note-cell px-4 py-3 text-text-muted text-xs hidden md:table-cell max-w-xs truncate cursor-pointer hover:text-white transition-all duration-200" data-notes="${notesDisplay.replace(/"/g, '&quot;')}" title="Click to view full note">${notesDisplay}</td>
-                        <td class="px-4 py-3 text-right"></td>
+                        <td class="note-cell px-4 py-3 text-text-muted text-xs hidden md:table-cell max-w-xs truncate cursor-pointer hover:text-white transition-all duration-200" data-notes="${combinedNotes.replace(/"/g, '&quot;')}" title="Click to view full note">${entry.supervisorNote ? '💬 ' : ''}${notesDisplay}</td>
+                        <td class="px-4 py-3 text-right">
+                            <button class="add-supervisor-note-btn p-2 rounded-lg hover:bg-surface-hover text-primary hover:text-white transition-all duration-200" data-id="${entry.id}" data-supervisor-note="${(entry.supervisorNote || '').replace(/"/g, '&quot;')}" title="Add/Edit Supervisor Note">
+                                <i class="ph-bold ph-note-pencil"></i>
+                            </button>
+                        </td>
                     </tr>
                 `;
             }).join('');
