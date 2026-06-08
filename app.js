@@ -696,7 +696,7 @@ const renderTable = (entries, tableBodyElement) => {
             <td class="px-4 py-3"><span class="badge ${typeBadgeClass}">${entry.activityType}</span></td>
             <td class="px-4 py-3 text-text-muted text-xs max-w-[150px] truncate" title="${entry.supervisionType}">${entry.supervisionType}</td>
             <td class="px-4 py-3 text-text-muted">${entry.supervisorName || '-'}</td>
-            <td class="px-4 py-3 text-text-muted text-xs hidden md:table-cell max-w-xs truncate" title="${notesDisplay}">${notesDisplay}</td>
+            <td class="note-cell px-4 py-3 text-text-muted text-xs hidden md:table-cell max-w-xs truncate cursor-pointer hover:text-white transition-all duration-200" data-notes="${notesDisplay.replace(/"/g, '&quot;')}" title="Click to view full note">${notesDisplay}</td>
             <td class="px-4 py-3 text-right flex justify-end gap-1">
                 <button class="duplicate-btn p-2 rounded-lg hover:bg-surface-hover text-text-muted hover:text-text transition-colors" data-id="${entry.id}" title="Duplicate">
                     <i class="ph-bold ph-copy"></i>
@@ -891,6 +891,16 @@ const handleDeleteEntry = async () => {
 };
 
 const handleTableClick = (e) => {
+    // Handle Click on Note Cell
+    const noteCell = e.target.closest('.note-cell');
+    if (noteCell) {
+        const fullNote = noteCell.dataset.notes || noteCell.textContent;
+        if (fullNote && fullNote.trim()) {
+            CustomModal.alert(fullNote, "Activity Notes", "ph-note-blank");
+        }
+        return;
+    }
+
     // Handle Duplicate
     const dupBtn = e.target.closest('.duplicate-btn');
     if (dupBtn) {
@@ -1633,7 +1643,7 @@ const renderTraineeReview = async (entries) => {
                             ${entry.supervisionType}
                         </td>
                         <td class="px-4 py-3 text-text-muted text-xs">${entry.supervisorName || '-'}</td>
-                        <td class="px-4 py-3 text-text-muted text-xs hidden md:table-cell max-w-xs truncate" title="${notesDisplay}">${notesDisplay}</td>
+                        <td class="note-cell px-4 py-3 text-text-muted text-xs hidden md:table-cell max-w-xs truncate cursor-pointer hover:text-white transition-all duration-200" data-notes="${notesDisplay.replace(/"/g, '&quot;')}" title="Click to view full note">${notesDisplay}</td>
                         <td class="px-4 py-3 text-right"></td>
                     </tr>
                 `;
@@ -1688,11 +1698,16 @@ const setupSupervisorListeners = () => {
             }
         });
     }
+
+    const reviewTableBody = document.getElementById('review-table-body');
+    if (reviewTableBody) {
+        reviewTableBody.addEventListener('click', handleTableClick);
+    }
 };
 
 // --- Custom Dialogue Modal System ---
 const CustomModal = {
-    alert(message, title = "Notification") {
+    alert(message, title = "Notification", icon = "ph-bell") {
         return new Promise((resolve) => {
             const isLight = document.body.classList.contains('light-mode');
             const modal = document.createElement('div');
@@ -1708,13 +1723,15 @@ const CustomModal = {
             const glassBlur = isLight ? 'backdrop-filter: blur(25px);' : 'backdrop-filter: blur(25px);';
 
             modal.innerHTML = `
-                <div class="p-6 rounded-2xl max-w-sm w-full border transform modal-scale-up text-center"
+                <div class="p-6 rounded-2xl max-w-md w-full border transform modal-scale-up text-center"
                      style="background: ${cardBg}; border-color: ${borderCol}; ${shadow}; ${glassBlur}">
                     <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4 text-primary text-xl">
-                        <i class="ph ph-bell"></i>
+                        <i class="ph ${icon}"></i>
                     </div>
                     <h3 class="text-lg font-bold ${textTitle} mb-2">${title}</h3>
-                    <p class="text-sm ${textBody} mb-6 whitespace-pre-line leading-relaxed text-left">${message}</p>
+                    <div class="max-h-[50vh] overflow-y-auto pr-1 mb-6 text-left">
+                        <p class="text-sm ${textBody} whitespace-pre-line leading-relaxed">${message}</p>
+                    </div>
                     <button class="modal-close-btn w-full ${btnBg} ${btnText} font-semibold py-2.5 px-4 rounded-xl transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5">
                         Dismiss
                     </button>
