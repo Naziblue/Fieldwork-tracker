@@ -235,6 +235,37 @@
             margin: 0 auto 20px;
             font-size: 20px; font-weight: 900;
         }
+
+        /* ── Splash screen ── */
+        #splash {
+            position: relative;
+            min-height: 100svh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+        .splash-logo {
+            animation: fadeUp 1s cubic-bezier(0.22,1,0.36,1) 0.15s both;
+        }
+        .splash-tagline {
+            animation: fadeUp 0.9s cubic-bezier(0.22,1,0.36,1) 0.35s both;
+        }
+        .splash-cta-row {
+            animation: fadeUp 0.9s cubic-bezier(0.22,1,0.36,1) 0.52s both;
+        }
+        /* Scroll cue bouncing arrow */
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50%       { transform: translateY(8px); }
+        }
+        .scroll-cue {
+            animation: fadeUp 0.8s cubic-bezier(0.22,1,0.36,1) 0.9s both;
+        }
+        .scroll-cue-arrow {
+            animation: bounce 1.6s ease-in-out infinite;
+        }
     </style>
 </head>
 
@@ -289,6 +320,37 @@
         </div>
     </div>
 </div>
+
+<!-- ══════════════════════════════════
+     SPLASH — first screen (Antigravity style)
+══════════════════════════════════ -->
+<section id="splash">
+    <!-- Logo -->
+    <div class="splash-logo mb-5">
+        <img src="fieldly-logo.png" alt="Fieldly" style="height:56px;">
+    </div>
+
+    <!-- Tagline -->
+    <p class="splash-tagline text-base font-medium text-slate-400 mb-8 text-center px-4">
+        Fieldwork tracking built for BCBA trainees.
+    </p>
+
+    <!-- CTA row -->
+    <div class="splash-cta-row flex items-center gap-4">
+        <a href="app.html" class="launch-btn px-7 py-3">
+            Launch App <i class="ph-bold ph-arrow-right text-xs"></i>
+        </a>
+        <a href="#hero" class="launch-btn-outline px-7 py-3">Learn More</a>
+    </div>
+
+    <!-- Scroll cue -->
+    <div class="scroll-cue absolute bottom-10 flex flex-col items-center gap-1.5">
+        <span class="text-xs font-medium text-slate-400 tracking-wider uppercase">Scroll</span>
+        <div class="scroll-cue-arrow">
+            <i class="ph ph-caret-down text-slate-400 text-xl"></i>
+        </div>
+    </div>
+</section>
 
 <!-- ══════════════════════════════════
      HERO
@@ -606,13 +668,13 @@ function toggleMobileNav() {
     document.getElementById('mobile-nav').classList.toggle('open');
 }
 
-// ── Sticky CTA bar ── appears after scrolling past hero
-const stickyCta  = document.getElementById('sticky-cta');
-const heroSection = document.getElementById('hero');
+// ── Sticky CTA bar ── appears after scrolling past the splash screen
+const stickyCta   = document.getElementById('sticky-cta');
+const splashSection = document.getElementById('splash');
 const ctaObserver = new IntersectionObserver(entries => {
     stickyCta.classList.toggle('visible', !entries[0].isIntersecting);
-}, { threshold: 0.1 });
-ctaObserver.observe(heroSection);
+}, { threshold: 0.05 });
+ctaObserver.observe(splashSection);
 
 // ── Scroll reveal ──
 const revealEls = document.querySelectorAll('.reveal');
