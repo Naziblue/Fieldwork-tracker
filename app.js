@@ -700,9 +700,15 @@ const renderTable = (entries, tableBodyElement) => {
         const totalHours = calculateHours(entry.startTime, entry.endTime);
         const row = document.createElement('tr');
         const hasSupervisorNote = !!entry.supervisorNote;
-        row.className = hasSupervisorNote 
-            ? 'magenta-row transition-all duration-200 group' 
-            : 'hover:bg-surface-hover transition-colors group';
+        const isFixed = !!entry.feedbackFixed;
+        
+        let rowClass = 'hover:bg-surface-hover transition-colors group';
+        if (hasSupervisorNote) {
+            rowClass = isFixed 
+                ? 'green-row transition-all duration-200 group' 
+                : 'magenta-row transition-all duration-200 group';
+        }
+        row.className = rowClass;
 
         let notesDisplay = entry.notes || '';
         if (entry.activityType === 'Unrestricted' && entry.unrestrictedActivityType) {
@@ -721,9 +727,12 @@ const renderTable = (entries, tableBodyElement) => {
         let feedbackCellContent = '';
         if (hasSupervisorNote) {
             feedbackCellContent = `
-                <span class="inline-flex items-center justify-center text-pink-500 font-bold cursor-pointer hover:scale-110 transition-transform" title="Supervisor Feedback Included">
-                    <i class="ph-fill ph-envelope text-sm animate-bounce-slow"></i>
-                </span>
+                <div class="flex items-center justify-center gap-2" onclick="event.stopPropagation()">
+                    <input type="checkbox" class="feedback-fixed-checkbox rounded border-white/10 text-primary focus:ring-0 focus:ring-offset-0 bg-surface/50 h-4 w-4 cursor-pointer" ${isFixed ? 'checked' : ''} data-id="${entry.id}">
+                    <span class="inline-flex items-center justify-center ${isFixed ? 'text-white' : 'text-pink-500'} font-bold cursor-pointer hover:scale-110 transition-transform" title="${isFixed ? 'Feedback Resolved' : 'Feedback Pending'}">
+                        <i class="ph-fill ph-envelope text-sm ${isFixed ? '' : 'animate-bounce-slow'}"></i>
+                    </span>
+                </div>
             `;
         }
 
@@ -932,6 +941,28 @@ const handleDeleteEntry = async () => {
 };
 
 const handleTableClick = async (e) => {
+    // Handle Click on Feedback Fixed Checkbox
+    const checkbox = e.target.closest('.feedback-fixed-checkbox');
+    if (checkbox) {
+        const entryId = checkbox.dataset.id;
+        const isChecked = checkbox.checked;
+        const targetTraineeUid = selectedTraineeId || userId;
+        const entryRef = doc(db, `users/${targetTraineeUid}/entries/${entryId}`);
+        
+        try {
+            await updateDoc(entryRef, { feedbackFixed: isChecked });
+            if (selectedTraineeId) {
+                // Refresh supervisor view
+                selectTrainee(selectedTraineeId);
+            }
+        } catch (error) {
+            console.error("Error updating feedback fixed status:", error);
+            checkbox.checked = !isChecked; // revert checkbox UI
+            await CustomModal.alert("Failed to update status: " + error.message, "Error");
+        }
+        return;
+    }
+
     // Handle Click on Feedback Cell (Envelope)
     const feedbackCell = e.target.closest('.feedback-cell');
     if (feedbackCell) {
@@ -1733,6 +1764,14 @@ const renderTraineeReview = async (entries) => {
                 }
 
                 const hasSupervisorNote = !!entry.supervisorNote;
+                const isFixed = !!entry.feedbackFixed;
+                let rowClass = 'hover:bg-surface-hover transition-colors';
+                if (hasSupervisorNote) {
+                    rowClass = isFixed 
+                        ? 'green-row transition-all duration-200' 
+                        : 'mustard-row transition-all duration-200';
+                }
+
                 let combinedNotes = notesDisplay;
                 if (hasSupervisorNote) {
                     combinedNotes += `\n\n💬 [Supervisor Note]: ${entry.supervisorNote}`;
@@ -1746,14 +1785,17 @@ const renderTraineeReview = async (entries) => {
                 let feedbackCellContent = '';
                 if (hasSupervisorNote) {
                     feedbackCellContent = `
-                        <span class="inline-flex items-center justify-center text-pink-500 font-bold cursor-pointer hover:scale-110 transition-transform" title="Feedback Provided">
-                            <i class="ph-fill ph-envelope text-sm animate-bounce-slow"></i>
-                        </span>
+                        <div class="flex items-center justify-center gap-2" onclick="event.stopPropagation()">
+                            <input type="checkbox" class="feedback-fixed-checkbox rounded border-white/10 text-primary focus:ring-0 focus:ring-offset-0 bg-surface/50 h-4 w-4 cursor-pointer" ${isFixed ? 'checked' : ''} data-id="${entry.id}">
+                            <span class="inline-flex items-center justify-center ${isFixed ? 'text-white' : 'text-pink-500'} font-bold cursor-pointer hover:scale-110 transition-transform" title="${isFixed ? 'Feedback Resolved' : 'Feedback Pending'}">
+                                <i class="ph-fill ph-envelope text-sm ${isFixed ? '' : 'animate-bounce-slow'}"></i>
+                            </span>
+                        </div>
                     `;
                 }
 
                 return `
-                    <tr class="${hasSupervisorNote ? 'mustard-row' : ''} hover:bg-surface-hover transition-colors">
+                    <tr class="${rowClass}">
                         <td class="px-4 py-3 text-white">${dayjs(entry.date).format('MMM D')}</td>
                         <td class="px-4 py-3 text-text-muted text-xs">${entry.startTime} - ${entry.endTime}</td>
                         <td class="px-4 py-3 text-white font-medium">${calculateHours(entry.startTime, entry.endTime).toFixed(2)}</td>

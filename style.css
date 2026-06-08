@@ -974,3 +974,19 @@ select.bg-transparent {
     display: block;
     max-width: 100%;
 }
+
+/* Green Row for Fixed Feedback */
+.green-row {
+    background-color: rgba(34, 197, 94, 0.05) !important; /* green-500/5 */
+    border-left: 3px solid rgb(34, 197, 94) !important; /* green-500 */
+}
+.green-row:hover {
+    background-color: rgba(34, 197, 94, 0.09) !important;
+}
+.light-mode .green-row {
+    background-color: rgba(22, 163, 74, 0.05) !important; /* green-600/5 */
+    border-left: 3px solid rgb(22, 163, 74) !important; /* green-600 */
+}
+.light-mode .green-row:hover {
+    background-color: rgba(22, 163, 74, 0.09) !important;
+}
