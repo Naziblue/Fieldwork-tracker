@@ -201,10 +201,22 @@ function setupTableHeaders() {
         <th class="px-4 py-3 font-medium text-text-muted hidden md:table-cell">Notes</th>
         <th class="px-4 py-3 font-medium text-text-muted text-right">Actions</th>
     `;
+    const reviewTableHeaderHTML = `
+        <th class="px-4 py-3 font-medium text-text-muted">Date</th>
+        <th class="px-4 py-3 font-medium text-text-muted">Time</th>
+        <th class="px-4 py-3 font-medium text-text-muted">Hrs</th>
+        <th class="px-4 py-3 font-medium text-text-muted">Client</th>
+        <th class="px-4 py-3 font-medium text-text-muted">Type</th>
+        <th class="px-4 py-3 font-medium text-text-muted hidden sm:table-cell">Unrestricted Type</th>
+        <th class="px-4 py-3 font-medium text-text-muted">Supervision</th>
+        <th class="px-4 py-3 font-medium text-text-muted">Supervisor</th>
+        <th class="px-4 py-3 font-medium text-text-muted hidden md:table-cell">Notes</th>
+        <th class="px-4 py-3 font-medium text-text-muted text-right">Note</th>
+    `;
     if (tableHeaders.monthly) tableHeaders.monthly.innerHTML = tableHeaderHTML;
     if (tableHeaders.yearly) tableHeaders.yearly.innerHTML = tableHeaderHTML;
     if (tableHeaders.allTime) tableHeaders.allTime.innerHTML = tableHeaderHTML;
-    if (tableHeaders.review) tableHeaders.review.innerHTML = tableHeaderHTML;
+    if (tableHeaders.review) tableHeaders.review.innerHTML = reviewTableHeaderHTML;
 }
 
 // --- Authentication ---
