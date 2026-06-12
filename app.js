@@ -1173,45 +1173,54 @@ Based on this information, please generate a structured note that includes:
 
 Keep the final note completely objective, concise, formatted perfectly, with no conversational preamble or quotes. Just plain text.`;
     } else {
-        // --- RESTRICTED HOURS PROMPT ---
+        // --- RESTRICTED HOURS PROMPT (RBT → BCBA Intern Conversion) ---
         let rawNotes = currentVal;
-        let targetedSkills = "";
 
         if (!rawNotes) {
-            const inputPrompt = await CustomModal.prompt("What you actually did (e.g., played with blocks, gave tokens, did flashcards):", "e.g., delivered direct instruction, matching tasks, token reinforcement", "Session Details");
+            const inputPrompt = await CustomModal.prompt("Paste your original RBT session note here to convert it into a BCBA intern unrestricted fieldwork note:", "e.g., The RBT supported the student during transitions by implementing DRA...", "Original RBT Session Note");
             if (!inputPrompt || !inputPrompt.trim()) return;
             rawNotes = inputPrompt.trim();
-
-            const skillsPrompt = await CustomModal.prompt("Skills or Behaviors Targeted (e.g., Manding, reducing aggression):", "e.g., manding, motor imitation, reduction of task-avoidance", "Targeted Skills");
-            targetedSkills = skillsPrompt ? skillsPrompt.trim() : "Manding / Social Skills";
-        } else {
-            targetedSkills = "Extracted from raw notes.";
         }
 
-        const supervisorText = supervisionType.includes('Supervised') || supervisionType.includes('Observation')
-            ? `Supervisor ${supervisorName || 'BCBA'} observed the session and provided feedback.`
-            : "Direct service session.";
+        promptText = `You are an expert in ABA documentation and BACB fieldwork requirements. Your task is to convert the following RBT session note into a BCBA intern unrestricted fieldwork note that is appropriate for BACB documentation.
 
-        promptText = `Act as an expert Board Certified Behavior Analyst (BCBA) supervisor. Help me write a professional, audit-proof BACB fieldwork activity note for my restricted hours. 
+Follow these rules exactly:
 
-Never copy/paste: Write unique, case-specific activities for every entry to protect confidentiality.
-Include context: Always reference the specific curriculum, program, or behavior plan being addressed.
-Ties to supervision: If the activity involved a supervisor, make sure to note if they observed you and the feedback provided.
+1. Replace all references to "RBT" with "intern."
+2. Rewrite the note from the perspective of the intern engaging in behavior-analytic activities. The note should reflect unrestricted fieldwork experiences and demonstrate application of ABA principles.
+3. Maintain the original facts and sequence of events from the RBT note. Do not invent activities, assessments, meetings, analyses, or interventions that were not described.
+4. Use professional, objective language similar to BACB fieldwork examples. Avoid casual wording.
+5. Highlight the behavior-analytic components of the activities when appropriate, including:
+   - Differential reinforcement procedures
+   - Antecedent interventions
+   - Functional communication training (FCT)
+   - Environmental modifications
+   - Skill acquisition procedures
+   - Behavior skills training
+   - Prompting and prompt fading
+   - Reinforcement systems
+   - Self-management strategies
+   - Data-based decision making
+   - Collaboration related to treatment implementation
+   - Safety procedures outlined in intervention plans
+6. Do not describe the intern as merely "assisting," "helping," or "shadowing." The intern should be portrayed as actively implementing, facilitating, observing, or evaluating behavior-analytic procedures.
+7. Avoid excessive detail. Notes should generally consist of 2–3 concise paragraphs and remain suitable for BACB fieldwork documentation.
+8. Use ABA terminology accurately, but keep the language natural and readable.
+9. Conclude every note with the single most appropriate BACB Task List (6th Ed.) Item based on the primary unrestricted activity demonstrated in the note.
 
-Here are the details of the session:
-- Client Pseudonym/Initials: ${clientName || 'Client A'}
-- Setting: ${setting || 'Clinic'}
-- Exact Duration: ${durationText}
-- Skills or Behaviors Targeted: ${targetedSkills}
-- What I actually did: ${rawNotes}
-- Supervision Ties: ${supervisorText}
+Format your response exactly as follows (no preamble, no quotes, no markdown, just the note):
 
-Based on this information, please generate a structured note that includes:
-1. A concise, professional summary of the direct service provided.
-2. Clear behavioral language (avoiding mentalisms or subjective terms).
-3. The specific BACB Task List item (6th Edition) that best aligns with this restricted activity.
+[Paragraph 1]
 
-Keep the final note objective, concise, and ready, with no conversational preamble or quotes. Just plain text.`;
+[Paragraph 2]
+
+[Optional Paragraph 3 if needed]
+
+BACB Task List (6th Ed.) Item: [Code] [Title]
+
+---
+Original RBT Note to Convert:
+${rawNotes}`;
     }
 
     // Set UI to loading state
