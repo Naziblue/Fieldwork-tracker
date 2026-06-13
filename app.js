@@ -75,6 +75,14 @@ let tabGoogleGuest, tabUserPass, authGoogleGuestContainer, authUserPassContainer
     goToSignup, goToSignin, emailLinkBanner, bannerLinkEmailBtn,
     accountSecuritySection, accountRealEmail, linkEmailBtn, emailLinkStatus;
 
+// Notification System State Variables
+let activeNotifications = [];
+let globalChatsData = {};
+let unsubscribeGlobalChats = null;
+let desktopNotificationBtn, desktopNotificationDropdown, mobileNotificationBtn, mobileNotificationDropdown,
+    desktopNotificationList, desktopNotificationEmpty, mobileNotificationList, mobileNotificationEmpty,
+    desktopMarkAllRead, mobileMarkAllRead;
+
 function initDOMElements() {
     console.log("App.js: Initializing DOM elements...");
     try {
@@ -184,6 +192,18 @@ function initDOMElements() {
         accountRealEmail = document.getElementById('account-real-email');
         linkEmailBtn = document.getElementById('link-email-btn');
         emailLinkStatus = document.getElementById('email-link-status');
+
+        // Notifications UI elements
+        desktopNotificationBtn = document.getElementById('desktop-notification-btn');
+        desktopNotificationDropdown = document.getElementById('desktop-notification-dropdown');
+        mobileNotificationBtn = document.getElementById('mobile-notification-btn');
+        mobileNotificationDropdown = document.getElementById('mobile-notification-dropdown');
+        desktopNotificationList = document.getElementById('desktop-notification-list');
+        desktopNotificationEmpty = document.getElementById('desktop-notification-empty');
+        mobileNotificationList = document.getElementById('mobile-notification-list');
+        mobileNotificationEmpty = document.getElementById('mobile-notification-empty');
+        desktopMarkAllRead = document.getElementById('desktop-mark-all-read');
+        mobileMarkAllRead = document.getElementById('mobile-mark-all-read');
 
         // Load saved Gemini API key
         geminiApiKey = localStorage.getItem('gemini_api_key') || '';
@@ -1759,6 +1779,7 @@ const setupTraineeListeners = () => {
         console.log(`[DEBUG] Loaded ${allEntries.length} entries. First entry:`, allEntries[0]);
         const activeView = document.querySelector('.view-btn.bg-white\\/10')?.dataset.view || 'monthly';
         if (activeView !== 'supervisor-dashboard') switchView(activeView);
+        updateNotificationsUI();
     });
 };
 
@@ -1784,6 +1805,7 @@ const updateSupervisorDashboard = async () => {
         });
 
         renderTraineesList();
+        initializeNotifications();
     } catch (error) {
         console.error("Error updating supervisor dashboard:", error);
         if (error.code === 'permission-denied') {
@@ -2349,7 +2371,8 @@ const sendChatMessage = async (e) => {
 
         await setDoc(summaryDocRef, {
             lastMessageText: text,
-            lastMessageAt: serverTimestamp()
+            lastMessageAt: serverTimestamp(),
+            lastSenderId: userId
         }, { merge: true });
     } catch (error) {
         console.error("Error sending message:", error);
@@ -3397,8 +3420,12 @@ function init() {
                         if (roleSelectionView) roleSelectionView.classList.add('hidden');
                         if (appContainer) appContainer.classList.remove('hidden');
                         setupUIByRole(profileData.role);
-                        if (profileData.role === 'trainee' || profileData.role === 'admin') setupTraineeListeners();
-                        else setupSupervisorListeners();
+                        if (profileData.role === 'trainee' || profileData.role === 'admin') {
+                            setupTraineeListeners();
+                            initializeNotifications();
+                        } else {
+                            setupSupervisorListeners();
+                        }
                     }
                     if (document.getElementById('trainee-name')) document.getElementById('trainee-name').value = profileData.name || '';
                     if (document.getElementById('rbt-number')) document.getElementById('rbt-number').value = profileData.rbtNumber || '';
@@ -3441,6 +3468,22 @@ function init() {
                 supervisorChatsUnsubscribes.forEach(unsub => { try { unsub(); } catch (e) {} });
                 supervisorChatsUnsubscribes = [];
             }
+            if (unsubscribeGlobalChats) {
+                unsubscribeGlobalChats();
+                unsubscribeGlobalChats = null;
+            }
+
+            activeNotifications = [];
+            globalChatsData = {};
+
+            // Clear and hide notification badges/dropdowns
+            const badges = document.querySelectorAll('.notification-badge');
+            badges.forEach(badge => {
+                badge.textContent = '0';
+                badge.classList.add('hidden');
+            });
+            if (desktopNotificationDropdown) desktopNotificationDropdown.classList.add('hidden');
+            if (mobileNotificationDropdown) mobileNotificationDropdown.classList.add('hidden');
 
             userId = null;
             allEntries = [];
@@ -3453,6 +3496,9 @@ function init() {
             if (accountSecuritySection) accountSecuritySection.classList.add('hidden');
         }
     });
+
+    // Initialize Notification System Toggles
+    setupNotificationToggles();
 
     console.log("App.js: Initialization complete");
 }
@@ -3705,6 +3751,273 @@ function initInteractiveParticles(canvasId) {
     }
     animate();
 }
+
+// --- Notification System Engine ---
+const initializeNotifications = () => {
+    if (!userId || userId === 'guest') return;
+
+    if (unsubscribeGlobalChats) {
+        unsubscribeGlobalChats();
+        unsubscribeGlobalChats = null;
+    }
+
+    globalChatsData = {};
+    activeNotifications = [];
+
+    if (profileData.role === 'trainee' || profileData.role === 'admin') {
+        const chatsRef = collection(db, `users/${userId}/chats`);
+        unsubscribeGlobalChats = onSnapshot(chatsRef, (snapshot) => {
+            snapshot.forEach(docSnap => {
+                globalChatsData[docSnap.id] = {
+                    supervisorName: docSnap.data().supervisorName || 'Supervisor',
+                    supervisorEmail: docSnap.data().supervisorEmail || '',
+                    ...docSnap.data()
+                };
+            });
+            updateNotificationsUI();
+        }, (error) => {
+            console.error("Error listening to global trainee chats:", error);
+        });
+    } else if (profileData.role === 'supervisor') {
+        if (supervisorChatsUnsubscribes && supervisorChatsUnsubscribes.length > 0) {
+            supervisorChatsUnsubscribes.forEach(unsub => { try { unsub(); } catch (e) {} });
+            supervisorChatsUnsubscribes = [];
+        }
+
+        if (myTrainees && myTrainees.length > 0) {
+            myTrainees.forEach(trainee => {
+                const chatDocRef = doc(db, `users/${trainee.id}/chats/${userId}`);
+                const unsub = onSnapshot(chatDocRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        globalChatsData[trainee.id] = {
+                            traineeName: trainee.name || 'Trainee',
+                            traineeEmail: trainee.email || '',
+                            ...docSnap.data()
+                        };
+                    }
+                    updateNotificationsUI();
+                }, (error) => {
+                    console.error("Error listening to trainee chat document:", trainee.id, error);
+                });
+                supervisorChatsUnsubscribes.push(unsub);
+            });
+        }
+    }
+};
+
+const updateNotificationsUI = () => {
+    if (!userId || userId === 'guest') return;
+
+    activeNotifications = [];
+
+    // 1. Process Messages
+    Object.entries(globalChatsData).forEach(([contactId, chatSummary]) => {
+        if (chatSummary.lastSenderId && chatSummary.lastSenderId !== userId) {
+            const lastRead = parseInt(localStorage.getItem(`chat_read_${userId}_${contactId}`) || '0', 10);
+            const lastMessageTime = chatSummary.lastMessageAt ? (chatSummary.lastMessageAt.toDate ? chatSummary.lastMessageAt.toDate().getTime() : new Date(chatSummary.lastMessageAt).getTime()) : 0;
+
+            if (lastMessageTime > lastRead) {
+                const senderName = chatSummary.traineeName || chatSummary.supervisorName || 'User';
+                activeNotifications.push({
+                    id: `msg_${contactId}`,
+                    type: 'message',
+                    title: 'New Message',
+                    body: `${senderName}: "${chatSummary.lastMessageText || 'No messages'}"`,
+                    timestamp: lastMessageTime,
+                    senderId: contactId,
+                    senderName: senderName,
+                    senderEmail: chatSummary.traineeEmail || chatSummary.supervisorEmail || ''
+                });
+            }
+        }
+    });
+
+    // 2. Process Comments (Trainees only)
+    if (profileData.role === 'trainee' || profileData.role === 'admin') {
+        if (allEntries && allEntries.length > 0) {
+            allEntries.forEach(entry => {
+                if (entry.supervisorNote && entry.supervisorNote.trim() !== '') {
+                    const readCommentText = localStorage.getItem(`comment_read_${userId}_${entry.id}`);
+                    if (readCommentText !== entry.supervisorNote) {
+                        const supervisorName = entry.supervisorName || 'Supervisor';
+                        activeNotifications.push({
+                            id: `comment_${entry.id}`,
+                            type: 'comment',
+                            title: 'New Feedback',
+                            body: `${supervisorName} left notes on entry for ${entry.date}: "${entry.supervisorNote}"`,
+                            timestamp: entry.updatedAt ? new Date(entry.updatedAt).getTime() : Date.now(),
+                            entryId: entry.id,
+                            noteText: entry.supervisorNote
+                        });
+                    }
+                }
+            });
+        }
+    }
+
+    const unreadCount = activeNotifications.length;
+
+    // 3. Update Badges
+    const badges = document.querySelectorAll('.notification-badge');
+    badges.forEach(badge => {
+        badge.textContent = unreadCount;
+        if (unreadCount > 0) {
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
+    });
+
+    // 4. Render Dropdowns
+    const renderList = (listEl, emptyEl) => {
+        if (!listEl) return;
+        listEl.innerHTML = '';
+        
+        if (unreadCount === 0) {
+            if (emptyEl) emptyEl.classList.remove('hidden');
+            return;
+        }
+
+        if (emptyEl) emptyEl.classList.add('hidden');
+
+        activeNotifications.sort((a, b) => b.timestamp - a.timestamp);
+
+        const itemsHtml = activeNotifications.map(n => {
+            const timeStr = dayjs(n.timestamp).format('MMM D, h:mm A');
+            const iconClass = n.type === 'message' ? 'ph-fill ph-chat-circle-text text-indigo-400' : 'ph-fill ph-envelope-open text-pink-500';
+            return `
+                <div class="notification-item p-3 hover:bg-white/5 transition-colors cursor-pointer flex gap-3 items-start" data-id="${n.id}">
+                    <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-lg flex-shrink-0 mt-0.5">
+                        <i class="${iconClass}"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex justify-between items-start gap-1">
+                            <span class="text-xs font-semibold text-white truncate">${n.title}</span>
+                            <span class="text-[9px] text-text-muted flex-shrink-0 mt-0.5">${timeStr}</span>
+                        </div>
+                        <p class="text-[11px] text-text-muted mt-0.5 line-clamp-2 leading-relaxed">${n.body}</p>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        listEl.innerHTML = itemsHtml;
+
+        const items = listEl.querySelectorAll('.notification-item');
+        items.forEach(item => {
+            item.addEventListener('click', () => {
+                const notifId = item.dataset.id;
+                handleNotificationClick(notifId);
+            });
+        });
+    };
+
+    renderList(desktopNotificationList, desktopNotificationEmpty);
+    renderList(mobileNotificationList, mobileNotificationEmpty);
+};
+
+const handleNotificationClick = async (notifId) => {
+    const n = activeNotifications.find(x => x.id === notifId);
+    if (!n) return;
+
+    if (n.type === 'message') {
+        localStorage.setItem(`chat_read_${userId}_${n.senderId}`, Date.now().toString());
+    } else if (n.type === 'comment') {
+        localStorage.setItem(`comment_read_${userId}_${n.entryId}`, n.noteText);
+    }
+
+    updateNotificationsUI();
+
+    if (desktopNotificationDropdown) desktopNotificationDropdown.classList.add('hidden');
+    if (mobileNotificationDropdown) mobileNotificationDropdown.classList.add('hidden');
+
+    if (n.type === 'message') {
+        switchView('messages');
+        setTimeout(() => {
+            const contactItem = document.querySelector(`.chat-contact-item[data-id="${n.senderId}"]`);
+            if (contactItem) {
+                contactItem.click();
+            } else {
+                selectChatContact(n.senderId, n.senderName, n.senderEmail);
+            }
+        }, 300);
+    } else if (n.type === 'comment') {
+        switchView('monthly');
+        setTimeout(() => {
+            const cell = document.querySelector(`.feedback-cell[data-id="${n.entryId}"]`);
+            const row = cell ? cell.closest('tr') : null;
+            if (row) {
+                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                row.classList.add('bg-primary/20');
+                setTimeout(() => {
+                    row.classList.remove('bg-primary/20');
+                }, 3000);
+            }
+            showFeedbackForEntry(n.entryId);
+        }, 300);
+    }
+};
+
+const showFeedbackForEntry = async (entryId) => {
+    const entry = allEntries.find(e => e.id === entryId);
+    if (!entry || !entry.supervisorNote) return;
+
+    const isFixed = entry.feedbackFixed === true;
+    const feedback = entry.supervisorNote;
+
+    if (profileData.role === 'supervisor') {
+        CustomModal.alert(feedback, "Supervisor Feedback", "ph-envelope-simple-open");
+    } else {
+        await CustomModal.feedback(feedback, isFixed, async (isChecked) => {
+            const entryRef = doc(db, `users/${userId}/entries/${entryId}`);
+            try {
+                await updateDoc(entryRef, { feedbackFixed: isChecked });
+                const cell = document.querySelector(`.feedback-cell[data-id="${entryId}"]`);
+                if (cell) cell.dataset.fixed = isChecked ? 'true' : 'false';
+            } catch (error) {
+                console.error("Error updating feedback fixed status:", error);
+                await CustomModal.alert("Failed to update status: " + error.message, "Error");
+            }
+        });
+    }
+};
+
+const setupNotificationToggles = () => {
+    const toggleDropdown = (btn, dropdown) => {
+        if (!btn || !dropdown) return;
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdown.classList.toggle('hidden');
+            if (btn === desktopNotificationBtn && mobileNotificationDropdown) mobileNotificationDropdown.classList.add('hidden');
+            if (btn === mobileNotificationBtn && desktopNotificationDropdown) desktopNotificationDropdown.classList.add('hidden');
+        });
+    };
+
+    toggleDropdown(desktopNotificationBtn, desktopNotificationDropdown);
+    toggleDropdown(mobileNotificationBtn, mobileNotificationDropdown);
+
+    document.addEventListener('click', () => {
+        if (desktopNotificationDropdown) desktopNotificationDropdown.classList.add('hidden');
+        if (mobileNotificationDropdown) mobileNotificationDropdown.classList.add('hidden');
+    });
+
+    if (desktopNotificationDropdown) desktopNotificationDropdown.addEventListener('click', (e) => e.stopPropagation());
+    if (mobileNotificationDropdown) mobileNotificationDropdown.addEventListener('click', (e) => e.stopPropagation());
+
+    const markAllReadAction = () => {
+        activeNotifications.forEach(n => {
+            if (n.type === 'message') {
+                localStorage.setItem(`chat_read_${userId}_${n.senderId}`, Date.now().toString());
+            } else if (n.type === 'comment') {
+                localStorage.setItem(`comment_read_${userId}_${n.entryId}`, n.noteText);
+            }
+        });
+        updateNotificationsUI();
+    };
+
+    if (desktopMarkAllRead) desktopMarkAllRead.addEventListener('click', markAllReadAction);
+    if (mobileMarkAllRead) mobileMarkAllRead.addEventListener('click', markAllReadAction);
+};
 
 // Start the app
 if (document.readyState === 'loading') {
