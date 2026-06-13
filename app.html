@@ -64,7 +64,14 @@
                 <p class="text-slate-200 text-sm font-medium tracking-wide leading-relaxed max-w-xs mx-auto mt-2">Professional tracking for your ABA fieldwork hours.</p>
             </div>
 
-            <div class="space-y-4">
+            <!-- Tabs for Auth Method -->
+            <div class="flex border-b border-white/10 mb-6">
+                <button type="button" id="tab-google-guest" class="flex-1 pb-3 text-sm font-semibold border-b-2 border-primary text-white focus:outline-none transition-all">Google & Guest</button>
+                <button type="button" id="tab-user-pass" class="flex-1 pb-3 text-sm font-semibold border-b-2 border-transparent text-text-muted hover:text-white focus:outline-none transition-all">Username & Pass</button>
+            </div>
+
+            <!-- Google & Guest Container -->
+            <div id="auth-google-guest-container" class="space-y-4">
                 <button id="login-btn"
                     class="group w-full bg-white text-slate-900 hover:bg-gray-100 font-semibold py-3 px-6 rounded-xl flex items-center justify-center transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5">
                     <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5 mr-3" alt="Google">
@@ -82,6 +89,45 @@
                     <i class="ph ph-user mr-2 text-lg"></i>
                     Continue as Guest
                 </button>
+            </div>
+
+            <!-- Username & Password Container -->
+            <div id="auth-user-pass-container" class="hidden">
+                <!-- Sign In Form -->
+                <form id="signin-form" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-medium text-text-muted mb-1">Username</label>
+                        <input type="text" id="signin-username" class="input-field w-full rounded-xl px-3 py-2.5 text-sm bg-slate-950/50 border-white/10 text-white" placeholder="Enter username" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-text-muted mb-1">Password</label>
+                        <input type="password" id="signin-password" class="input-field w-full rounded-xl px-3 py-2.5 text-sm bg-slate-950/50 border-white/10 text-white" placeholder="Enter password" required>
+                    </div>
+                    <button type="submit" id="username-signin-btn" class="w-full bg-primary hover:bg-primary-hover text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5">
+                        Sign In
+                    </button>
+                    <p class="text-xs text-center text-text-muted mt-4">
+                        Don't have an account? <button type="button" id="go-to-signup" class="text-primary hover:underline font-medium bg-transparent border-0 p-0 font-semibold">Sign Up</button>
+                    </p>
+                </form>
+
+                <!-- Sign Up Form -->
+                <form id="signup-form" class="space-y-4 hidden">
+                    <div>
+                        <label class="block text-xs font-medium text-text-muted mb-1">Choose Username</label>
+                        <input type="text" id="signup-username" class="input-field w-full rounded-xl px-3 py-2.5 text-sm bg-slate-950/50 border-white/10 text-white" placeholder="Alphanumeric, min 3 chars" required minlength="3">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-text-muted mb-1">Choose Password</label>
+                        <input type="password" id="signup-password" class="input-field w-full rounded-xl px-3 py-2.5 text-sm bg-slate-950/50 border-white/10 text-white" placeholder="Min 6 characters" required minlength="6">
+                    </div>
+                    <button type="submit" id="username-signup-btn" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl hover:-translate-y-0.5">
+                        Create Account
+                    </button>
+                    <p class="text-xs text-center text-text-muted mt-4">
+                        Already have an account? <button type="button" id="go-to-signin" class="text-primary hover:underline font-medium bg-transparent border-0 p-0 font-semibold">Sign In</button>
+                    </p>
+                </form>
             </div>
 
             <div id="login-error-message"
@@ -238,6 +284,17 @@
 
         <!-- Main Content -->
         <main id="main-content" class="flex-1 flex flex-col h-full overflow-hidden bg-background relative transition-all duration-300">
+            <!-- Email Link Warning Banner -->
+            <div id="email-link-banner" class="hidden bg-amber-500/15 border-b border-amber-500/20 px-6 py-3 flex items-center justify-between text-amber-200 text-sm backdrop-blur-md z-10 animate-fade-in">
+                <div class="flex items-center gap-2">
+                    <i class="ph-fill ph-warning-circle text-lg text-amber-500"></i>
+                    <span>Your account is not secured with an email. Add a real email to enable supervisor matching and password recovery.</span>
+                </div>
+                <button id="banner-link-email-btn" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-100 font-semibold px-3 py-1.5 rounded-lg border border-amber-500/30 transition-all text-xs">
+                    Link Email
+                </button>
+            </div>
+
             <!-- Top Header (mobile only — hamburger to open sidebar) -->
             <header
                 class="h-14 border-b border-white/5 flex items-center justify-between px-4 bg-sidebar/95 backdrop-blur-md z-10 lg:hidden">
@@ -819,6 +876,25 @@
                             class="w-full bg-surface hover:bg-surface-hover text-white font-medium py-2 rounded-lg border border-white/10 transition-colors">Save
                             Profile</button>
                     </form>
+
+                    <!-- Account Security (Linking Email) -->
+                    <div id="account-security-section" class="border-t border-white/10 pt-6 hidden">
+                        <h3 class="text-sm font-semibold text-primary uppercase tracking-wider mb-4">Account Security</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-medium text-text-muted mb-1">Linked Email Address</label>
+                                <div class="flex gap-2">
+                                    <input type="email" id="account-real-email" class="input-field w-full rounded-lg px-3 py-2 text-sm bg-slate-950/50 border-white/10 text-white" placeholder="No email linked yet">
+                                    <button id="link-email-btn" type="button" class="bg-primary hover:bg-primary-hover text-white font-medium px-4 py-2 rounded-lg text-sm transition-colors whitespace-nowrap">
+                                        Link Email
+                                    </button>
+                                </div>
+                                <p id="email-link-status" class="text-xs text-text-muted mt-1 leading-relaxed">
+                                    Link your real email address to secure your account.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
 
                     <div class="border-t border-white/10 pt-6">
                         <h3 class="text-sm font-semibold text-primary uppercase tracking-wider mb-4">Supervisors

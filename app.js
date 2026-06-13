@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, signInAnonymously, signInWithCustomToken, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, setDoc, getDoc, query, where, getDocs, collectionGroup, serverTimestamp, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // --- Config & State ---
@@ -68,6 +68,12 @@ let tableHeaders = {};
 // AI Note Assistant State Variables
 let geminiApiKey = '', geminiApiKeyInput, toggleApiKeyBtn, saveAiSettingsBtn,
     aiAssistBtn, aiUndoBar, aiUndoBtn, aiAcceptBtn, originalNotes = '';
+
+// Username & Password Auth and Email Linking Elements
+let tabGoogleGuest, tabUserPass, authGoogleGuestContainer, authUserPassContainer,
+    signinForm, signupForm, signinUsername, signinPassword, signupUsername, signupPassword,
+    goToSignup, goToSignin, emailLinkBanner, bannerLinkEmailBtn,
+    accountSecuritySection, accountRealEmail, linkEmailBtn, emailLinkStatus;
 
 function initDOMElements() {
     console.log("App.js: Initializing DOM elements...");
@@ -159,6 +165,26 @@ function initDOMElements() {
         aiUndoBtn = document.getElementById('ai-undo-btn');
         aiAcceptBtn = document.getElementById('ai-accept-btn');
 
+        // Username & Password Auth elements
+        tabGoogleGuest = document.getElementById('tab-google-guest');
+        tabUserPass = document.getElementById('tab-user-pass');
+        authGoogleGuestContainer = document.getElementById('auth-google-guest-container');
+        authUserPassContainer = document.getElementById('auth-user-pass-container');
+        signinForm = document.getElementById('signin-form');
+        signupForm = document.getElementById('signup-form');
+        signinUsername = document.getElementById('signin-username');
+        signinPassword = document.getElementById('signin-password');
+        signupUsername = document.getElementById('signup-username');
+        signupPassword = document.getElementById('signup-password');
+        goToSignup = document.getElementById('go-to-signup');
+        goToSignin = document.getElementById('go-to-signin');
+        emailLinkBanner = document.getElementById('email-link-banner');
+        bannerLinkEmailBtn = document.getElementById('banner-link-email-btn');
+        accountSecuritySection = document.getElementById('account-security-section');
+        accountRealEmail = document.getElementById('account-real-email');
+        linkEmailBtn = document.getElementById('link-email-btn');
+        emailLinkStatus = document.getElementById('email-link-status');
+
         // Load saved Gemini API key
         geminiApiKey = localStorage.getItem('gemini_api_key') || '';
         if (geminiApiKeyInput) {
@@ -235,6 +261,144 @@ const handleGoogleLogin = async () => {
         console.error("Google sign-in error", error);
         loginErrorMessage.classList.remove('hidden');
         loginErrorMessage.querySelector('span').textContent = `Login failed: ${error.message}`;
+    }
+};
+
+const handleUsernameSignup = async (e) => {
+    e.preventDefault();
+    loginErrorMessage.classList.add('hidden');
+    
+    const username = signupUsername.value.trim();
+    const password = signupPassword.value;
+    
+    if (username.length < 3) {
+        loginErrorMessage.classList.remove('hidden');
+        loginErrorMessage.querySelector('span').textContent = 'Username must be at least 3 characters.';
+        return;
+    }
+    
+    // Alphanumeric, underscores, hyphens only
+    const usernameRegex = /^[a-zA-Z0-9_-]+$/;
+    if (!usernameRegex.test(username)) {
+        loginErrorMessage.classList.remove('hidden');
+        loginErrorMessage.querySelector('span').textContent = 'Username can only contain letters, numbers, underscores, and hyphens.';
+        return;
+    }
+    
+    const normalizedUsername = username.toLowerCase();
+    const email = `${normalizedUsername}@fieldlygo.com`;
+    
+    const signupBtn = document.getElementById('username-signup-btn');
+    const originalText = signupBtn.textContent;
+    signupBtn.disabled = true;
+    signupBtn.textContent = 'Creating Account...';
+    
+    try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        await updateProfile(userCredential.user, { displayName: username });
+        
+        // Save user profile document in Firestore
+        const profileRef = doc(db, `users/${userCredential.user.uid}`);
+        await setDoc(profileRef, {
+            username: username,
+            email: email, // Placeholder email
+            name: username,
+            registeredAt: new Date().toISOString(),
+            lastLoginAt: new Date().toISOString(),
+            planType: 'free',
+            isVip: false,
+            status: 'active',
+            version: '1.0'
+        }, { merge: true });
+        
+        signupForm.reset();
+    } catch (error) {
+        console.error("Username signup error", error);
+        loginErrorMessage.classList.remove('hidden');
+        let errorMsg = error.message;
+        if (error.code === 'auth/email-already-in-use') {
+            errorMsg = 'This username is already taken. Please choose another one.';
+        }
+        loginErrorMessage.querySelector('span').textContent = `Sign Up failed: ${errorMsg}`;
+    } finally {
+        signupBtn.disabled = false;
+        signupBtn.textContent = originalText;
+    }
+};
+
+const handleUsernameSignin = async (e) => {
+    e.preventDefault();
+    loginErrorMessage.classList.add('hidden');
+    
+    const input = signinUsername.value.trim();
+    const password = signinPassword.value;
+    
+    let email = input;
+    if (!input.includes('@')) {
+        email = `${input.toLowerCase()}@fieldlygo.com`;
+    }
+    
+    const signinBtn = document.getElementById('username-signin-btn');
+    const originalText = signinBtn.textContent;
+    signinBtn.disabled = true;
+    signinBtn.textContent = 'Signing In...';
+    
+    try {
+        await signInWithEmailAndPassword(auth, email, password);
+        signinForm.reset();
+    } catch (error) {
+        console.error("Username sign-in error", error);
+        loginErrorMessage.classList.remove('hidden');
+        let errorMsg = error.message;
+        if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+            errorMsg = 'Incorrect username/email or password.';
+        }
+        loginErrorMessage.querySelector('span').textContent = `Sign In failed: ${errorMsg}`;
+    } finally {
+        signinBtn.disabled = false;
+        signinBtn.textContent = originalText;
+    }
+};
+
+const handleLinkEmail = async () => {
+    if (!auth.currentUser) return;
+    emailLinkStatus.textContent = '';
+    emailLinkStatus.className = 'text-xs text-text-muted mt-1 leading-relaxed';
+    
+    const email = accountRealEmail.value.trim();
+    
+    if (!email || !email.includes('@') || !email.includes('.')) {
+        emailLinkStatus.textContent = 'Please enter a valid email address.';
+        emailLinkStatus.className = 'text-xs text-red-400 mt-1 leading-relaxed';
+        return;
+    }
+    
+    linkEmailBtn.disabled = true;
+    linkEmailBtn.textContent = 'Linking...';
+    
+    try {
+        const profileRef = doc(db, `users/${auth.currentUser.uid}`);
+        await setDoc(profileRef, {
+            email: email
+        }, { merge: true });
+        
+        profileData.email = email;
+        accountRealEmail.value = email;
+        
+        emailLinkStatus.textContent = 'Email address linked successfully! ✅';
+        emailLinkStatus.className = 'text-xs text-emerald-400 mt-1 leading-relaxed';
+        
+        if (emailLinkBanner) emailLinkBanner.classList.add('hidden');
+        if (userDisplay) userDisplay.textContent = auth.currentUser.displayName || email;
+        
+        await CustomModal.alert("Your real email address has been linked successfully! Other users (like supervisors) can now find you using this email.", "Email Linked");
+    } catch (error) {
+        console.error("Error linking email", error);
+        emailLinkStatus.textContent = 'Error: ' + error.message;
+        emailLinkStatus.className = 'text-xs text-red-400 mt-1 leading-relaxed';
+    } finally {
+        linkEmailBtn.disabled = false;
+        linkEmailBtn.textContent = 'Link Email';
     }
 };
 
@@ -418,7 +582,32 @@ const addOrUpdateSupervisor = async (e) => {
             } else {
                 const profileRef = doc(db, `users/${userId}`);
                 try {
-                    const supervisorEmails = profileData.supervisors.map(s => s.email).filter(e => e);
+                    const resolvedEmails = [];
+                    for (const s of profileData.supervisors) {
+                        if (!s.email) continue;
+                        const trimmedEmail = s.email.trim();
+                        resolvedEmails.push(trimmedEmail);
+                        
+                        if (!trimmedEmail.includes('@')) {
+                            const placeholderEmail = `${trimmedEmail.toLowerCase()}@fieldlygo.com`;
+                            resolvedEmails.push(placeholderEmail);
+                        } else {
+                            try {
+                                const q = query(collection(db, 'users'), where('email', '==', trimmedEmail));
+                                const snap = await getDocs(q);
+                                snap.forEach(docSnap => {
+                                    const data = docSnap.data();
+                                    if (data.username) {
+                                        resolvedEmails.push(`${data.username.toLowerCase()}@fieldlygo.com`);
+                                    }
+                                });
+                            } catch (err) {
+                                console.error("Error looking up supervisor in users:", err);
+                            }
+                        }
+                    }
+                    const supervisorEmails = [...new Set(resolvedEmails)];
+
                     await setDoc(profileRef, {
                         supervisors: profileData.supervisors,
                         supervisorEmails: supervisorEmails
@@ -1581,7 +1770,7 @@ const updateSupervisorDashboard = async () => {
     const traineesList = document.getElementById('trainees-list');
     if (!userId || profileData.role !== 'supervisor' || !traineesList) return;
 
-    const userEmail = auth.currentUser.email;
+    const userEmail = (profileData && profileData.email) || auth.currentUser.email;
     traineesList.innerHTML = '<div class="p-4 text-center text-text-muted"><i class="ph ph-circle-notch animate-spin"></i> Loading...</div>';
 
     try {
@@ -1911,7 +2100,7 @@ const updateChatView = async () => {
     try {
         if (profileData.role === 'supervisor') {
             contactsTitle.textContent = "Trainees";
-            const userEmail = auth.currentUser.email;
+            const userEmail = (profileData && profileData.email) || auth.currentUser.email;
             
             // Query for trainees linked to this supervisor
             const q = query(collection(db, 'users'), where('supervisorEmails', 'array-contains', userEmail));
@@ -2283,7 +2472,7 @@ const openStartChatModal = async () => {
     
     try {
         if (profileData.role === 'supervisor') {
-            const userEmail = auth.currentUser.email;
+            const userEmail = (profileData && profileData.email) || auth.currentUser.email;
             const q = query(collection(db, 'users'), where('supervisorEmails', 'array-contains', userEmail));
             const querySnapshot = await getDocs(q);
             const myTraineesList = querySnapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
@@ -2695,6 +2884,41 @@ function init() {
     if (settingsBackdrop) settingsBackdrop.addEventListener('click', closeSettingsPanel);
     if (profileForm) profileForm.addEventListener('submit', saveProfile);
     if (supervisorForm) supervisorForm.addEventListener('submit', addOrUpdateSupervisor);
+
+    // Username/Password login and linking listeners
+    if (tabGoogleGuest) tabGoogleGuest.addEventListener('click', () => {
+        tabGoogleGuest.classList.add('border-primary', 'text-white');
+        tabGoogleGuest.classList.remove('border-transparent', 'text-text-muted');
+        tabUserPass.classList.add('border-transparent', 'text-text-muted');
+        tabUserPass.classList.remove('border-primary', 'text-white');
+        authGoogleGuestContainer.classList.remove('hidden');
+        authUserPassContainer.classList.add('hidden');
+    });
+    if (tabUserPass) tabUserPass.addEventListener('click', () => {
+        tabUserPass.classList.add('border-primary', 'text-white');
+        tabUserPass.classList.remove('border-transparent', 'text-text-muted');
+        tabGoogleGuest.classList.add('border-transparent', 'text-text-muted');
+        tabGoogleGuest.classList.remove('border-primary', 'text-white');
+        authUserPassContainer.classList.remove('hidden');
+        authGoogleGuestContainer.classList.add('hidden');
+    });
+    if (goToSignup) goToSignup.addEventListener('click', () => {
+        signinForm.classList.add('hidden');
+        signupForm.classList.remove('hidden');
+    });
+    if (goToSignin) goToSignin.addEventListener('click', () => {
+        signupForm.classList.add('hidden');
+        signinForm.classList.remove('hidden');
+    });
+    if (signinForm) signinForm.addEventListener('submit', handleUsernameSignin);
+    if (signupForm) signupForm.addEventListener('submit', handleUsernameSignup);
+    if (linkEmailBtn) linkEmailBtn.addEventListener('click', handleLinkEmail);
+    if (bannerLinkEmailBtn) bannerLinkEmailBtn.addEventListener('click', () => {
+        openSettingsPanel();
+        setTimeout(() => {
+            if (accountRealEmail) accountRealEmail.focus();
+        }, 300);
+    });
 
     // Chat Form Submission
     const chatInputForm = document.getElementById('chat-input-form');
@@ -3140,6 +3364,32 @@ function init() {
                 if (docSnap.exists()) {
                     profileData = docSnap.data();
                     console.log("[DEBUG] Profile Loaded. Role:", profileData.role);
+                    
+                    // Update user display text to username or display name
+                    if (userDisplay) userDisplay.textContent = profileData.username || user.displayName || user.email;
+
+                    // Warning banner check for placeholder emails
+                    const isPlaceholderEmail = user.email && user.email.endsWith('@fieldlygo.com');
+                    const hasRealEmail = profileData.email && !profileData.email.endsWith('@fieldlygo.com');
+                    
+                    if (isPlaceholderEmail && !hasRealEmail) {
+                        if (emailLinkBanner) emailLinkBanner.classList.remove('hidden');
+                        if (accountSecuritySection) accountSecuritySection.classList.remove('hidden');
+                        if (accountRealEmail) accountRealEmail.value = '';
+                        if (emailLinkStatus) {
+                            emailLinkStatus.textContent = 'Please link a real email address to secure your account.';
+                            emailLinkStatus.className = 'text-xs text-amber-400 mt-1 leading-relaxed';
+                        }
+                    } else {
+                        if (emailLinkBanner) emailLinkBanner.classList.add('hidden');
+                        if (accountSecuritySection) accountSecuritySection.classList.remove('hidden');
+                        if (accountRealEmail) accountRealEmail.value = profileData.email || user.email || '';
+                        if (emailLinkStatus) {
+                            emailLinkStatus.textContent = 'Your account is linked to your email address. You can update it here.';
+                            emailLinkStatus.className = 'text-xs text-emerald-400 mt-1 leading-relaxed';
+                        }
+                    }
+
                     if (!profileData.role) {
                         if (appContainer) appContainer.classList.add('hidden');
                         if (roleSelectionView) roleSelectionView.classList.remove('hidden');
@@ -3173,6 +3423,8 @@ function init() {
             if (appContainer) appContainer.classList.add('hidden');
             if (roleSelectionView) roleSelectionView.classList.add('hidden');
             if (loginView) loginView.classList.remove('hidden');
+            if (emailLinkBanner) emailLinkBanner.classList.add('hidden');
+            if (accountSecuritySection) accountSecuritySection.classList.add('hidden');
         }
     });
 
