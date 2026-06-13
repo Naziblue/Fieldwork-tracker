@@ -3419,7 +3419,33 @@ function init() {
                 }
             });
 
-        } else if (userId !== 'guest') {
+        } else {
+            // Clean up active listeners on sign out to prevent race conditions
+            if (unsubscribeProfile) {
+                unsubscribeProfile();
+                unsubscribeProfile = null;
+            }
+            if (unsubscribeEntries) {
+                unsubscribeEntries();
+                unsubscribeEntries = null;
+            }
+            if (unsubscribeChats) {
+                unsubscribeChats();
+                unsubscribeChats = null;
+            }
+            if (unsubscribeChatMessages) {
+                unsubscribeChatMessages();
+                unsubscribeChatMessages = null;
+            }
+            if (supervisorChatsUnsubscribes && supervisorChatsUnsubscribes.length > 0) {
+                supervisorChatsUnsubscribes.forEach(unsub => { try { unsub(); } catch (e) {} });
+                supervisorChatsUnsubscribes = [];
+            }
+
+            userId = null;
+            allEntries = [];
+            profileData = { name: '', rbtNumber: '', supervisors: [], fieldworkType: 'Supervised' };
+
             if (appContainer) appContainer.classList.add('hidden');
             if (roleSelectionView) roleSelectionView.classList.add('hidden');
             if (loginView) loginView.classList.remove('hidden');
