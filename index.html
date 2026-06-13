@@ -682,7 +682,9 @@ function toggleMobileNav() {
 const stickyCta   = document.getElementById('sticky-cta');
 const splashSection = document.getElementById('splash');
 const ctaObserver = new IntersectionObserver(entries => {
-    stickyCta.classList.toggle('visible', !entries[0].isIntersecting);
+    const isVisible = !entries[0].isIntersecting;
+    stickyCta.classList.toggle('visible', isVisible);
+    document.body.style.paddingBottom = isVisible ? '60px' : '0px';
 }, { threshold: 0.05 });
 ctaObserver.observe(splashSection);
 
