@@ -2296,22 +2296,30 @@ const renderSupervisorMfvfReviewPanel = (month, request) => {
                     <div class="rounded-xl bg-white/5 border border-white/5 p-3"><p class="text-text-muted uppercase tracking-wider">Location</p><p class="text-white font-bold mt-1">${data.state || '-'} / ${data.country || '-'}</p></div>
                 </div>
             </div>
-            ${canReview ? `
-                <div class="flex flex-wrap justify-end gap-3 mt-5">
+            <div class="flex flex-wrap justify-end gap-3 mt-5">
+                ${canReview ? `
                     <button id="mfvf-request-changes-btn" class="px-4 py-2 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 text-orange-200 border border-orange-500/25 text-sm font-semibold transition-colors">
                         <i class="ph ph-chat-teardrop-text"></i> Request Changes
                     </button>
-                    <button id="mfvf-sign-return-btn" class="px-4 py-2 rounded-xl bg-green-500 hover:bg-green-600 text-white text-sm font-bold transition-colors shadow-lg">
-                        <i class="ph ph-signature"></i> Sign & Return
-                    </button>
-                </div>
-            ` : ''}
+                ` : ''}
+                <button id="mfvf-preview-form-btn" class="px-4 py-2 rounded-xl bg-green-500 hover:bg-green-600 text-white text-sm font-bold transition-colors shadow-lg">
+                    <i class="ph ph-eye"></i> Preview Form
+                </button>
+            </div>
         </div>
     `;
     panel.classList.remove('hidden');
 
-    document.getElementById('mfvf-sign-return-btn')?.addEventListener('click', () => signMfvfRequest(month, request));
+    document.getElementById('mfvf-preview-form-btn')?.addEventListener('click', () => openMfvfRequestPreview(month, request));
     document.getElementById('mfvf-request-changes-btn')?.addEventListener('click', () => requestMfvfChanges(month, request));
+};
+
+const openMfvfRequestPreview = (month, request) => {
+    if (window.openMfvfRequestPdfViewer) {
+        window.openMfvfRequestPdfViewer(month, request);
+        return;
+    }
+    CustomModal.alert("PDF preview is still loading. Please try again in a moment.", "Preview Loading");
 };
 
 const formatHoursForDisplay = (hours) => {
@@ -3697,6 +3705,133 @@ function init() {
         });
     }
 
+    function setPdfSupervisorSendVisible(isVisible) {
+        const container = document.getElementById('pdf-send-supervisor-container');
+        if (container) container.classList.toggle('hidden', !isVisible);
+        if (!isVisible && pdfSendSupervisorMenu) pdfSendSupervisorMenu.classList.add('hidden');
+    }
+
+    function buildMfvfRequestPdf(month, request) {
+        const doc = new jsPDF('p', 'mm', 'letter');
+        const data = request.formData || {};
+        const monthLabel = request.monthLabel || dayjs(month).format('MMMM YYYY');
+        const signedDate = request.signedAt ? dayjs(request.signedAt).format('MMM D, YYYY h:mm A') : '';
+
+        doc.setFillColor(15, 23, 42);
+        doc.rect(0, 0, 216, 24, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(15);
+        doc.text('Monthly Fieldwork Verification Form Preview', 14, 15);
+
+        doc.setTextColor(31, 41, 55);
+        doc.setFontSize(10);
+        let y = 36;
+        const line = (label, value) => {
+            doc.setFont('helvetica', 'bold');
+            doc.text(`${label}:`, 14, y);
+            doc.setFont('helvetica', 'normal');
+            doc.text(String(value || '-'), 62, y);
+            y += 8;
+        };
+
+        line('Status', request.status === 'signed' ? 'Signed and returned' : 'Submitted for review');
+        line('Month / Year', monthLabel);
+        line('Trainee Name', request.traineeName || 'Trainee');
+        line('BACB ID', request.bacbId || '');
+        line('Supervisor Name', request.supervisorName || profileData.name || 'Supervisor');
+        line('Supervisor Cert', request.supervisorCert || '');
+        line('State', data.state || '');
+        line('Country', data.country || '');
+
+        y += 4;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.text('Fieldwork Hours', 14, y);
+        y += 9;
+        doc.setFontSize(10);
+        line('Independent Hours', formatHoursForDisplay(data.unsupervisedHours || 0));
+        line('Supervised Hours', formatHoursForDisplay(data.supervisedHours || 0));
+        line('Total Fieldwork Hours', formatHoursForDisplay(data.totalHours || 0));
+        line('Restricted Hours', formatHoursForDisplay(data.restrictedHours || 0));
+        line('Unrestricted Hours', formatHoursForDisplay(data.unrestrictedHours || 0));
+        line('Observation', `${Math.round(data.observationMinutes || 0)}m`);
+        line('Supervision %', `${Number(data.supervisionPercentage || 0).toFixed(2)}%`);
+
+        y += 6;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.text('Signatures', 14, y);
+        y += 10;
+        doc.setFontSize(10);
+        line('Trainee', request.traineeName || 'Trainee');
+        line('Submitted', request.traineeSubmittedAt ? dayjs(request.traineeSubmittedAt).format('MMM D, YYYY h:mm A') : '');
+        line('Supervisor Signature', request.supervisorSignatureName || (request.status === 'signed' ? request.supervisorName : 'Pending'));
+        line('Signed Date', signedDate || 'Pending');
+
+        if (request.traineeNote || request.supervisorComments) {
+            y += 4;
+            doc.setFont('helvetica', 'bold');
+            doc.text('Notes', 14, y);
+            y += 8;
+            doc.setFont('helvetica', 'normal');
+            const notes = [
+                request.traineeNote ? `Trainee: ${request.traineeNote}` : '',
+                request.supervisorComments ? `Supervisor: ${request.supervisorComments}` : ''
+            ].filter(Boolean).join('\n');
+            doc.text(doc.splitTextToSize(notes, 180), 14, y);
+        }
+
+        return doc;
+    }
+
+    function renderMfvfRequestPreviewPanel(month, request) {
+        if (!pdfAutofillPanel) return;
+        const data = request.formData || {};
+        const monthLabel = request.monthLabel || dayjs(month).format('MMMM YYYY');
+        const statusColor = request.status === 'signed' ? 'green' : 'orange';
+        let html = '';
+
+        html += makeSectionHeader('Submitted M-FVF', 'ph-fill ph-file-pdf');
+        html += makeCopyCard('Status', request.status === 'signed' ? 'Signed and returned' : 'Submitted for review', statusColor);
+        html += makeCopyCard('Month / Year', monthLabel, 'blue');
+        html += makeCopyCard('Trainee Name', request.traineeName || 'Trainee', 'blue');
+        html += makeCopyCard('BACB ID / RBT Number', request.bacbId || '', 'blue');
+        html += makeCopyCard('Supervisor Name', request.supervisorName || profileData.name || 'Supervisor', 'teal');
+
+        html += makeSectionHeader('Fieldwork Hours', 'ph-fill ph-clock');
+        html += makeCopyCard('Independent Hours', formatHoursForDisplay(data.unsupervisedHours || 0), 'orange');
+        html += makeCopyCard('Supervised Hours', formatHoursForDisplay(data.supervisedHours || 0), 'green');
+        html += makeCopyCard('Total Fieldwork Hours', formatHoursForDisplay(data.totalHours || 0), 'purple');
+        html += makeCopyCard('Observation', `${Math.round(data.observationMinutes || 0)}m`, 'teal');
+        html += makeCopyCard('Percentage Supervised', `${Number(data.supervisionPercentage || 0).toFixed(2)}%`, Number(data.supervisionPercentage || 0) >= 5 ? 'green' : 'red');
+
+        html += makeSectionHeader('Signature Status', 'ph-fill ph-signature');
+        html += makeCopyCard('Supervisor Signature', request.supervisorSignatureName || (request.status === 'signed' ? request.supervisorName : 'Pending'), request.status === 'signed' ? 'green' : 'orange');
+        html += makeCopyCard('Signed Date', request.signedAt ? dayjs(request.signedAt).format('MMM D, YYYY h:mm A') : 'Pending', request.status === 'signed' ? 'green' : 'orange');
+
+        pdfAutofillPanel.innerHTML = html;
+    }
+
+    function openMfvfRequestPdfViewer(month, request) {
+        if (!pdfPreviewModal || !pdfIframe || !request) return;
+        populatePdfMonthSelector();
+        if (pdfMonthSelector && month) pdfMonthSelector.value = month;
+        renderMfvfRequestPreviewPanel(month, request);
+        setPdfSupervisorSendVisible(false);
+        if (pdfSendToast) pdfSendToast.classList.add('hidden');
+        if (pdfFallback) pdfFallback.classList.add('hidden');
+        pdfIframe.classList.remove('hidden');
+
+        const doc = buildMfvfRequestPdf(month, request);
+        currentPdfDoc = doc;
+        currentPdfFilename = `MFVF_${request.traineeName || 'Trainee'}_${month || 'preview'}.pdf`;
+        pdfIframe.src = doc.output('bloburl');
+
+        pdfPreviewModal.classList.remove('hidden');
+        pdfPreviewModal.classList.add('flex');
+        document.body.style.overflow = 'hidden';
+    }
+
     function openPdfViewer() {
         if (!pdfPreviewModal || !pdfIframe) return;
 
@@ -3704,6 +3839,7 @@ function init() {
         populatePdfMonthSelector();
         renderAutofillPanel(pdfMonthSelector.value || monthSelector.value);
         renderPdfSupervisorSendMenu();
+        setPdfSupervisorSendVisible(true);
         if (pdfSendSupervisorMenu) pdfSendSupervisorMenu.classList.add('hidden');
         if (pdfSendToast) pdfSendToast.classList.add('hidden');
 
@@ -3738,6 +3874,7 @@ function init() {
         };
     }
     window.openMfvfPdfViewer = openPdfViewer;
+    window.openMfvfRequestPdfViewer = openMfvfRequestPdfViewer;
 
     function closePdfViewer() {
         if (!pdfPreviewModal) return;
