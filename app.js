@@ -1,6 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, signInAnonymously, signInWithCustomToken, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, setDoc, getDoc, query, where, getDocs, collectionGroup, serverTimestamp, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
 // --- Config & State ---
 let firebaseConfig;
@@ -24,7 +25,7 @@ const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial
 dayjs.extend(window.dayjs_plugin_customParseFormat);
 const { jsPDF } = window.jspdf;
 
-let db, auth;
+let db, auth, storage;
 let userId = null;
 let allEntries = [];
 let profileData = { name: '', rbtNumber: '', supervisors: [], fieldworkType: 'Supervised' }; // Default to Supervised
@@ -1756,6 +1757,68 @@ const showPdfSendToast = (message = "M-FVF has been sent") => {
     }, 3200);
 };
 
+const askDownloadBeforeMfvfUpload = () => {
+    return new Promise((resolve) => {
+        const isLight = document.body.classList.contains('light-mode');
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 z-[250] flex items-center justify-center bg-slate-950/70 backdrop-blur-md modal-fade-in p-4';
+
+        const cardBg = isLight ? 'bg-white' : 'rgba(15, 23, 42, 0.92)';
+        const borderCol = isLight ? 'rgba(16, 185, 129, 0.18)' : 'rgba(255, 255, 255, 0.12)';
+        const textTitle = isLight ? 'text-slate-900' : 'text-white';
+        const textBody = isLight ? 'text-slate-600' : 'text-slate-300';
+        const cancelBtnBg = isLight ? 'bg-slate-100 hover:bg-slate-200' : 'bg-white/5 hover:bg-white/10';
+        const cancelBtnText = isLight ? 'text-slate-700' : 'text-white';
+
+        modal.innerHTML = `
+            <div class="p-6 rounded-2xl max-w-md w-full border transform modal-scale-up text-center"
+                 style="background: ${cardBg}; border-color: ${borderCol}; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.45); backdrop-filter: blur(25px);">
+                <div class="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-4 text-emerald-300 text-xl">
+                    <i class="ph-fill ph-download-simple"></i>
+                </div>
+                <h3 class="text-lg font-bold ${textTitle} mb-2">Download PDF First</h3>
+                <p class="text-sm ${textBody} mb-6 leading-relaxed text-left">
+                    To send the exact completed form to your supervisor, first use the PDF viewer's own download/save button.
+                    Then click Download below and select the saved PDF file so FieldlyGo can upload it for your supervisor.
+                </p>
+                <div class="grid grid-cols-2 gap-3">
+                    <button class="modal-cancel-btn w-full ${cancelBtnBg} ${cancelBtnText} font-semibold py-2.5 px-4 rounded-xl border border-white/10 transition-all">
+                        Cancel
+                    </button>
+                    <button class="modal-download-btn w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2.5 px-4 rounded-xl transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5">
+                        Download
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+        const closeModal = (result) => {
+            modal.classList.replace('modal-fade-in', 'modal-fade-out');
+            modal.querySelector('.transform').classList.replace('modal-scale-up', 'modal-scale-down');
+            setTimeout(() => {
+                modal.remove();
+                resolve(result);
+            }, 200);
+        };
+        modal.querySelector('.modal-cancel-btn').addEventListener('click', () => closeModal(false));
+        modal.querySelector('.modal-download-btn').addEventListener('click', () => closeModal(true));
+    });
+};
+
+const chooseMfvfPdfFile = () => {
+    return new Promise((resolve) => {
+        const input = document.getElementById('mfvf-upload-input');
+        if (!input) {
+            resolve(null);
+            return;
+        }
+        input.value = '';
+        input.onchange = () => resolve(input.files?.[0] || null);
+        input.click();
+    });
+};
+
 const sendMfvfToSupervisor = async (options = {}) => {
     const selectedMonth = options.selectedMonth || monthSelector.value;
     const supName = options.supervisorName || mfvfSupervisorSelect?.value;
@@ -1769,18 +1832,59 @@ const sendMfvfToSupervisor = async (options = {}) => {
         await CustomModal.alert("Please sign in before sending a verification form.", "Sign In Required");
         return;
     }
+    if (!storage) {
+        await CustomModal.alert("Firebase Storage is not ready yet. Please refresh and try again.", "Storage Not Ready");
+        return;
+    }
+
+    const shouldDownload = await askDownloadBeforeMfvfUpload();
+    if (!shouldDownload) return;
+
+    await CustomModal.alert("Choose the downloaded completed PDF file in the next step.", "Select Downloaded PDF", "ph-file-pdf");
+    const pdfFile = await chooseMfvfPdfFile();
+    if (!pdfFile) return;
+    if (pdfFile.type !== 'application/pdf' && !pdfFile.name.toLowerCase().endsWith('.pdf')) {
+        await CustomModal.alert("Please choose a PDF file.", "PDF Required");
+        return;
+    }
+    if (pdfFile.size > 10 * 1024 * 1024) {
+        await CustomModal.alert("Please choose a PDF smaller than 10 MB.", "File Too Large");
+        return;
+    }
 
     const sendBtn = options.button || document.getElementById('mfvf-send-supervisor-btn');
     const originalButtonText = sendBtn?.textContent || 'Send';
     if (sendBtn) {
         sendBtn.disabled = true;
-        sendBtn.textContent = 'Sending...';
+        sendBtn.textContent = 'Uploading...';
     }
 
     try {
         const payload = await buildMfvfPayload(selectedMonth, supervisor, 'submitted');
         payload.traineeSubmittedAt = new Date().toISOString();
         payload.supervisorComments = '';
+        const submittedAt = new Date().toISOString();
+        const storagePath = `mfvf/${userId}/${selectedMonth}/submitted.pdf`;
+        const fileRef = storageRef(storage, storagePath);
+        await uploadBytes(fileRef, pdfFile, {
+            contentType: 'application/pdf',
+            customMetadata: {
+                traineeId: userId,
+                supervisorUid: payload.supervisorUid || '',
+                month: selectedMonth,
+                sourceFileName: pdfFile.name
+            }
+        });
+        const downloadUrl = await getDownloadURL(fileRef);
+        payload.status = 'submitted';
+        payload.traineeSubmittedAt = submittedAt;
+        payload.submittedPdfPath = storagePath;
+        payload.submittedPdfUrl = downloadUrl;
+        payload.submittedPdfName = pdfFile.name;
+        payload.submittedPdfSize = pdfFile.size;
+        payload.submittedPdfUpdatedAt = submittedAt;
+        payload.signedPdfPath = '';
+        payload.signedPdfUrl = '';
 
         await setDoc(getMfvfVerificationRef(userId, selectedMonth), payload, { merge: true });
 
@@ -2302,24 +2406,25 @@ const renderSupervisorMfvfReviewPanel = (month, request) => {
                         <i class="ph ph-chat-teardrop-text"></i> Request Changes
                     </button>
                 ` : ''}
-                <button id="mfvf-preview-form-btn" class="px-4 py-2 rounded-xl bg-green-500 hover:bg-green-600 text-white text-sm font-bold transition-colors shadow-lg">
-                    <i class="ph ph-eye"></i> Preview Form
+                <button id="mfvf-open-submitted-pdf-btn" class="px-4 py-2 rounded-xl bg-green-500 hover:bg-green-600 text-white text-sm font-bold transition-colors shadow-lg">
+                    <i class="ph ph-file-pdf"></i> Open Submitted PDF
                 </button>
             </div>
         </div>
     `;
     panel.classList.remove('hidden');
 
-    document.getElementById('mfvf-preview-form-btn')?.addEventListener('click', () => openMfvfRequestPreview(month, request));
+    document.getElementById('mfvf-open-submitted-pdf-btn')?.addEventListener('click', () => openSubmittedMfvfPdf(request));
     document.getElementById('mfvf-request-changes-btn')?.addEventListener('click', () => requestMfvfChanges(month, request));
 };
 
-const openMfvfRequestPreview = (month, request) => {
-    if (window.openMfvfRequestPdfViewer) {
-        window.openMfvfRequestPdfViewer(month, request);
+const openSubmittedMfvfPdf = async (request) => {
+    const url = request?.submittedPdfUrl || request?.signedPdfUrl;
+    if (!url) {
+        await CustomModal.alert("No uploaded PDF is attached to this request yet.", "PDF Not Found");
         return;
     }
-    CustomModal.alert("PDF preview is still loading. Please try again in a moment.", "Preview Loading");
+    window.open(url, '_blank', 'noopener,noreferrer');
 };
 
 const formatHoursForDisplay = (hours) => {
@@ -3280,6 +3385,7 @@ function init() {
     const app = initializeApp(firebaseConfig);
     db = getFirestore(app);
     auth = getAuth(app);
+    storage = getStorage(app);
 
     // Event Listeners
     if (loginBtn) loginBtn.addEventListener('click', handleGoogleLogin);
