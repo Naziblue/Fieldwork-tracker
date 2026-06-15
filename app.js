@@ -524,7 +524,9 @@ let editingSupervisorOriginalName = null; // Track which supervisor is being edi
 const renderSupervisors = () => {
     supervisorsList.innerHTML = '';
     const supervisorDropdowns = [supervisorSelect, mfvfSupervisorSelect];
-    supervisorDropdowns.forEach(sel => sel.innerHTML = '<option value="">Select a supervisor...</option>');
+    supervisorDropdowns.forEach(sel => {
+        if (sel) sel.innerHTML = '<option value="">Select a supervisor...</option>';
+    });
 
     if (profileData.supervisors) {
         profileData.supervisors.forEach(s => {
@@ -544,7 +546,9 @@ const renderSupervisors = () => {
                     </button>
                 </div>`;
             supervisorsList.appendChild(div);
-            supervisorDropdowns.forEach(sel => sel.add(new Option(`${s.name}`, s.name)));
+            supervisorDropdowns.forEach(sel => {
+                if (sel) sel.add(new Option(`${s.name}`, s.name));
+            });
         });
     }
 };
@@ -1807,7 +1811,7 @@ const sendMfvfToSupervisor = async (options = {}) => {
             if (pdfSendSupervisorMenu) pdfSendSupervisorMenu.classList.add('hidden');
             showPdfSendToast("M-FVF has been sent");
         } else {
-            mfvfModal.classList.add('hidden');
+            if (mfvfModal) mfvfModal.classList.add('hidden');
             await CustomModal.alert("M-FVF sent to your supervisor.", "Sent");
         }
         updateMonthlyView();
