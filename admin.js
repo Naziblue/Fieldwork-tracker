@@ -370,11 +370,11 @@ function populateUserTable() {
         const statusColor = isActive ? 'text-green-400' : status === 'deactivated' ? 'text-red-400' : 'text-yellow-400';
         const statusDot = isActive ? 'bg-green-500' : status === 'deactivated' ? 'bg-red-500' : 'bg-yellow-500';
         const accessAction = isActive
-            ? `<button class="admin-user-action px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-300 border border-red-500/20 text-xs font-semibold transition-colors" data-action="deactivate" data-user-id="${user.id}">Deactivate</button>`
-            : `<button class="admin-user-action px-3 py-1.5 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-300 border border-green-500/20 text-xs font-semibold transition-colors" data-action="activate" data-user-id="${user.id}">Grant Access</button>`;
+            ? `<button class="admin-user-action inline-flex items-center justify-center gap-1.5 min-w-[96px] px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-300 border border-red-500/20 text-xs font-semibold transition-colors" data-action="deactivate" data-user-id="${user.id}"><i class="ph ph-lock-key"></i>Deactivate</button>`
+            : `<button class="admin-user-action inline-flex items-center justify-center gap-1.5 min-w-[96px] px-3 py-1.5 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-300 border border-green-500/20 text-xs font-semibold transition-colors" data-action="activate" data-user-id="${user.id}"><i class="ph ph-lock-key-open"></i>Grant Access</button>`;
         const planAction = user.planType === 'vip'
-            ? `<button class="admin-user-action p-2 text-amber-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors" title="Move to free plan" data-action="free" data-user-id="${user.id}"><i class="ph ph-star"></i></button>`
-            : `<button class="admin-user-action p-2 text-text-muted hover:text-amber-300 hover:bg-white/5 rounded-lg transition-colors" title="Give VIP access" data-action="vip" data-user-id="${user.id}"><i class="ph ph-star"></i></button>`;
+            ? `<button class="admin-user-action inline-flex items-center justify-center gap-1.5 min-w-[76px] px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-white/10 text-xs font-semibold transition-colors" title="Move to free plan" data-action="free" data-user-id="${user.id}"><i class="ph ph-star"></i>Free</button>`
+            : `<button class="admin-user-action inline-flex items-center justify-center gap-1.5 min-w-[76px] px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/20 text-xs font-semibold transition-colors" title="Give VIP access" data-action="vip" data-user-id="${user.id}"><i class="ph ph-star"></i>VIP</button>`;
 
         const certLine = user.rbtNumber ? `<span class="text-[10px] text-slate-500">Cert: ${escapeHtml(user.rbtNumber)}</span>` : '';
 
@@ -411,7 +411,7 @@ function populateUserTable() {
                 </div>
             </td>
             <td class="px-6 py-4">
-                <div class="flex items-center justify-end gap-2">
+                <div class="flex items-center justify-end gap-2 whitespace-nowrap">
                     ${planAction}
                     ${accessAction}
                 </div>
