@@ -1825,64 +1825,92 @@ const sendMfvfToSupervisor = async (options = {}) => {
     const supervisor = profileData.supervisors?.find(s => s.name === supName);
 
     if (!supervisor) {
-        await CustomModal.alert("Please select a supervisor.", "Selection Required");
+        await CustomModal.alert('Please select a supervisor.', 'Selection Required');
         return;
     }
     if (!userId || userId === 'guest') {
-        await CustomModal.alert("Please sign in before sending a verification form.", "Sign In Required");
+        await CustomModal.alert('Please sign in before sending a verification form.', 'Sign In Required');
         return;
     }
     if (!storage) {
-        await CustomModal.alert("Firebase Storage is not ready yet. Please refresh and try again.", "Storage Not Ready");
+        await CustomModal.alert('Firebase Storage is not ready yet. Please refresh and try again.', 'Storage Not Ready');
         return;
     }
 
-    const shouldDownload = await askDownloadBeforeMfvfUpload();
-    if (!shouldDownload) return;
-
-    await CustomModal.alert("Choose the downloaded completed PDF file in the next step.", "Select Downloaded PDF", "ph-file-pdf");
-    const pdfFile = await chooseMfvfPdfFile();
-    if (!pdfFile) return;
-    if (pdfFile.type !== 'application/pdf' && !pdfFile.name.toLowerCase().endsWith('.pdf')) {
-        await CustomModal.alert("Please choose a PDF file.", "PDF Required");
-        return;
+    // Check if a draft PDF has been saved from the Download step
+    let draftPdfUrl = '';
+    let draftPdfPath = '';
+    let draftPdfName = '';
+    try {
+        const snap = await getDoc(getMfvfVerificationRef(userId, selectedMonth));
+        if (snap.exists()) {
+            const data = snap.data();
+            draftPdfUrl = data.draftPdfUrl || '';
+            draftPdfPath = data.draftPdfPath || '';
+            draftPdfName = data.draftPdfName || '';
+        }
+    } catch (e) {
+        console.warn('Could not read draft PDF info:', e);
     }
-    if (pdfFile.size > 10 * 1024 * 1024) {
-        await CustomModal.alert("Please choose a PDF smaller than 10 MB.", "File Too Large");
+
+    // If no draft PDF — prompt trainee to download first
+    if (!draftPdfUrl) {
+        const go = await CustomModal.confirm(
+            'No downloaded PDF found for this month. Please click "Download PDF" first to generate and save your filled form, then send it to your supervisor.',
+            'Download Required'
+        );
+        if (go) {
+            if (typeof window.openMfvfPdfViewer === 'function') window.openMfvfPdfViewer();
+        }
         return;
     }
 
     const sendBtn = options.button || document.getElementById('mfvf-send-supervisor-btn');
-    const originalButtonText = sendBtn?.textContent || 'Send';
+    const originalBtnHtml = sendBtn?.innerHTML || 'Send';
     if (sendBtn) {
         sendBtn.disabled = true;
-        sendBtn.textContent = 'Uploading...';
+        sendBtn.innerHTML = '<i class="ph-fill ph-spinner-gap animate-spin text-sm"></i> Sending...';
     }
 
     try {
         const payload = await buildMfvfPayload(selectedMonth, supervisor, 'submitted');
-        payload.traineeSubmittedAt = new Date().toISOString();
-        payload.supervisorComments = '';
         const submittedAt = new Date().toISOString();
-        const storagePath = `mfvf/${userId}/${selectedMonth}/submitted.pdf`;
-        const fileRef = storageRef(storage, storagePath);
-        await uploadBytes(fileRef, pdfFile, {
-            contentType: 'application/pdf',
-            customMetadata: {
-                traineeId: userId,
-                supervisorUid: payload.supervisorUid || '',
-                month: selectedMonth,
-                sourceFileName: pdfFile.name
+
+        // Copy the draft file to a submitted path in Storage
+        // Fetch the blob from the existing draft URL and re-upload as submitted
+        let submittedPdfUrl = draftPdfUrl;
+        let submittedPdfPath = draftPdfPath;
+        let submittedPdfSize = 0;
+        try {
+            const res = await fetch(draftPdfUrl);
+            if (res.ok) {
+                const blob = await res.blob();
+                submittedPdfSize = blob.size;
+                const submittedPath = `mfvf/${userId}/${selectedMonth}/submitted.pdf`;
+                const submittedRef = storageRef(storage, submittedPath);
+                await uploadBytes(submittedRef, blob, {
+                    contentType: 'application/pdf',
+                    customMetadata: {
+                        traineeId: userId,
+                        supervisorUid: payload.supervisorUid || '',
+                        month: selectedMonth
+                    }
+                });
+                submittedPdfUrl = await getDownloadURL(submittedRef);
+                submittedPdfPath = submittedPath;
             }
-        });
-        const downloadUrl = await getDownloadURL(fileRef);
+        } catch (copyErr) {
+            console.warn('Could not copy draft to submitted — using draft URL directly:', copyErr);
+        }
+
         payload.status = 'submitted';
         payload.traineeSubmittedAt = submittedAt;
-        payload.submittedPdfPath = storagePath;
-        payload.submittedPdfUrl = downloadUrl;
-        payload.submittedPdfName = pdfFile.name;
-        payload.submittedPdfSize = pdfFile.size;
+        payload.submittedPdfPath = submittedPdfPath;
+        payload.submittedPdfUrl = submittedPdfUrl;
+        payload.submittedPdfName = draftPdfName;
+        payload.submittedPdfSize = submittedPdfSize;
         payload.submittedPdfUpdatedAt = submittedAt;
+        payload.supervisorComments = '';
         payload.signedPdfPath = '';
         payload.signedPdfUrl = '';
 
@@ -1913,19 +1941,19 @@ const sendMfvfToSupervisor = async (options = {}) => {
 
         if (options.source === 'pdf') {
             if (pdfSendSupervisorMenu) pdfSendSupervisorMenu.classList.add('hidden');
-            showPdfSendToast("M-FVF has been sent");
+            showPdfSendToast('M-FVF has been sent ✓');
         } else {
             if (mfvfModal) mfvfModal.classList.add('hidden');
-            await CustomModal.alert("M-FVF sent to your supervisor.", "Sent");
+            await CustomModal.alert('M-FVF sent to your supervisor.', 'Sent');
         }
         updateMonthlyView();
     } catch (error) {
-        console.error("Error sending M-FVF:", error);
-        await CustomModal.alert("Failed to send M-FVF: " + error.message, "Send Error");
+        console.error('Error sending M-FVF:', error);
+        await CustomModal.alert('Failed to send M-FVF: ' + error.message, 'Send Error');
     } finally {
         if (sendBtn) {
             sendBtn.disabled = false;
-            sendBtn.textContent = originalButtonText;
+            sendBtn.innerHTML = originalBtnHtml;
         }
     }
 };
@@ -3938,7 +3966,336 @@ function init() {
         document.body.style.overflow = 'hidden';
     }
 
+    // ===== GENERATE & DOWNLOAD PRE-FILLED M-FVF PDF =====
+    async function generateAndDownloadMfvfPdf() {
+        const selectedMonth = pdfMonthSelector?.value || monthSelector?.value;
+        if (!selectedMonth) {
+            await CustomModal.alert('Please select a month first.', 'No Month Selected');
+            return;
+        }
+
+        const [year, month] = selectedMonth.split('-').map(Number);
+        const monthEntries = allEntries.filter(e => {
+            const d = dayjs(e.date);
+            return d.year() === year && (d.month() + 1) === month;
+        });
+
+        const summary = calculateSummaryData(monthEntries);
+        const monthLabel = dayjs(`${year}-${String(month).padStart(2,'0')}-01`).format('MMMM YYYY');
+
+        // Find the dominant supervisor for this month (most supervised hours)
+        const supervisorHoursMap = {};
+        monthEntries.forEach(e => {
+            if (e.supervisorName && e.supervisionType !== 'No Supervision') {
+                const h = calculateHours(e.startTime, e.endTime);
+                supervisorHoursMap[e.supervisorName] = (supervisorHoursMap[e.supervisorName] || 0) + h;
+            }
+        });
+        const topSupervisorName = Object.entries(supervisorHoursMap).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
+        const supervisorProfile = profileData.supervisors?.find(s => s.name === topSupervisorName);
+
+        // Formatting helpers
+        const fmtHH = (hrs) => String(Math.floor(hrs)).padStart(2, '0');
+        const fmtMM = (hrs) => String(Math.round((hrs % 1) * 60)).padStart(2, '0');
+
+        // ─── Build jsPDF document ───
+        const doc = new jsPDF('p', 'mm', 'letter');
+        const pageW = 216;
+        const margin = 14;
+        const col2 = 110;
+
+        // Header banner
+        doc.setFillColor(15, 23, 42);
+        doc.rect(0, 0, pageW, 22, 'F');
+        doc.setFillColor(99, 102, 241);
+        doc.rect(0, 22, pageW, 3, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(13);
+        doc.setFont('helvetica', 'bold');
+        doc.text('MONTHLY FIELDWORK VERIFICATION FORM', pageW / 2, 10, { align: 'center' });
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Individual Supervisor · BACB 2027 Requirements · Pre-filled by FieldlyGo', pageW / 2, 17, { align: 'center' });
+
+        // "Generated by FieldlyGo" watermark note
+        doc.setTextColor(130, 140, 160);
+        doc.setFontSize(7);
+        doc.text(`Generated: ${dayjs().format('MMM D, YYYY h:mm A')} · fieldlygo.com`, pageW - margin, 30, { align: 'right' });
+
+        let y = 36;
+
+        // Section: Trainee Info
+        const drawSectionHeader = (title, yPos) => {
+            doc.setFillColor(241, 245, 249);
+            doc.rect(margin, yPos - 4, pageW - margin * 2, 7, 'F');
+            doc.setTextColor(30, 41, 59);
+            doc.setFontSize(8);
+            doc.setFont('helvetica', 'bold');
+            doc.text(title.toUpperCase(), margin + 2, yPos);
+            return yPos + 8;
+        };
+
+        const drawField = (label, value, x, yPos, w = 85) => {
+            doc.setTextColor(100, 116, 139);
+            doc.setFontSize(7);
+            doc.setFont('helvetica', 'normal');
+            doc.text(label, x, yPos);
+            doc.setTextColor(15, 23, 42);
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'bold');
+            doc.text(String(value || ''), x, yPos + 5);
+            doc.setDrawColor(203, 213, 225);
+            doc.setLineWidth(0.3);
+            doc.line(x, yPos + 7, x + w, yPos + 7);
+        };
+
+        y = drawSectionHeader('Trainee Information', y);
+        drawField('Trainee Name', profileData.name || '', margin, y, 85);
+        drawField('BACB ID / RBT Number', profileData.rbtNumber || '', col2, y, 85);
+        y += 14;
+
+        // Find state/country from entries
+        const stateEntry = monthEntries.find(e => e.state);
+        const countryEntry = monthEntries.find(e => e.country);
+        drawField('Month / Year', monthLabel, margin, y, 85);
+        drawField('State Where Fieldwork Occurred', stateEntry?.state || '', col2, y, 85);
+        y += 14;
+        drawField('Country Where Fieldwork Occurred', countryEntry?.country || 'United States', margin, y, 85);
+        y += 14;
+
+        // Supervisor section
+        y = drawSectionHeader('Supervisor Information', y + 2);
+        drawField('Supervisor Name', supervisorProfile?.name || topSupervisorName || '', margin, y, 85);
+        drawField('Certification # or BACB ID', supervisorProfile?.cert || '', col2, y, 85);
+        y += 16;
+
+        // Hours section
+        y = drawSectionHeader('Fieldwork Hours (This Month Only)', y);
+
+        // Format as "__ hh __ mm"
+        const indepH = fmtHH(summary.unsupervised);
+        const indepM = fmtMM(summary.unsupervised);
+        const supH = fmtHH(summary.supervised);
+        const supM = fmtMM(summary.supervised);
+        const totalH = fmtHH(summary.total);
+        const totalM = fmtMM(summary.total);
+        const obsMins = Math.round(summary.observationMinutes);
+
+        const drawHoursRow = (label, hh, mm, yPos) => {
+            doc.setTextColor(30, 41, 59);
+            doc.setFontSize(8.5);
+            doc.setFont('helvetica', 'normal');
+            doc.text(label, margin, yPos);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(15, 23, 42);
+            doc.text(`${hh} hh  ${mm} mm`, pageW - margin - 30, yPos, { align: 'right' });
+            doc.setDrawColor(226, 232, 240);
+            doc.setLineWidth(0.2);
+            doc.line(margin, yPos + 2, pageW - margin, yPos + 2);
+        };
+
+        drawHoursRow('A. Independent Hours (supervisor NOT present)', indepH, indepM, y);
+        y += 8;
+        drawHoursRow('B. Supervised Hours (supervisor present)', supH, supM, y);
+        y += 8;
+
+        // Observation inside supervised
+        doc.setTextColor(100, 116, 139);
+        doc.setFontSize(7.5);
+        doc.setFont('helvetica', 'italic');
+        doc.text(`   These fieldwork hours include: ${obsMins} mm of observation`, margin, y);
+        y += 7;
+
+        // Total row with highlight
+        doc.setFillColor(238, 242, 255);
+        doc.rect(margin, y - 4, pageW - margin * 2, 9, 'F');
+        doc.setTextColor(30, 41, 59);
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Total Fieldwork Hours (A + B)', margin + 2, y + 1);
+        doc.text(`${totalH} hh  ${totalM} mm`, pageW - margin - 30, y + 1, { align: 'right' });
+        y += 12;
+
+        // Supervision percentage
+        const pct = summary.percentage.toFixed(2);
+        const pctColor = summary.percentage >= 5 ? [34, 197, 94] : [239, 68, 68];
+        doc.setFillColor(...pctColor, 20);
+        doc.rect(margin, y - 4, pageW - margin * 2, 9, 'F');
+        doc.setTextColor(30, 41, 59);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.text('Percentage of Hours Supervised', margin + 2, y + 1);
+        doc.setTextColor(...pctColor);
+        doc.text(`${pct}%`, pageW - margin - 30, y + 1, { align: 'right' });
+        y += 12;
+
+        // Supervision breakdown
+        y = drawSectionHeader('Supervision Detail', y);
+        drawField('Individual Supervision Hours', `${fmtHH(summary.individualSupervision)} hh  ${fmtMM(summary.individualSupervision)} mm`, margin, y, 85);
+        drawField('Group Supervision Hours', `${fmtHH(summary.groupSupervision)} hh  ${fmtMM(summary.groupSupervision)} mm`, col2, y, 85);
+        y += 16;
+
+        // Supervisor breakdown table (if multiple supervisors)
+        const supEntries = Object.entries(supervisorHoursMap);
+        if (supEntries.length > 0) {
+            y = drawSectionHeader('Supervised Hours by Supervisor', y);
+            supEntries.forEach(([name, hrs]) => {
+                doc.setTextColor(30, 41, 59);
+                doc.setFontSize(8.5);
+                doc.setFont('helvetica', 'normal');
+                doc.text(name, margin, y);
+                doc.setFont('helvetica', 'bold');
+                doc.text(`${fmtHH(hrs)} hh  ${fmtMM(hrs)} mm`, pageW - margin - 30, y, { align: 'right' });
+                doc.setDrawColor(226, 232, 240);
+                doc.setLineWidth(0.2);
+                doc.line(margin, y + 2, pageW - margin, y + 2);
+                y += 8;
+            });
+            y += 4;
+        }
+
+        // Signature section
+        y = drawSectionHeader('Signatures', y);
+        const sigBoxW = (pageW - margin * 2 - 10) / 2;
+
+        // Trainee signature box
+        doc.setDrawColor(203, 213, 225);
+        doc.setLineWidth(0.4);
+        doc.rect(margin, y, sigBoxW, 22);
+        doc.setTextColor(100, 116, 139);
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Trainee Signature', margin + 2, y + 4);
+        doc.setTextColor(15, 23, 42);
+        doc.setFontSize(8.5);
+        doc.setFont('helvetica', 'bold');
+        doc.text(profileData.name || '', margin + 2, y + 13);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7);
+        doc.setTextColor(100, 116, 139);
+        doc.text(`Date: ${dayjs().format('MM/DD/YYYY')}`, margin + 2, y + 19);
+
+        // Supervisor signature box (blank — must be signed by supervisor)
+        const sigBox2X = margin + sigBoxW + 10;
+        doc.rect(sigBox2X, y, sigBoxW, 22);
+        doc.setTextColor(100, 116, 139);
+        doc.setFontSize(7);
+        doc.text('Supervisor Signature', sigBox2X + 2, y + 4);
+        doc.setTextColor(180, 190, 200);
+        doc.setFontSize(8);
+        doc.text('(To be signed by supervisor)', sigBox2X + 2, y + 13);
+        doc.text('Date: ____________', sigBox2X + 2, y + 19);
+        y += 28;
+
+        // Entry log table
+        if (monthEntries.length > 0) {
+            const sortedEntries = [...monthEntries].sort((a, b) => {
+                const dc = new Date(a.date) - new Date(b.date);
+                return dc !== 0 ? dc : a.startTime.localeCompare(b.startTime);
+            });
+
+            const tableData = sortedEntries.map(e => {
+                let notes = e.notes || '';
+                if (e.activityType === 'Unrestricted' && e.unrestrictedActivityType) {
+                    notes = `[${e.unrestrictedActivityType}] ${notes}`;
+                }
+                return [
+                    dayjs(e.date).format('MM/DD'),
+                    e.startTime,
+                    e.endTime,
+                    calculateHours(e.startTime, e.endTime).toFixed(2),
+                    e.setting || '-',
+                    e.activityType || '-',
+                    e.supervisionType || '-',
+                    e.supervisorName || '-',
+                    notes
+                ];
+            });
+
+            doc.autoTable({
+                startY: y,
+                head: [['Date', 'Start', 'End', 'Hrs', 'Setting', 'Type', 'Supervision', 'Supervisor', 'Notes / Activity']],
+                body: tableData,
+                theme: 'grid',
+                headStyles: { fillColor: [15, 23, 42], textColor: 255, fontSize: 7, fontStyle: 'bold' },
+                styles: { fontSize: 6.5, cellPadding: 1.5 },
+                columnStyles: {
+                    0: { cellWidth: 14 },
+                    1: { cellWidth: 13 },
+                    2: { cellWidth: 13 },
+                    3: { cellWidth: 10 },
+                    4: { cellWidth: 18 },
+                    5: { cellWidth: 18 },
+                    6: { cellWidth: 22 },
+                    7: { cellWidth: 24 },
+                    8: { cellWidth: 'auto' }
+                }
+            });
+        }
+
+        // Footer note
+        const finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 6 : y + 6;
+        doc.setTextColor(130, 140, 160);
+        doc.setFontSize(6.5);
+        doc.setFont('helvetica', 'italic');
+        doc.text(
+            'Per BACB 2027: Supervised hrs ≥5% of total (≥7.5% Concentrated). Group supervision ≤50% of supervised. Form signed by last day of following month.',
+            pageW / 2, Math.min(finalY, 272), { align: 'center', maxWidth: pageW - margin * 2 }
+        );
+
+        // ─── Download to device ───
+        const filename = `MFVF_${(profileData.name || 'Trainee').replace(/\s+/g, '_')}_${selectedMonth}.pdf`;
+        doc.save(filename);
+
+        // ─── Upload to Firebase Storage ───
+        if (userId && userId !== 'guest' && storage) {
+            try {
+                const pdfBlob = doc.output('blob');
+                const storagePath = `mfvf/${userId}/${selectedMonth}/draft.pdf`;
+                const fileRef = storageRef(storage, storagePath);
+                await uploadBytes(fileRef, pdfBlob, { contentType: 'application/pdf' });
+                const downloadUrl = await getDownloadURL(fileRef);
+
+                await setDoc(getMfvfVerificationRef(userId, selectedMonth), {
+                    status: 'draft',
+                    month: selectedMonth,
+                    monthLabel,
+                    traineeId: userId,
+                    traineeName: profileData.name || '',
+                    traineeEmail: profileData.email || auth.currentUser?.email || '',
+                    bacbId: profileData.rbtNumber || '',
+                    supervisorName: supervisorProfile?.name || topSupervisorName || '',
+                    supervisorEmail: supervisorProfile?.email || '',
+                    supervisorCert: supervisorProfile?.cert || '',
+                    draftPdfPath: storagePath,
+                    draftPdfUrl: downloadUrl,
+                    draftPdfName: filename,
+                    formData: {
+                        state: stateEntry?.state || '',
+                        country: countryEntry?.country || 'United States',
+                        independentHours: summary.unsupervised,
+                        supervisedHours: summary.supervised,
+                        totalHours: summary.total,
+                        restrictedHours: summary.restricted,
+                        unrestrictedHours: summary.unrestricted,
+                        observationMinutes: summary.observationMinutes,
+                        supervisionPercentage: summary.percentage,
+                        individualSupervision: summary.individualSupervision,
+                        groupSupervision: summary.groupSupervision
+                    },
+                    entryCount: monthEntries.length,
+                    updatedAt: new Date().toISOString()
+                }, { merge: true });
+
+                showPdfSendToast('PDF downloaded & saved ✓');
+            } catch (err) {
+                console.warn('M-FVF draft upload failed (non-critical):', err);
+            }
+        }
+    }
+
     function openPdfViewer() {
+
         if (!pdfPreviewModal || !pdfIframe) return;
 
         // Populate month picker & auto-fill panel
@@ -4044,9 +4401,18 @@ function init() {
         exportToCsv(allEntries, calculateSummaryData(allEntries), `Fieldwork_AllTime.csv`);
     });
 
-    if (pdfDownloadBtn) {
-        pdfDownloadBtn.addEventListener('click', () => {
-            if (currentPdfDoc) currentPdfDoc.save(currentPdfFilename);
+    const pdfDownloadBtnEl = document.getElementById('pdf-download-btn');
+    if (pdfDownloadBtnEl) {
+        pdfDownloadBtnEl.addEventListener('click', async () => {
+            pdfDownloadBtnEl.disabled = true;
+            const origHtml = pdfDownloadBtnEl.innerHTML;
+            pdfDownloadBtnEl.innerHTML = '<i class="ph-fill ph-spinner-gap animate-spin text-sm"></i> Generating...';
+            try {
+                await generateAndDownloadMfvfPdf();
+            } finally {
+                pdfDownloadBtnEl.disabled = false;
+                pdfDownloadBtnEl.innerHTML = origHtml;
+            }
         });
     }
 
