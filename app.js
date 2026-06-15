@@ -4243,9 +4243,9 @@ function init() {
             pageW / 2, Math.min(finalY, 272), { align: 'center', maxWidth: pageW - margin * 2 }
         );
 
-        // ─── Download to device ───
+
+        // ─── Upload to Firebase Storage (no local download) ───
         const filename = `MFVF_${(profileData.name || 'Trainee').replace(/\s+/g, '_')}_${selectedMonth}.pdf`;
-        doc.save(filename);
 
         // ─── Upload to Firebase Storage ───
         if (userId && userId !== 'guest' && storage) {
@@ -4406,7 +4406,7 @@ function init() {
         pdfDownloadBtnEl.addEventListener('click', async () => {
             pdfDownloadBtnEl.disabled = true;
             const origHtml = pdfDownloadBtnEl.innerHTML;
-            pdfDownloadBtnEl.innerHTML = '<i class="ph-fill ph-spinner-gap animate-spin text-sm"></i> Generating...';
+            pdfDownloadBtnEl.innerHTML = '<i class="ph-fill ph-spinner-gap animate-spin text-sm"></i> Saving...';
             try {
                 await generateAndDownloadMfvfPdf();
             } finally {
