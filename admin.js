@@ -405,15 +405,19 @@ function populateUserTable() {
                 <span class="text-sm text-text-muted">${joinedDate}</span>
             </td>
             <td class="px-6 py-4">
-                <div class="flex items-center gap-2">
-                    <div class="w-1.5 h-1.5 rounded-full ${statusDot}"></div>
-                    <span class="text-xs font-medium ${statusColor} capitalize">${status}</span>
+                <div class="space-y-2">
+                    <div class="flex items-center gap-2">
+                        <div class="w-1.5 h-1.5 rounded-full ${statusDot}"></div>
+                        <span class="text-xs font-medium ${statusColor} capitalize">${status}</span>
+                    </div>
+                    <div>
+                        ${accessAction}
+                    </div>
                 </div>
             </td>
             <td class="px-6 py-4">
                 <div class="flex items-center justify-end gap-2 whitespace-nowrap">
                     ${planAction}
-                    ${accessAction}
                 </div>
             </td>
         </tr>
