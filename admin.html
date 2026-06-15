@@ -176,15 +176,23 @@
                         <input type="text" id="user-search" placeholder="Search by name, email, or cert #..."
                             class="input-field w-full pl-10 pr-4 py-2.5 rounded-xl text-sm">
                     </div>
-                    <div class="flex gap-2">
-                        <select class="input-field px-4 py-2 rounded-xl text-sm">
-                            <option>All Roles</option>
-                            <option>Trainee</option>
-                            <option>Supervisor</option>
+                    <div class="flex flex-wrap gap-2">
+                        <select id="role-filter" class="input-field px-4 py-2 rounded-xl text-sm">
+                            <option value="all">All Roles</option>
+                            <option value="trainee">Trainee</option>
+                            <option value="supervisor">Supervisor</option>
+                            <option value="admin">Admin</option>
+                            <option value="unset">Unset</option>
                         </select>
-                        <button
-                            class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2">
-                            <i class="ph ph-plus-circle"></i> Add User
+                        <select id="status-filter" class="input-field px-4 py-2 rounded-xl text-sm">
+                            <option value="all">All Statuses</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="deactivated">Deactivated</option>
+                        </select>
+                        <button id="refresh-users-btn"
+                            class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2">
+                            <i class="ph ph-arrows-clockwise"></i> Refresh
                         </button>
                     </div>
                 </div>
@@ -305,7 +313,7 @@
         </div>
     </main>
 
-    <script type="module" src="admin.js?v=2"></script>
+    <script type="module" src="admin.js?v=user_access_controls_20260614"></script>
 </body>
 
 </html>

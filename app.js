@@ -34,6 +34,7 @@ let activeChatContactId = null;
 let unsubscribeChatMessages = null;
 let unsubscribeChats = null;
 let supervisorChatsUnsubscribes = [];
+let accessBlockedAlertShown = false;
 let chartInstances = {};
 let currentPdfDoc = null;
 let currentPdfFilename = "report.pdf";
@@ -1784,6 +1785,11 @@ const setupTraineeListeners = () => {
     });
 };
 
+const isUserAccessBlocked = (profile) => {
+    const status = (profile?.status || 'active').toString().trim().toLowerCase();
+    return profile?.accessEnabled === false || ['deactivated', 'disabled', 'suspended'].includes(status);
+};
+
 // --- Supervisor Dashboard Logic ---
 let myTrainees = [];
 let selectedTraineeId = null;
@@ -3402,6 +3408,21 @@ function init() {
                 if (docSnap.exists()) {
                     profileData = docSnap.data();
                     console.log("[DEBUG] Profile Loaded. Role:", profileData.role);
+
+                    if (isUserAccessBlocked(profileData)) {
+                        if (appContainer) appContainer.classList.add('hidden');
+                        if (roleSelectionView) roleSelectionView.classList.add('hidden');
+                        if (!accessBlockedAlertShown) {
+                            accessBlockedAlertShown = true;
+                            CustomModal.alert("Your account access is currently deactivated. Please contact the FieldlyGo admin team if you believe this is a mistake.", "Account Access Deactivated", "ph-lock-key")
+                                .finally(() => signOut(auth));
+                        } else {
+                            signOut(auth);
+                        }
+                        return;
+                    }
+
+                    accessBlockedAlertShown = false;
                     
                     // Update user display text to username or display name
                     if (userDisplay) userDisplay.textContent = profileData.username || user.displayName || user.email;

@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, collection, onSnapshot, query, collectionGroup, getDocs, getDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getFirestore, collection, onSnapshot, query, getDoc, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // --- Config & State ---
 let firebaseConfig = {
@@ -15,6 +15,7 @@ let firebaseConfig = {
 let db, auth;
 let allUsers = [];
 let isDemoMode = false;
+let unsubscribeUsers = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     const app = initializeApp(firebaseConfig);
@@ -23,6 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initViewSwitching();
     initTerminal();
+    initUserControls();
     initAuthListeners();
 });
 
@@ -103,23 +105,33 @@ async function fetchLiveData() {
 
     try {
         const q = query(collection(db, 'users'));
-        const querySnapshot = await getDocs(q);
+        if (unsubscribeUsers) unsubscribeUsers();
 
-        allUsers = querySnapshot.docs.map(docSnap => {
-            const data = docSnap.data();
-            const userId = docSnap.id;
-            return { id: userId, ...data };
+        unsubscribeUsers = onSnapshot(q, (querySnapshot) => {
+            allUsers = querySnapshot.docs.map(docSnap => {
+                const data = docSnap.data();
+                return { id: docSnap.id, ...data };
+            });
+
+            allUsers.sort((a, b) => {
+                const aDate = normalizeDate(a.registeredAt || a.createdAt || a.lastLoginAt);
+                const bDate = normalizeDate(b.registeredAt || b.createdAt || b.lastLoginAt);
+                return bDate - aDate;
+            });
+
+            isDemoMode = false;
+            document.getElementById('admin-status-text').textContent = 'System Linked';
+            document.getElementById('admin-status-text').classList.replace('text-yellow-400', 'text-green-400');
+
+            updateSystemTerminal(`[SUCCESS] Synced ${allUsers.length} live user profiles.`, "text-green-400");
+
+            updateDashboardStats();
+            populateUserTable();
+            initCharts();
+        }, (error) => {
+            console.error("Error listening to admin data:", error);
+            handleFetchError(error);
         });
-
-        isDemoMode = false;
-        document.getElementById('admin-status-text').textContent = 'System Linked';
-        document.getElementById('admin-status-text').classList.replace('text-yellow-400', 'text-green-400');
-
-        updateSystemTerminal(`[SUCCESS] Database scan complete. Map build with ${allUsers.length} live profiles.`, "text-green-400");
-
-        updateDashboardStats();
-        populateUserTable();
-        initCharts();
 
     } catch (error) {
         console.error("Error fetching admin data:", error);
@@ -140,7 +152,7 @@ function handleFetchError(error) {
     });
 
     if (isPermissionError) {
-        updateSystemTerminal("[ERROR] Security block: Permission denied. Access to collectionGroup is restricted.", "text-red-400");
+        updateSystemTerminal("[ERROR] Security block: Permission denied. Access to the users collection is restricted.", "text-red-400");
 
         // Offer Demo Mode
         const terminal = document.getElementById('terminal-output');
@@ -184,7 +196,7 @@ window.enableDemoMode = function () {
 
 function updateDashboardStats() {
     const totalUsers = allUsers.length;
-    const trainees = allUsers.filter(u => u.role === 'trainee').length;
+    const trainees = allUsers.filter(u => u.role === 'trainee' && getUserStatus(u) === 'active').length;
     const supervisors = allUsers.filter(u => u.role === 'supervisor').length;
 
     document.getElementById('stat-total-users').textContent = totalUsers.toLocaleString();
@@ -304,31 +316,67 @@ const chartOptions = {
 };
 
 // --- User Table ---
+function initUserControls() {
+    const searchInput = document.getElementById('user-search');
+    const roleFilter = document.getElementById('role-filter');
+    const statusFilter = document.getElementById('status-filter');
+    const refreshBtn = document.getElementById('refresh-users-btn');
+    const tableBody = document.getElementById('user-table-body');
+
+    [searchInput, roleFilter, statusFilter].forEach(el => {
+        if (el) el.addEventListener('input', populateUserTable);
+    });
+
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
+            populateUserTable();
+            updateSystemTerminal("[INFO] User table refreshed.", "text-blue-400");
+        });
+    }
+
+    if (tableBody) {
+        tableBody.addEventListener('click', handleUserAction);
+    }
+}
+
 function populateUserTable() {
     const tableBody = document.getElementById('user-table-body');
     if (!tableBody) return;
+
+    const filteredUsers = getFilteredUsers();
 
     if (allUsers.length === 0) {
         tableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-text-muted">No users found in database.</td></tr>`;
         return;
     }
 
-    tableBody.innerHTML = allUsers.map(user => {
-        const initials = (user.name || 'U N').split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
-        const role = user.role || 'Unset';
+    if (filteredUsers.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-text-muted">No users match the current filters.</td></tr>`;
+        return;
+    }
 
-        // Professional Data Handling
+    tableBody.innerHTML = filteredUsers.map(user => {
+        const initials = (user.name || 'U N').split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+        const role = user.role || 'unset';
+
         const plan = user.planType ? (user.planType === 'vip' ? 'VIP Access' : 'Free Plan') : 'Free Plan';
         const planBadge = user.planType === 'vip'
             ? '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">VIP</span>'
             : '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-700/50 text-slate-400 border border-white/5">FREE</span>';
 
-        const joinedDate = user.registeredAt
-            ? new Date(user.registeredAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-            : '<span class="italic text-slate-600">Unknown</span>';
+        const joinedDate = formatDate(user.registeredAt || user.createdAt || user.lastLoginAt);
+        const status = getUserStatus(user);
+        const isActive = status === 'active';
+        const statusColor = isActive ? 'text-green-400' : status === 'deactivated' ? 'text-red-400' : 'text-yellow-400';
+        const statusDot = isActive ? 'bg-green-500' : status === 'deactivated' ? 'bg-red-500' : 'bg-yellow-500';
+        const accessAction = isActive
+            ? `<button class="admin-user-action px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-300 border border-red-500/20 text-xs font-semibold transition-colors" data-action="deactivate" data-user-id="${user.id}">Deactivate</button>`
+            : `<button class="admin-user-action px-3 py-1.5 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-300 border border-green-500/20 text-xs font-semibold transition-colors" data-action="activate" data-user-id="${user.id}">Grant Access</button>`;
+        const planAction = user.planType === 'vip'
+            ? `<button class="admin-user-action p-2 text-amber-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors" title="Move to free plan" data-action="free" data-user-id="${user.id}"><i class="ph ph-star"></i></button>`
+            : `<button class="admin-user-action p-2 text-text-muted hover:text-amber-300 hover:bg-white/5 rounded-lg transition-colors" title="Give VIP access" data-action="vip" data-user-id="${user.id}"><i class="ph ph-star"></i></button>`;
 
-        const status = user.status || 'Active';
-        const statusColor = status.toLowerCase() === 'active' ? 'text-green-400' : 'text-slate-400';
+        const certLine = user.rbtNumber ? `<span class="text-[10px] text-slate-500">Cert: ${escapeHtml(user.rbtNumber)}</span>` : '';
 
         return `
         <tr class="hover:bg-white/5 transition-colors group border-b border-white/5 last:border-0">
@@ -338,13 +386,14 @@ function populateUserTable() {
                         ${initials}
                     </div>
                     <div>
-                        <p class="font-medium text-white text-sm">${user.name || 'Anonymous'}</p>
-                        <p class="text-xs text-text-muted">${user.email || 'N/A'}</p>
+                        <p class="font-medium text-white text-sm">${escapeHtml(user.name || user.username || 'Anonymous')}</p>
+                        <p class="text-xs text-text-muted">${escapeHtml(user.email || 'N/A')}</p>
+                        ${certLine}
                     </div>
                 </div>
             </td>
             <td class="px-6 py-4">
-                <span class="text-xs font-medium text-text-muted uppercase tracking-wider">${role}</span>
+                <span class="text-xs font-medium text-text-muted uppercase tracking-wider">${escapeHtml(role)}</span>
             </td>
             <td class="px-6 py-4">
                 <div class="flex items-center gap-2">
@@ -357,15 +406,112 @@ function populateUserTable() {
             </td>
             <td class="px-6 py-4">
                 <div class="flex items-center gap-2">
-                    <div class="w-1.5 h-1.5 rounded-full ${status.toLowerCase() === 'active' ? 'bg-green-500' : 'bg-slate-500'}"></div>
-                    <span class="text-xs font-medium ${statusColor}">${status}</span>
+                    <div class="w-1.5 h-1.5 rounded-full ${statusDot}"></div>
+                    <span class="text-xs font-medium ${statusColor} capitalize">${status}</span>
                 </div>
             </td>
-            <td class="px-6 py-4 text-right">
-                <button class="p-2 text-text-muted hover:text-white transition-colors"><i class="ph ph-dots-three-vertical-bold"></i></button>
+            <td class="px-6 py-4">
+                <div class="flex items-center justify-end gap-2">
+                    ${planAction}
+                    ${accessAction}
+                </div>
             </td>
         </tr>
     `}).join('');
+}
+
+function getFilteredUsers() {
+    const search = (document.getElementById('user-search')?.value || '').trim().toLowerCase();
+    const roleFilter = document.getElementById('role-filter')?.value || 'all';
+    const statusFilter = document.getElementById('status-filter')?.value || 'all';
+
+    return allUsers.filter(user => {
+        const role = (user.role || 'unset').toLowerCase();
+        const status = getUserStatus(user);
+        const haystack = [
+            user.name,
+            user.username,
+            user.email,
+            user.rbtNumber,
+            user.id,
+            user.role,
+            user.status
+        ].filter(Boolean).join(' ').toLowerCase();
+
+        return (!search || haystack.includes(search)) &&
+            (roleFilter === 'all' || role === roleFilter) &&
+            (statusFilter === 'all' || status === statusFilter);
+    });
+}
+
+async function handleUserAction(event) {
+    const btn = event.target.closest('.admin-user-action');
+    if (!btn || isDemoMode) return;
+
+    const targetUser = allUsers.find(user => user.id === btn.dataset.userId);
+    if (!targetUser) return;
+
+    const action = btn.dataset.action;
+    const updates = {
+        adminUpdatedAt: serverTimestamp(),
+        adminUpdatedBy: auth.currentUser?.email || 'admin'
+    };
+
+    if (action === 'activate') {
+        updates.status = 'active';
+        updates.accessEnabled = true;
+    } else if (action === 'deactivate') {
+        updates.status = 'deactivated';
+        updates.accessEnabled = false;
+    } else if (action === 'vip') {
+        updates.planType = 'vip';
+        updates.isVip = true;
+    } else if (action === 'free') {
+        updates.planType = 'free';
+        updates.isVip = false;
+    } else {
+        return;
+    }
+
+    btn.disabled = true;
+    btn.classList.add('opacity-50', 'cursor-wait');
+
+    try {
+        await updateDoc(doc(db, `users/${targetUser.id}`), updates);
+        updateSystemTerminal(`[SUCCESS] Updated ${targetUser.email || targetUser.id}: ${action}.`, "text-green-400");
+    } catch (error) {
+        console.error("User access update failed:", error);
+        updateSystemTerminal(`[ERROR] Failed to update ${targetUser.email || targetUser.id}: ${error.message}`, "text-red-400");
+        btn.disabled = false;
+        btn.classList.remove('opacity-50', 'cursor-wait');
+    }
+}
+
+function getUserStatus(user) {
+    if (user.accessEnabled === false) return 'deactivated';
+    return (user.status || 'active').toString().trim().toLowerCase();
+}
+
+function formatDate(value) {
+    const time = normalizeDate(value);
+    if (!time) return '<span class="italic text-slate-600">Unknown</span>';
+    return new Date(time).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function normalizeDate(value) {
+    if (!value) return 0;
+    if (value.toDate) return value.toDate().getTime();
+    const time = new Date(value).getTime();
+    return Number.isFinite(time) ? time : 0;
+}
+
+function escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 
 // --- Terminal ---
