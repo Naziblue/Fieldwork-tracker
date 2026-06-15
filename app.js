@@ -61,7 +61,8 @@ let generateMfvfBtn, exportMonthlyCsvBtn, exportYearlyPdfBtn, exportYearlyCsvBtn
     mfvfGenerateConfirm, mfvfCancel;
 
 // PDF Preview
-let pdfPreviewModal, pdfIframe, pdfDownloadBtn, pdfCloseBtn;
+let pdfPreviewModal, pdfIframe, pdfDownloadBtn, pdfCloseBtn,
+    pdfSendSupervisorBtn, pdfSendSupervisorMenu, pdfSendToast;
 
 let chartContexts = {};
 let tableHeaders = {};
@@ -148,6 +149,9 @@ function initDOMElements() {
         pdfIframe = document.getElementById('pdf-iframe');
         pdfDownloadBtn = document.getElementById('pdf-download-btn');
         pdfCloseBtn = document.getElementById('pdf-close-btn');
+        pdfSendSupervisorBtn = document.getElementById('pdf-send-supervisor-btn');
+        pdfSendSupervisorMenu = document.getElementById('pdf-send-supervisor-menu');
+        pdfSendToast = document.getElementById('pdf-send-toast');
 
         const totalHoursEl = document.getElementById('totalHoursChart');
         const restrictedHoursEl = document.getElementById('restrictedHoursChart');
@@ -1738,9 +1742,19 @@ const buildMfvfPayload = async (selectedMonth, supervisor, status = 'draft') => 
     };
 };
 
-const sendMfvfToSupervisor = async () => {
-    const selectedMonth = monthSelector.value;
-    const supName = mfvfSupervisorSelect.value;
+const showPdfSendToast = (message = "M-FVF has been sent") => {
+    if (!pdfSendToast) return;
+    pdfSendToast.textContent = message;
+    pdfSendToast.classList.remove('hidden');
+    clearTimeout(showPdfSendToast.timer);
+    showPdfSendToast.timer = setTimeout(() => {
+        pdfSendToast.classList.add('hidden');
+    }, 3200);
+};
+
+const sendMfvfToSupervisor = async (options = {}) => {
+    const selectedMonth = options.selectedMonth || monthSelector.value;
+    const supName = options.supervisorName || mfvfSupervisorSelect?.value;
     const supervisor = profileData.supervisors?.find(s => s.name === supName);
 
     if (!supervisor) {
@@ -1752,7 +1766,8 @@ const sendMfvfToSupervisor = async () => {
         return;
     }
 
-    const sendBtn = document.getElementById('mfvf-send-supervisor-btn');
+    const sendBtn = options.button || document.getElementById('mfvf-send-supervisor-btn');
+    const originalButtonText = sendBtn?.textContent || 'Send';
     if (sendBtn) {
         sendBtn.disabled = true;
         sendBtn.textContent = 'Sending...';
@@ -1788,8 +1803,13 @@ const sendMfvfToSupervisor = async () => {
             });
         }
 
-        mfvfModal.classList.add('hidden');
-        await CustomModal.alert("M-FVF sent to your supervisor.", "Sent");
+        if (options.source === 'pdf') {
+            if (pdfSendSupervisorMenu) pdfSendSupervisorMenu.classList.add('hidden');
+            showPdfSendToast("M-FVF has been sent");
+        } else {
+            mfvfModal.classList.add('hidden');
+            await CustomModal.alert("M-FVF sent to your supervisor.", "Sent");
+        }
         updateMonthlyView();
     } catch (error) {
         console.error("Error sending M-FVF:", error);
@@ -1797,7 +1817,7 @@ const sendMfvfToSupervisor = async () => {
     } finally {
         if (sendBtn) {
             sendBtn.disabled = false;
-            sendBtn.textContent = 'Send';
+            sendBtn.textContent = originalButtonText;
         }
     }
 };
@@ -3629,12 +3649,63 @@ function init() {
         pdfMonthSelector.value = monthSelector.value;
     }
 
+    function renderPdfSupervisorSendMenu() {
+        if (!pdfSendSupervisorMenu) return;
+        pdfSendSupervisorMenu.innerHTML = '';
+
+        const supervisors = profileData.supervisors || [];
+        if (!supervisors.length) {
+            const empty = document.createElement('p');
+            empty.className = 'px-3 py-2 text-xs text-text-muted';
+            empty.textContent = 'No supervisors added yet.';
+            pdfSendSupervisorMenu.appendChild(empty);
+            return;
+        }
+
+        supervisors.forEach((supervisor) => {
+            const row = document.createElement('div');
+            row.className = 'flex items-center justify-between gap-3 rounded-lg px-3 py-2 hover:bg-white/6';
+
+            const info = document.createElement('div');
+            info.className = 'min-w-0';
+
+            const name = document.createElement('p');
+            name.className = 'text-sm font-semibold text-white truncate';
+            name.textContent = supervisor.name || 'Supervisor';
+
+            const email = document.createElement('p');
+            email.className = 'text-[11px] text-text-muted truncate';
+            email.textContent = supervisor.email || 'No email saved';
+
+            const sendBtn = document.createElement('button');
+            sendBtn.type = 'button';
+            sendBtn.className = 'px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/30 transition-colors';
+            sendBtn.textContent = 'Send';
+            sendBtn.addEventListener('click', async (event) => {
+                event.stopPropagation();
+                await sendMfvfToSupervisor({
+                    supervisorName: supervisor.name,
+                    selectedMonth: pdfMonthSelector?.value || monthSelector.value,
+                    button: sendBtn,
+                    source: 'pdf'
+                });
+            });
+
+            info.append(name, email);
+            row.append(info, sendBtn);
+            pdfSendSupervisorMenu.appendChild(row);
+        });
+    }
+
     function openPdfViewer() {
         if (!pdfPreviewModal || !pdfIframe) return;
 
         // Populate month picker & auto-fill panel
         populatePdfMonthSelector();
         renderAutofillPanel(pdfMonthSelector.value || monthSelector.value);
+        renderPdfSupervisorSendMenu();
+        if (pdfSendSupervisorMenu) pdfSendSupervisorMenu.classList.add('hidden');
+        if (pdfSendToast) pdfSendToast.classList.add('hidden');
 
         // Reset iframe state
         pdfIframe.classList.remove('hidden');
@@ -3679,11 +3750,25 @@ function init() {
     if (pdfMonthSelector) {
         pdfMonthSelector.addEventListener('change', () => {
             renderAutofillPanel(pdfMonthSelector.value);
+            renderPdfSupervisorSendMenu();
         });
     }
 
     if (generateMfvfBtn) generateMfvfBtn.addEventListener('click', openMfvfWorkflowModal);
     if (pdfCloseBtn) pdfCloseBtn.addEventListener('click', closePdfViewer);
+    if (pdfSendSupervisorBtn) {
+        pdfSendSupervisorBtn.addEventListener('click', (event) => {
+            event.stopPropagation();
+            renderPdfSupervisorSendMenu();
+            if (pdfSendSupervisorMenu) pdfSendSupervisorMenu.classList.toggle('hidden');
+        });
+    }
+    if (pdfSendSupervisorMenu) {
+        pdfSendSupervisorMenu.addEventListener('click', (event) => event.stopPropagation());
+    }
+    document.addEventListener('click', () => {
+        if (pdfSendSupervisorMenu) pdfSendSupervisorMenu.classList.add('hidden');
+    });
 
     // Close on Escape key
     document.addEventListener('keydown', (e) => {
@@ -3723,7 +3808,7 @@ function init() {
     });
 
     const mfvfSendSupervisorBtn = document.getElementById('mfvf-send-supervisor-btn');
-    if (mfvfSendSupervisorBtn) mfvfSendSupervisorBtn.addEventListener('click', sendMfvfToSupervisor);
+    if (mfvfSendSupervisorBtn) mfvfSendSupervisorBtn.addEventListener('click', () => sendMfvfToSupervisor());
 
     if (pdfDownloadBtn) {
         pdfDownloadBtn.addEventListener('click', () => {
