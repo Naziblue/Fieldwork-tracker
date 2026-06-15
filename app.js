@@ -79,6 +79,7 @@ let tabGoogleGuest, tabUserPass, authGoogleGuestContainer, authUserPassContainer
 let activeNotifications = [];
 let globalChatsData = {};
 let unsubscribeGlobalChats = null;
+let supervisorNotificationUnsubscribes = [];
 let desktopNotificationBtn, desktopNotificationDropdown, mobileNotificationBtn, mobileNotificationDropdown,
     desktopNotificationList, desktopNotificationEmpty, mobileNotificationList, mobileNotificationEmpty,
     desktopMarkAllRead, mobileMarkAllRead;
@@ -2267,6 +2268,8 @@ const renderTraineeChatsList = (snapshot) => {
 
 const selectChatContact = (contactId, name, email) => {
     activeChatContactId = contactId;
+    localStorage.setItem(`chat_read_${userId}_${contactId}`, Date.now().toString());
+    updateNotificationsUI();
     
     document.getElementById('chat-placeholder').classList.add('hidden');
     document.getElementById('chat-window').classList.remove('hidden');
@@ -2336,6 +2339,18 @@ const selectChatContact = (contactId, name, email) => {
             `;
             messagesContainer.appendChild(messageWrapper);
         });
+
+        const latestIncomingTime = snapshot.docs.reduce((latest, docSnap) => {
+            const data = docSnap.data();
+            if (data.senderId === userId || !data.timestamp) return latest;
+            const time = data.timestamp.toDate ? data.timestamp.toDate().getTime() : new Date(data.timestamp).getTime();
+            return Number.isFinite(time) ? Math.max(latest, time) : latest;
+        }, 0);
+
+        if (latestIncomingTime > 0) {
+            localStorage.setItem(`chat_read_${userId}_${contactId}`, latestIncomingTime.toString());
+            updateNotificationsUI();
+        }
 
         // Scroll to the bottom of the message container
         setTimeout(() => {
@@ -3472,6 +3487,10 @@ function init() {
                 unsubscribeGlobalChats();
                 unsubscribeGlobalChats = null;
             }
+            if (supervisorNotificationUnsubscribes && supervisorNotificationUnsubscribes.length > 0) {
+                supervisorNotificationUnsubscribes.forEach(unsub => { try { unsub(); } catch (e) {} });
+                supervisorNotificationUnsubscribes = [];
+            }
 
             activeNotifications = [];
             globalChatsData = {};
@@ -3760,6 +3779,10 @@ const initializeNotifications = () => {
         unsubscribeGlobalChats();
         unsubscribeGlobalChats = null;
     }
+    if (supervisorNotificationUnsubscribes && supervisorNotificationUnsubscribes.length > 0) {
+        supervisorNotificationUnsubscribes.forEach(unsub => { try { unsub(); } catch (e) {} });
+        supervisorNotificationUnsubscribes = [];
+    }
 
     globalChatsData = {};
     activeNotifications = [];
@@ -3767,23 +3790,20 @@ const initializeNotifications = () => {
     if (profileData.role === 'trainee' || profileData.role === 'admin') {
         const chatsRef = collection(db, `users/${userId}/chats`);
         unsubscribeGlobalChats = onSnapshot(chatsRef, (snapshot) => {
+            const nextChatsData = {};
             snapshot.forEach(docSnap => {
-                globalChatsData[docSnap.id] = {
+                nextChatsData[docSnap.id] = {
                     supervisorName: docSnap.data().supervisorName || 'Supervisor',
                     supervisorEmail: docSnap.data().supervisorEmail || '',
                     ...docSnap.data()
                 };
             });
+            globalChatsData = nextChatsData;
             updateNotificationsUI();
         }, (error) => {
             console.error("Error listening to global trainee chats:", error);
         });
     } else if (profileData.role === 'supervisor') {
-        if (supervisorChatsUnsubscribes && supervisorChatsUnsubscribes.length > 0) {
-            supervisorChatsUnsubscribes.forEach(unsub => { try { unsub(); } catch (e) {} });
-            supervisorChatsUnsubscribes = [];
-        }
-
         if (myTrainees && myTrainees.length > 0) {
             myTrainees.forEach(trainee => {
                 const chatDocRef = doc(db, `users/${trainee.id}/chats/${userId}`);
@@ -3794,12 +3814,14 @@ const initializeNotifications = () => {
                             traineeEmail: trainee.email || '',
                             ...docSnap.data()
                         };
+                    } else {
+                        delete globalChatsData[trainee.id];
                     }
                     updateNotificationsUI();
                 }, (error) => {
                     console.error("Error listening to trainee chat document:", trainee.id, error);
                 });
-                supervisorChatsUnsubscribes.push(unsub);
+                supervisorNotificationUnsubscribes.push(unsub);
             });
         }
     }
