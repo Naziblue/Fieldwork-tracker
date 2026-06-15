@@ -862,6 +862,30 @@ select.bg-transparent {
     background-color: rgba(99, 102, 241, 0.1) !important; /* Indigo accent background */
     border-color: rgba(99, 102, 241, 0.2);
 }
+.chat-contact-item.unread {
+    background: linear-gradient(90deg, rgba(236, 72, 153, 0.18), rgba(236, 72, 153, 0.05)) !important;
+    border-color: rgba(236, 72, 153, 0.6) !important;
+    border-left: 3px solid #ec4899 !important;
+    box-shadow: inset 0 0 0 1px rgba(236, 72, 153, 0.08);
+}
+.chat-contact-item.unread .chat-contact-preview {
+    color: rgba(255, 255, 255, 0.9) !important;
+    font-weight: 600;
+}
+.chat-unread-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+    height: 1.1rem;
+    padding: 0 0.4rem;
+    border-radius: 999px;
+    background-color: #ec4899;
+    color: white;
+    font-size: 0.62rem;
+    line-height: 1;
+    font-weight: 800;
+}
 
 .chat-message-bubble {
     max-w-[70%];
@@ -914,6 +938,14 @@ select.bg-transparent {
 }
 .light-mode .chat-contact-item.active {
     background-color: rgba(99, 102, 241, 0.08) !important;
+}
+.light-mode .chat-contact-item.unread {
+    background: linear-gradient(90deg, rgba(219, 39, 119, 0.16), rgba(219, 39, 119, 0.04)) !important;
+    border-color: rgba(219, 39, 119, 0.45) !important;
+    border-left-color: #db2777 !important;
+}
+.light-mode .chat-contact-item.unread .chat-contact-preview {
+    color: #831843 !important;
 }
 
 /* Chat Message Actions and Previews */

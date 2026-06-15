@@ -2199,12 +2199,17 @@ const renderSupervisorChatsList = (activeChatsMap) => {
     contactsList.innerHTML = activeChats.map(chat => {
         const lastMsg = chat.lastMessageText || 'No messages yet';
         const lastTime = chat.lastMessageAt ? dayjs(chat.lastMessageAt.toDate ? chat.lastMessageAt.toDate() : chat.lastMessageAt).format('h:mm A') : '';
+        const isUnread = isUnreadChat(chat.traineeId, chat);
         const activeClass = activeChatContactId === chat.traineeId ? 'active' : '';
+        const unreadClass = isUnread && !activeClass ? 'unread' : '';
         return `
-            <div class="chat-contact-item ${activeClass}" data-id="${chat.traineeId}" data-name="${chat.traineeName}" data-email="${chat.traineeEmail}">
+            <div class="chat-contact-item ${activeClass} ${unreadClass}" data-id="${chat.traineeId}" data-name="${chat.traineeName}" data-email="${chat.traineeEmail}">
                 <div class="flex items-center justify-between gap-2">
                     <span class="text-white font-medium text-sm truncate">${chat.traineeName}</span>
-                    <span class="text-[10px] text-text-muted flex-shrink-0">${lastTime}</span>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        ${isUnread && !activeClass ? '<span class="chat-unread-pill">New</span>' : ''}
+                        <span class="text-[10px] text-text-muted">${lastTime}</span>
+                    </div>
                 </div>
                 <span class="chat-contact-preview text-text-muted text-xs truncate mt-0.5">${lastMsg}</span>
             </div>
@@ -2249,12 +2254,17 @@ const renderTraineeChatsList = (snapshot) => {
     contactsList.innerHTML = chats.map(chat => {
         const lastMsg = chat.lastMessageText || 'No messages yet';
         const lastTime = chat.lastMessageAt ? dayjs(chat.lastMessageAt.toDate ? chat.lastMessageAt.toDate() : chat.lastMessageAt).format('h:mm A') : '';
+        const isUnread = isUnreadChat(chat.supervisorUid, chat);
         const activeClass = activeChatContactId === chat.supervisorUid ? 'active' : '';
+        const unreadClass = isUnread && !activeClass ? 'unread' : '';
         return `
-            <div class="chat-contact-item ${activeClass}" data-id="${chat.supervisorUid}" data-name="${chat.supervisorName}" data-email="${chat.supervisorEmail}">
+            <div class="chat-contact-item ${activeClass} ${unreadClass}" data-id="${chat.supervisorUid}" data-name="${chat.supervisorName}" data-email="${chat.supervisorEmail}">
                 <div class="flex items-center justify-between gap-2">
                     <span class="text-white font-medium text-sm truncate">${chat.supervisorName}</span>
-                    <span class="text-[10px] text-text-muted flex-shrink-0">${lastTime}</span>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        ${isUnread && !activeClass ? '<span class="chat-unread-pill">New</span>' : ''}
+                        <span class="text-[10px] text-text-muted">${lastTime}</span>
+                    </div>
                 </div>
                 <span class="chat-contact-preview text-text-muted text-xs truncate mt-0.5">${lastMsg}</span>
             </div>
@@ -2275,6 +2285,11 @@ const renderTraineeChatsList = (snapshot) => {
 const selectChatContact = (contactId, name, email) => {
     activeChatContactId = contactId;
     localStorage.setItem(`chat_read_${userId}_${contactId}`, Date.now().toString());
+    const contactItem = document.querySelector(`.chat-contact-item[data-id="${contactId}"]`);
+    if (contactItem) {
+        contactItem.classList.remove('unread');
+        contactItem.querySelector('.chat-unread-pill')?.remove();
+    }
     updateNotificationsUI();
     
     document.getElementById('chat-placeholder').classList.add('hidden');
@@ -2366,6 +2381,13 @@ const selectChatContact = (contactId, name, email) => {
         console.error("Error listening to chat messages:", error);
         messagesContainer.innerHTML = `<div class="p-4 text-center text-red-400 text-xs">Error loading messages: ${error.message}</div>`;
     });
+};
+
+const isUnreadChat = (contactId, chatSummary) => {
+    if (!userId || !chatSummary?.lastSenderId || chatSummary.lastSenderId === userId) return false;
+    const lastRead = parseInt(localStorage.getItem(`chat_read_${userId}_${contactId}`) || '0', 10);
+    const lastMessageTime = chatSummary.lastMessageAt ? (chatSummary.lastMessageAt.toDate ? chatSummary.lastMessageAt.toDate().getTime() : new Date(chatSummary.lastMessageAt).getTime()) : 0;
+    return lastMessageTime > lastRead;
 };
 
 const sendChatMessage = async (e) => {
@@ -3927,6 +3949,19 @@ const updateNotificationsUI = () => {
         }
     });
 
+    const unreadMessageIds = new Set(activeNotifications.filter(n => n.type === 'message').map(n => n.senderId));
+    document.querySelectorAll('.chat-contact-item[data-id]').forEach(item => {
+        const isUnread = unreadMessageIds.has(item.dataset.id) && item.dataset.id !== activeChatContactId;
+        item.classList.toggle('unread', isUnread);
+        const hasPill = !!item.querySelector('.chat-unread-pill');
+        const timeWrap = item.querySelector('.flex.items-center.gap-2.flex-shrink-0');
+        if (isUnread && !hasPill && timeWrap) {
+            timeWrap.insertAdjacentHTML('afterbegin', '<span class="chat-unread-pill">New</span>');
+        } else if (!isUnread && hasPill) {
+            item.querySelector('.chat-unread-pill')?.remove();
+        }
+    });
+
     // 4. Render Dropdowns
     const renderList = (listEl, emptyEl) => {
         if (!listEl) return;
@@ -3991,7 +4026,7 @@ const handleNotificationClick = async (notifId) => {
     if (mobileNotificationDropdown) mobileNotificationDropdown.classList.add('hidden');
 
     if (n.type === 'message') {
-        switchView('messages');
+        switchView('chat');
         setTimeout(() => {
             const contactItem = document.querySelector(`.chat-contact-item[data-id="${n.senderId}"]`);
             if (contactItem) {
