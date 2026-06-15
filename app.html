@@ -1000,37 +1000,6 @@
         </div>
     </div>
 
-    <!-- MFVF Modal -->
-    <div id="mfvf-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm"></div>
-        <div class="relative glass-panel p-6 rounded-2xl max-w-sm w-full animate-fade-in">
-            <h2 class="text-xl font-bold text-white mb-2">Monthly M-FVF</h2>
-            <p class="text-sm text-text-muted mb-4">Preview the helper or send this month's verification form to your supervisor.</p>
-            <label class="block text-[10px] text-text-muted uppercase tracking-widest mb-1.5">Supervisor</label>
-            <select id="mfvf-supervisor-select" class="input-field w-full rounded-lg px-3 py-2 text-sm mb-4"></select>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-                <div>
-                    <label class="block text-[10px] text-text-muted uppercase tracking-widest mb-1.5">State</label>
-                    <input id="mfvf-state-input" class="input-field w-full rounded-lg px-3 py-2 text-sm" placeholder="CA">
-                </div>
-                <div>
-                    <label class="block text-[10px] text-text-muted uppercase tracking-widest mb-1.5">Country</label>
-                    <input id="mfvf-country-input" class="input-field w-full rounded-lg px-3 py-2 text-sm" value="United States">
-                </div>
-            </div>
-            <label class="block text-[10px] text-text-muted uppercase tracking-widest mb-1.5">Trainee note</label>
-            <textarea id="mfvf-trainee-note-input" class="input-field w-full rounded-lg px-3 py-2 text-sm mb-5 min-h-[80px]" placeholder="Optional note for your supervisor"></textarea>
-            <div class="flex gap-3">
-                <button id="mfvf-cancel"
-                    class="flex-1 py-2 rounded-lg bg-surface hover:bg-surface-hover text-text-muted transition-colors">Cancel</button>
-                <button id="mfvf-generate-confirm"
-                    class="flex-1 py-2 rounded-lg bg-surface hover:bg-surface-hover text-white transition-colors">Preview</button>
-                <button id="mfvf-send-supervisor-btn"
-                    class="flex-1 py-2 rounded-lg bg-primary hover:bg-primary-hover text-white transition-colors">Send</button>
-            </div>
-        </div>
-    </div>
-
     <!-- PDF Viewer Modal — Split View -->
     <div id="pdf-preview-modal" class="fixed inset-0 z-[200] hidden flex-col" style="background: rgba(5,8,22,0.95); backdrop-filter: blur(20px);">
 
@@ -1165,7 +1134,7 @@
     <!-- We are removing the old edit modal and using the slide-over for both add and edit -->
     <div id="edit-modal" class="hidden"></div>
 
-    <script type="module" src="app.js?v=mfvf_pdf_send_20260614"></script>
+    <script type="module" src="app.js?v=mfvf_no_popup_20260614"></script>
 
     <!-- Responsive Sidebar Script -->
     <script>

@@ -1823,11 +1823,7 @@ const sendMfvfToSupervisor = async (options = {}) => {
 };
 
 const openMfvfWorkflowModal = () => {
-    if (!mfvfModal) return;
-    if (mfvfSupervisorSelect && profileData.supervisors?.length === 1) {
-        mfvfSupervisorSelect.value = profileData.supervisors[0].name;
-    }
-    mfvfModal.classList.remove('hidden');
+    window.openMfvfPdfViewer?.();
 };
 
 const exportToCsv = (entries, summaryData, filename) => {
@@ -3737,6 +3733,7 @@ function init() {
             if (pdfFallback) pdfFallback.classList.remove('hidden');
         };
     }
+    window.openMfvfPdfViewer = openPdfViewer;
 
     function closePdfViewer() {
         if (!pdfPreviewModal) return;
@@ -3754,7 +3751,7 @@ function init() {
         });
     }
 
-    if (generateMfvfBtn) generateMfvfBtn.addEventListener('click', openMfvfWorkflowModal);
+    if (generateMfvfBtn) generateMfvfBtn.addEventListener('click', openPdfViewer);
     if (pdfCloseBtn) pdfCloseBtn.addEventListener('click', closePdfViewer);
     if (pdfSendSupervisorBtn) {
         pdfSendSupervisorBtn.addEventListener('click', (event) => {
@@ -3799,16 +3796,6 @@ function init() {
     if (exportAllTimeCsvBtn) exportAllTimeCsvBtn.addEventListener('click', () => {
         exportToCsv(allEntries, calculateSummaryData(allEntries), `Fieldwork_AllTime.csv`);
     });
-
-    if (mfvfCancel) mfvfCancel.addEventListener('click', () => mfvfModal.classList.add('hidden'));
-
-    if (mfvfGenerateConfirm) mfvfGenerateConfirm.addEventListener('click', async () => {
-        mfvfModal.classList.add('hidden');
-        openPdfViewer();
-    });
-
-    const mfvfSendSupervisorBtn = document.getElementById('mfvf-send-supervisor-btn');
-    if (mfvfSendSupervisorBtn) mfvfSendSupervisorBtn.addEventListener('click', () => sendMfvfToSupervisor());
 
     if (pdfDownloadBtn) {
         pdfDownloadBtn.addEventListener('click', () => {
