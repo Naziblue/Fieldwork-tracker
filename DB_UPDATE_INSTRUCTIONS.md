@@ -17,14 +17,22 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
     // --- 1. Users Profile Collection ---
-    // Trainees/supervisors can read and write their own profile document.
-    // Supervisors can read a trainee's profile if their email is in the trainee's supervisorEmails array.
-    // Trainees can read a supervisor's profile if the supervisor's email is in the trainee's supervisorEmails array.
-    // Admins can read all profiles.
+    // Users can update their own profile. Admins can update user access/status.
     match /users/{userId} {
-      allow write: if request.auth != null && request.auth.uid == userId;
-      allow read: if request.auth != null;
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow delete: if false;
     }
 
     // --- 2. Fieldwork Entries Subcollection ---
@@ -32,9 +40,10 @@ service cloud.firestore {
     // Linked supervisors can read and write entries (to add/edit/delete supervisorNote)
     // if their email is listed in the trainee's profile supervisorEmails array.
     match /users/{userId}/entries/{entryId} {
-      allow read, write: if request.auth != null && (
+      allow read, write: if isSignedIn() && (
         request.auth.uid == userId ||
-        request.auth.token.email in get(/databases/$(database)/documents/users/$(userId)).data.supervisorEmails
+        request.auth.token.email in get(/databases/$(database)/documents/users/$(userId)).data.supervisorEmails ||
+        isAdmin()
       );
     }
     
@@ -42,33 +51,39 @@ service cloud.firestore {
     // Trainees can read/write their own verifications.
     // Linked supervisors can read and write (to sign months) verifications if listed in supervisorEmails.
     match /users/{userId}/verifications/{verifId} {
-      allow read, write: if request.auth != null && (
+      allow read, write: if isSignedIn() && (
         request.auth.uid == userId ||
-        request.auth.token.email in get(/databases/$(database)/documents/users/$(userId)).data.supervisorEmails
+        request.auth.token.email in get(/databases/$(database)/documents/users/$(userId)).data.supervisorEmails ||
+        isAdmin()
       );
     }
 
     // --- 4. Chat Rooms & Messages ---
     // Trainees and their linked supervisors can read/write chat room summaries and messages.
     match /users/{userId}/chats/{supervisorUid} {
-      allow list: if request.auth != null && request.auth.uid == userId;
-      allow get, write: if request.auth != null && (
+      allow list: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow get, write: if isSignedIn() && (
         request.auth.uid == userId ||
-        request.auth.uid == supervisorUid
+        request.auth.uid == supervisorUid ||
+        isAdmin()
       );
     }
     match /users/{userId}/chats/{supervisorUid}/messages/{messageId} {
-      allow read, write: if request.auth != null && (
+      allow read, write: if isSignedIn() && (
         request.auth.uid == userId ||
-        request.auth.uid == supervisorUid
+        request.auth.uid == supervisorUid ||
+        isAdmin()
       );
     }
 
-    // --- 5. Admin & Requested Collections (Unchanged/Kept safe) ---
-    match /admin/{docId} { allow read, write: if true; } 
-    match /adminLogs/{docId} { allow read, write: if true; }
-    match /settings/{docId} { allow read, write: if true; }
-    match /invitations/{docId} { allow read, write: if true; }
+    // --- 5. Admin & Requested Collections ---
+    match /admin/{docId} { allow read, write: if isAdmin(); }
+    match /adminLogs/{docId} { allow read, write: if isAdmin(); }
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /invitations/{docId} { allow read, write: if isSignedIn(); }
     
     // --- 6. Future/Placeholder Collections (Unchanged/Kept safe) ---
     match /blocks/{docId} { allow read, write: if true; }
