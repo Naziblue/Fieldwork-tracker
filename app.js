@@ -1876,39 +1876,15 @@ const sendMfvfToSupervisor = async (options = {}) => {
         const payload = await buildMfvfPayload(selectedMonth, supervisor, 'submitted');
         const submittedAt = new Date().toISOString();
 
-        // Copy the draft file to a submitted path in Storage
-        // Fetch the blob from the existing draft URL and re-upload as submitted
-        let submittedPdfUrl = draftPdfUrl;
-        let submittedPdfPath = draftPdfPath;
-        let submittedPdfSize = 0;
-        try {
-            const res = await fetch(draftPdfUrl);
-            if (res.ok) {
-                const blob = await res.blob();
-                submittedPdfSize = blob.size;
-                const submittedPath = `mfvf/${userId}/${selectedMonth}/submitted.pdf`;
-                const submittedRef = storageRef(storage, submittedPath);
-                await uploadBytes(submittedRef, blob, {
-                    contentType: 'application/pdf',
-                    customMetadata: {
-                        traineeId: userId,
-                        supervisorUid: payload.supervisorUid || '',
-                        month: selectedMonth
-                    }
-                });
-                submittedPdfUrl = await getDownloadURL(submittedRef);
-                submittedPdfPath = submittedPath;
-            }
-        } catch (copyErr) {
-            console.warn('Could not copy draft to submitted — using draft URL directly:', copyErr);
-        }
+        // Use the draft PDF that was already uploaded to Storage — no need to copy it
+        const submittedPdfUrl = draftPdfUrl;
+        const submittedPdfPath = draftPdfPath;
 
         payload.status = 'submitted';
         payload.traineeSubmittedAt = submittedAt;
         payload.submittedPdfPath = submittedPdfPath;
         payload.submittedPdfUrl = submittedPdfUrl;
         payload.submittedPdfName = draftPdfName;
-        payload.submittedPdfSize = submittedPdfSize;
         payload.submittedPdfUpdatedAt = submittedAt;
         payload.supervisorComments = '';
         payload.signedPdfPath = '';

@@ -1,0 +1,14 @@
+[
+  {
+    "origin": [
+      "https://fieldlygo.com",
+      "https://www.fieldlygo.com",
+      "https://fieldwork-tracker-ae8f7.web.app",
+      "https://fieldwork-tracker-ae8f7.firebaseapp.com",
+      "https://fieldworktracker.netlify.app"
+    ],
+    "method": ["GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS"],
+    "responseHeader": ["Content-Type", "Authorization", "Content-Length", "X-Requested-With"],
+    "maxAgeSeconds": 3600
+  }
+]
