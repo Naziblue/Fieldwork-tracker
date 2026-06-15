@@ -2225,6 +2225,8 @@ const renderSupervisorChatsList = (activeChatsMap) => {
             selectChatContact(item.dataset.id, item.dataset.name, item.dataset.email);
         });
     });
+
+    openFirstUnreadChat(contactsList);
 };
 
 const renderTraineeChatsList = (snapshot) => {
@@ -2280,11 +2282,13 @@ const renderTraineeChatsList = (snapshot) => {
             selectChatContact(item.dataset.id, item.dataset.name, item.dataset.email);
         });
     });
+
+    openFirstUnreadChat(contactsList);
 };
 
 const selectChatContact = (contactId, name, email) => {
     activeChatContactId = contactId;
-    localStorage.setItem(`chat_read_${userId}_${contactId}`, Date.now().toString());
+    markChatRead(contactId);
     const contactItem = document.querySelector(`.chat-contact-item[data-id="${contactId}"]`);
     if (contactItem) {
         contactItem.classList.remove('unread');
@@ -2369,7 +2373,7 @@ const selectChatContact = (contactId, name, email) => {
         }, 0);
 
         if (latestIncomingTime > 0) {
-            localStorage.setItem(`chat_read_${userId}_${contactId}`, latestIncomingTime.toString());
+            markChatRead(contactId, latestIncomingTime);
             updateNotificationsUI();
         }
 
@@ -2386,8 +2390,30 @@ const selectChatContact = (contactId, name, email) => {
 const isUnreadChat = (contactId, chatSummary) => {
     if (!userId || !chatSummary?.lastSenderId || chatSummary.lastSenderId === userId) return false;
     const lastRead = parseInt(localStorage.getItem(`chat_read_${userId}_${contactId}`) || '0', 10);
-    const lastMessageTime = chatSummary.lastMessageAt ? (chatSummary.lastMessageAt.toDate ? chatSummary.lastMessageAt.toDate().getTime() : new Date(chatSummary.lastMessageAt).getTime()) : 0;
+    const lastMessageTime = getChatTimestamp(chatSummary);
     return lastMessageTime > lastRead;
+};
+
+const getChatTimestamp = (chatSummary) => {
+    if (!chatSummary?.lastMessageAt) return 0;
+    const time = chatSummary.lastMessageAt.toDate ? chatSummary.lastMessageAt.toDate().getTime() : new Date(chatSummary.lastMessageAt).getTime();
+    return Number.isFinite(time) ? time : 0;
+};
+
+const markChatRead = (contactId, explicitTime = 0) => {
+    if (!userId || !contactId) return;
+    const summaryTime = getChatTimestamp(globalChatsData[contactId]);
+    const readTime = Math.max(Date.now(), explicitTime, summaryTime) + 1;
+    localStorage.setItem(`chat_read_${userId}_${contactId}`, readTime.toString());
+};
+
+const openFirstUnreadChat = (contactsList) => {
+    if (activeChatContactId) return;
+    const unreadItem = contactsList.querySelector('.chat-contact-item.unread[data-id]');
+    if (!unreadItem) return;
+    setTimeout(() => {
+        if (!activeChatContactId && unreadItem.isConnected) unreadItem.click();
+    }, 0);
 };
 
 const sendChatMessage = async (e) => {
