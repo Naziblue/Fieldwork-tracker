@@ -3522,6 +3522,11 @@ function init() {
                 badge.textContent = '0';
                 badge.classList.add('hidden');
             });
+            const messageBadges = document.querySelectorAll('.message-unread-badge');
+            messageBadges.forEach(badge => {
+                badge.textContent = '0';
+                badge.classList.add('hidden');
+            });
             if (desktopNotificationDropdown) desktopNotificationDropdown.classList.add('hidden');
             if (mobileNotificationDropdown) mobileNotificationDropdown.classList.add('hidden');
 
@@ -3899,12 +3904,23 @@ const updateNotificationsUI = () => {
     }
 
     const unreadCount = activeNotifications.length;
+    const unreadMessageCount = activeNotifications.filter(n => n.type === 'message').length;
 
     // 3. Update Badges
     const badges = document.querySelectorAll('.notification-badge');
     badges.forEach(badge => {
         badge.textContent = unreadCount;
         if (unreadCount > 0) {
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
+    });
+
+    const messageBadges = document.querySelectorAll('.message-unread-badge');
+    messageBadges.forEach(badge => {
+        badge.textContent = unreadMessageCount > 99 ? '99+' : unreadMessageCount.toString();
+        if (unreadMessageCount > 0) {
             badge.classList.remove('hidden');
         } else {
             badge.classList.add('hidden');
