@@ -981,6 +981,66 @@ const updateMonthlyView = () => {
     monthlySummaryGrid.innerHTML = createSummaryHTML(summaryData, allTimeTotal, true);
     updateAlerts(summaryData, 'monthly-alerts');
     renderTable(monthlyEntries, logTableBody);
+    renderMfvfWorkflowStatus(selectedMonth, monthlyEntries);
+};
+
+const getMfvfVerificationRef = (traineeId, month) => doc(db, `users/${traineeId}/verifications/${month}`);
+
+const getMfvfStatusConfig = (status) => {
+    const normalized = status || 'not_started';
+    const config = {
+        not_started: ['Not Started', 'text-slate-300', 'bg-slate-500/10 border-white/10', 'ph ph-file-plus'],
+        draft: ['Draft', 'text-blue-300', 'bg-blue-500/10 border-blue-500/20', 'ph ph-pencil-simple'],
+        submitted: ['Sent to Supervisor', 'text-amber-300', 'bg-amber-500/10 border-amber-500/25', 'ph ph-paper-plane-tilt'],
+        changes_requested: ['Changes Requested', 'text-orange-300', 'bg-orange-500/10 border-orange-500/25', 'ph ph-warning-circle'],
+        signed: ['Signed & Returned', 'text-green-300', 'bg-green-500/10 border-green-500/25', 'ph ph-check-circle'],
+        rejected: ['Rejected', 'text-red-300', 'bg-red-500/10 border-red-500/25', 'ph ph-x-circle']
+    };
+    return config[normalized] || config.not_started;
+};
+
+const renderMfvfWorkflowStatus = async (month, entries) => {
+    const panel = document.getElementById('mfvf-workflow-status');
+    if (!panel || !userId || userId === 'guest' || !month) return;
+
+    try {
+        const snap = await getDoc(getMfvfVerificationRef(userId, month));
+        const request = snap.exists() ? snap.data() : null;
+        const [label, textClass, boxClass, icon] = getMfvfStatusConfig(request?.status);
+        const supervisorLabel = request?.supervisorName ? `Supervisor: ${request.supervisorName}` : 'Choose a supervisor and send this month for review.';
+        const signedLine = request?.status === 'signed'
+            ? `<p class="text-xs text-green-300 mt-1">Signed by ${request.supervisorSignatureName || request.supervisorName || 'Supervisor'} on ${dayjs(request.signedAt).format('MMM D, YYYY h:mm A')}.</p>`
+            : '';
+        const changesLine = request?.status === 'changes_requested' && request?.supervisorComments
+            ? `<p class="text-xs text-orange-200 mt-1">Supervisor note: ${request.supervisorComments}</p>`
+            : '';
+
+        panel.innerHTML = `
+            <div class="rounded-2xl border ${boxClass} p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="flex items-start gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center ${textClass}">
+                        <i class="${icon} text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs uppercase tracking-widest font-bold ${textClass}">M-FVF Status: ${label}</p>
+                        <p class="text-sm text-text mt-1">${dayjs(month).format('MMMM YYYY')} • ${entries.length} logged activities</p>
+                        <p class="text-xs text-text-muted mt-1">${supervisorLabel}</p>
+                        ${signedLine}
+                        ${changesLine}
+                    </div>
+                </div>
+                <button id="open-mfvf-workflow-btn" class="px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white text-sm font-semibold transition-colors flex items-center gap-2 justify-center">
+                    <i class="ph ph-file-pdf"></i>${request?.status === 'signed' ? 'View / Download' : request?.status === 'submitted' ? 'View Request' : 'Prepare Form'}
+                </button>
+            </div>
+        `;
+        panel.classList.remove('hidden');
+
+        document.getElementById('open-mfvf-workflow-btn')?.addEventListener('click', openMfvfWorkflowModal);
+    } catch (error) {
+        console.error("Error loading M-FVF workflow status:", error);
+        panel.classList.add('hidden');
+    }
 };
 
 const updateYearlyView = () => {
@@ -1625,6 +1685,131 @@ const generateMfvfPdf = async (entries, supervisor, monthStr, isSigned) => {
     pdfPreviewModal.classList.remove('hidden');
 };
 
+const buildMfvfPayload = async (selectedMonth, supervisor, status = 'draft') => {
+    const [year, month] = selectedMonth.split('-');
+    const entries = allEntries.filter(e => {
+        const d = dayjs(e.date);
+        return d.year() == year && (d.month() + 1) == month;
+    });
+    const summary = calculateSummaryData(entries);
+    const state = document.getElementById('mfvf-state-input')?.value?.trim() || '';
+    const country = document.getElementById('mfvf-country-input')?.value?.trim() || 'United States';
+    const traineeNote = document.getElementById('mfvf-trainee-note-input')?.value?.trim() || '';
+
+    let supervisorUid = supervisor.uid || '';
+    if (!supervisorUid && supervisor.email) {
+        try {
+            const q = query(collection(db, 'users'), where('email', '==', supervisor.email.trim()), where('role', '==', 'supervisor'));
+            const snap = await getDocs(q);
+            if (!snap.empty) supervisorUid = snap.docs[0].id;
+        } catch (error) {
+            console.error("Error resolving supervisor UID for M-FVF:", error);
+        }
+    }
+
+    return {
+        status,
+        month: selectedMonth,
+        monthLabel: dayjs(selectedMonth).format('MMMM YYYY'),
+        traineeId: userId,
+        traineeName: profileData.name || auth.currentUser?.displayName || 'Trainee',
+        traineeEmail: profileData.email || auth.currentUser?.email || '',
+        bacbId: profileData.rbtNumber || '',
+        supervisorUid,
+        supervisorName: supervisor.name || '',
+        supervisorEmail: supervisor.email || '',
+        supervisorCert: supervisor.cert || '',
+        traineeNote,
+        formData: {
+            state,
+            country,
+            independentHours: summary.unsupervised,
+            supervisedHours: summary.supervised,
+            totalHours: summary.total,
+            restrictedHours: summary.restricted,
+            unrestrictedHours: summary.unrestricted,
+            observationMinutes: summary.observationMinutes,
+            supervisionPercentage: summary.percentage,
+            individualSupervision: summary.individualSupervision,
+            groupSupervision: summary.groupSupervision
+        },
+        entryCount: entries.length,
+        updatedAt: new Date().toISOString()
+    };
+};
+
+const sendMfvfToSupervisor = async () => {
+    const selectedMonth = monthSelector.value;
+    const supName = mfvfSupervisorSelect.value;
+    const supervisor = profileData.supervisors?.find(s => s.name === supName);
+
+    if (!supervisor) {
+        await CustomModal.alert("Please select a supervisor.", "Selection Required");
+        return;
+    }
+    if (!userId || userId === 'guest') {
+        await CustomModal.alert("Please sign in before sending a verification form.", "Sign In Required");
+        return;
+    }
+
+    const sendBtn = document.getElementById('mfvf-send-supervisor-btn');
+    if (sendBtn) {
+        sendBtn.disabled = true;
+        sendBtn.textContent = 'Sending...';
+    }
+
+    try {
+        const payload = await buildMfvfPayload(selectedMonth, supervisor, 'submitted');
+        payload.traineeSubmittedAt = new Date().toISOString();
+        payload.supervisorComments = '';
+
+        await setDoc(getMfvfVerificationRef(userId, selectedMonth), payload, { merge: true });
+
+        if (payload.supervisorUid) {
+            const chatRef = doc(db, `users/${userId}/chats/${payload.supervisorUid}`);
+            const messagesRef = collection(db, `users/${userId}/chats/${payload.supervisorUid}/messages`);
+            const text = `${payload.traineeName} sent the ${payload.monthLabel} M-FVF for review and signature.`;
+            await setDoc(chatRef, {
+                traineeName: payload.traineeName,
+                traineeEmail: payload.traineeEmail,
+                supervisorName: payload.supervisorName,
+                supervisorEmail: payload.supervisorEmail,
+                lastMessageText: text,
+                lastMessageAt: serverTimestamp(),
+                lastSenderId: userId
+            }, { merge: true });
+            await addDoc(messagesRef, {
+                text,
+                senderId: userId,
+                senderName: payload.traineeName,
+                timestamp: serverTimestamp(),
+                systemType: 'mfvf_submitted',
+                month: selectedMonth
+            });
+        }
+
+        mfvfModal.classList.add('hidden');
+        await CustomModal.alert("M-FVF sent to your supervisor.", "Sent");
+        updateMonthlyView();
+    } catch (error) {
+        console.error("Error sending M-FVF:", error);
+        await CustomModal.alert("Failed to send M-FVF: " + error.message, "Send Error");
+    } finally {
+        if (sendBtn) {
+            sendBtn.disabled = false;
+            sendBtn.textContent = 'Send';
+        }
+    }
+};
+
+const openMfvfWorkflowModal = () => {
+    if (!mfvfModal) return;
+    if (mfvfSupervisorSelect && profileData.supervisors?.length === 1) {
+        mfvfSupervisorSelect.value = profileData.supervisors[0].name;
+    }
+    mfvfModal.classList.remove('hidden');
+};
+
 const exportToCsv = (entries, summaryData, filename) => {
     const headers = ["Date", "Start", "End", "Hours", "Setting", "Type", "Supervision", "Unrestricted Type", "Supervisor", "Client Present", "Client", "Session Notes/Unrestricted Activities Explanations"];
     let csvContent = headers.join(",") + "\n";
@@ -1948,7 +2133,9 @@ const renderTraineeReview = async (entries) => {
 
         const verificationRef = doc(db, `users/${selectedTraineeId}/verifications/${selectedMonth}`);
         const verifSnap = await getDoc(verificationRef);
-        const isSigned = verifSnap.exists() && verifSnap.data().status === 'signed';
+        const verificationData = verifSnap.exists() ? verifSnap.data() : null;
+        const isSigned = verificationData?.status === 'signed';
+        renderSupervisorMfvfReviewPanel(selectedMonth, verificationData);
 
         if (signMonthBtn) {
             if (isSigned) {
@@ -2049,6 +2236,70 @@ const renderTraineeReview = async (entries) => {
     updateReviewTable();
 };
 
+const renderSupervisorMfvfReviewPanel = (month, request) => {
+    const panel = document.getElementById('supervisor-mfvf-review-panel');
+    if (!panel) return;
+
+    if (!request || !['submitted', 'changes_requested', 'signed', 'rejected'].includes(request.status)) {
+        panel.classList.add('hidden');
+        panel.innerHTML = '';
+        return;
+    }
+
+    const [label, textClass, boxClass, icon] = getMfvfStatusConfig(request.status);
+    const data = request.formData || {};
+    const canReview = request.status === 'submitted' || request.status === 'changes_requested';
+    const signedLine = request.status === 'signed'
+        ? `<p class="text-xs text-green-300 mt-2">Signed by ${request.supervisorSignatureName || request.supervisorName || 'Supervisor'} on ${dayjs(request.signedAt).format('MMM D, YYYY h:mm A')}.</p>`
+        : '';
+
+    panel.innerHTML = `
+        <div class="rounded-2xl border ${boxClass} p-5">
+            <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+                <div class="flex items-start gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center ${textClass}">
+                        <i class="${icon} text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs uppercase tracking-widest font-bold ${textClass}">M-FVF Request: ${label}</p>
+                        <h4 class="text-lg font-bold text-white mt-1">${request.traineeName || 'Trainee'} • ${request.monthLabel || dayjs(month).format('MMMM YYYY')}</h4>
+                        <p class="text-xs text-text-muted mt-1">Submitted to ${request.supervisorName || 'Supervisor'}${request.traineeSubmittedAt ? ` on ${dayjs(request.traineeSubmittedAt).format('MMM D, YYYY h:mm A')}` : ''}</p>
+                        ${request.traineeNote ? `<p class="text-sm text-slate-200 mt-3">Trainee note: ${request.traineeNote}</p>` : ''}
+                        ${request.supervisorComments ? `<p class="text-sm text-orange-200 mt-3">Supervisor note: ${request.supervisorComments}</p>` : ''}
+                        ${signedLine}
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs min-w-full lg:min-w-[420px]">
+                    <div class="rounded-xl bg-white/5 border border-white/5 p-3"><p class="text-text-muted uppercase tracking-wider">Total</p><p class="text-white font-bold mt-1">${formatHoursForDisplay(data.totalHours || 0)}</p></div>
+                    <div class="rounded-xl bg-white/5 border border-white/5 p-3"><p class="text-text-muted uppercase tracking-wider">Supervised</p><p class="text-white font-bold mt-1">${formatHoursForDisplay(data.supervisedHours || 0)}</p></div>
+                    <div class="rounded-xl bg-white/5 border border-white/5 p-3"><p class="text-text-muted uppercase tracking-wider">Observation</p><p class="text-white font-bold mt-1">${Math.round(data.observationMinutes || 0)}m</p></div>
+                    <div class="rounded-xl bg-white/5 border border-white/5 p-3"><p class="text-text-muted uppercase tracking-wider">Location</p><p class="text-white font-bold mt-1">${data.state || '-'} / ${data.country || '-'}</p></div>
+                </div>
+            </div>
+            ${canReview ? `
+                <div class="flex flex-wrap justify-end gap-3 mt-5">
+                    <button id="mfvf-request-changes-btn" class="px-4 py-2 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 text-orange-200 border border-orange-500/25 text-sm font-semibold transition-colors">
+                        <i class="ph ph-chat-teardrop-text"></i> Request Changes
+                    </button>
+                    <button id="mfvf-sign-return-btn" class="px-4 py-2 rounded-xl bg-green-500 hover:bg-green-600 text-white text-sm font-bold transition-colors shadow-lg">
+                        <i class="ph ph-signature"></i> Sign & Return
+                    </button>
+                </div>
+            ` : ''}
+        </div>
+    `;
+    panel.classList.remove('hidden');
+
+    document.getElementById('mfvf-sign-return-btn')?.addEventListener('click', () => signMfvfRequest(month, request));
+    document.getElementById('mfvf-request-changes-btn')?.addEventListener('click', () => requestMfvfChanges(month, request));
+};
+
+const formatHoursForDisplay = (hours) => {
+    const h = Math.floor(hours);
+    const m = Math.round((hours % 1) * 60);
+    return `${h}h ${m}m`;
+};
+
 const setupSupervisorListeners = () => {
     updateSupervisorDashboard();
 
@@ -2096,6 +2347,83 @@ const setupSupervisorListeners = () => {
     const reviewTableBody = document.getElementById('review-table-body');
     if (reviewTableBody) {
         reviewTableBody.addEventListener('click', handleTableClick);
+    }
+};
+
+const notifyMfvfTrainee = async (request, text, systemType) => {
+    if (!request?.traineeId || !userId) return;
+    try {
+        const chatRef = doc(db, `users/${request.traineeId}/chats/${userId}`);
+        const messagesRef = collection(db, `users/${request.traineeId}/chats/${userId}/messages`);
+        await setDoc(chatRef, {
+            traineeName: request.traineeName || 'Trainee',
+            traineeEmail: request.traineeEmail || '',
+            supervisorName: profileData.name || request.supervisorName || 'Supervisor',
+            supervisorEmail: profileData.email || auth.currentUser?.email || '',
+            lastMessageText: text,
+            lastMessageAt: serverTimestamp(),
+            lastSenderId: userId
+        }, { merge: true });
+        await addDoc(messagesRef, {
+            text,
+            senderId: userId,
+            senderName: profileData.name || 'Supervisor',
+            timestamp: serverTimestamp(),
+            systemType,
+            month: request.month
+        });
+    } catch (error) {
+        console.error("Error notifying trainee about M-FVF:", error);
+    }
+};
+
+const signMfvfRequest = async (month, request) => {
+    if (!selectedTraineeId || !month || !request) return;
+    const signatureName = await CustomModal.prompt("Type your full legal name to sign and return this M-FVF:", profileData.name || '', "Sign M-FVF");
+    if (!signatureName || !signatureName.trim()) return;
+
+    try {
+        const signedAt = new Date().toISOString();
+        await setDoc(getMfvfVerificationRef(selectedTraineeId, month), {
+            status: 'signed',
+            signedAt,
+            supervisorId: userId,
+            supervisorName: profileData.name || request.supervisorName || 'Supervisor',
+            supervisorSignatureName: signatureName.trim(),
+            supervisorComments: '',
+            updatedAt: signedAt
+        }, { merge: true });
+
+        await notifyMfvfTrainee(request, `${profileData.name || 'Your supervisor'} signed and returned your ${request.monthLabel || dayjs(month).format('MMMM YYYY')} M-FVF.`, 'mfvf_signed');
+        await CustomModal.alert("M-FVF signed and returned to the trainee.", "Signed");
+        selectTrainee(selectedTraineeId);
+    } catch (error) {
+        console.error("Error signing M-FVF:", error);
+        await CustomModal.alert("Failed to sign M-FVF: " + error.message, "Sign Error");
+    }
+};
+
+const requestMfvfChanges = async (month, request) => {
+    if (!selectedTraineeId || !month || !request) return;
+    const comments = await CustomModal.prompt("What should the trainee change before you sign?", request.supervisorComments || '', "Request Changes");
+    if (comments === null) return;
+
+    try {
+        await setDoc(getMfvfVerificationRef(selectedTraineeId, month), {
+            status: 'changes_requested',
+            supervisorComments: comments.trim(),
+            reviewedAt: new Date().toISOString(),
+            supervisorId: userId,
+            supervisorName: profileData.name || request.supervisorName || 'Supervisor',
+            updatedAt: new Date().toISOString()
+        }, { merge: true });
+
+        await notifyMfvfTrainee(request, `${profileData.name || 'Your supervisor'} requested changes on your ${request.monthLabel || dayjs(month).format('MMMM YYYY')} M-FVF.`, 'mfvf_changes_requested');
+        await CustomModal.alert("Change request sent to the trainee.", "Changes Requested");
+        selectTrainee(selectedTraineeId);
+    } catch (error) {
+        console.error("Error requesting M-FVF changes:", error);
+        await CustomModal.alert("Failed to request changes: " + error.message, "Request Error");
     }
 };
 
@@ -3354,7 +3682,7 @@ function init() {
         });
     }
 
-    if (generateMfvfBtn) generateMfvfBtn.addEventListener('click', openPdfViewer);
+    if (generateMfvfBtn) generateMfvfBtn.addEventListener('click', openMfvfWorkflowModal);
     if (pdfCloseBtn) pdfCloseBtn.addEventListener('click', closePdfViewer);
 
     // Close on Escape key
@@ -3390,31 +3718,12 @@ function init() {
     if (mfvfCancel) mfvfCancel.addEventListener('click', () => mfvfModal.classList.add('hidden'));
 
     if (mfvfGenerateConfirm) mfvfGenerateConfirm.addEventListener('click', async () => {
-        const selectedMonth = monthSelector.value;
-        const supName = mfvfSupervisorSelect.value;
-        const supervisor = profileData.supervisors.find(s => s.name === supName);
-
-        if (!supervisor) {
-            await CustomModal.alert("Please select a supervisor", "Selection Required");
-            return;
-        }
-
-        const [year, month] = selectedMonth.split('-');
-        const entries = allEntries.filter(e => {
-            const d = dayjs(e.date);
-            return d.year() == year && (d.month() + 1) == month;
-        });
-
-        let isSigned = false;
-        if (userId !== 'guest') {
-            const verificationRef = doc(db, `users/${userId}/verifications/${selectedMonth}`);
-            const verifSnap = await getDoc(verificationRef);
-            isSigned = verifSnap.exists() && verifSnap.data().status === 'signed';
-        }
-
-        generateMfvfPdf(entries, supervisor, selectedMonth, isSigned);
         mfvfModal.classList.add('hidden');
+        openPdfViewer();
     });
+
+    const mfvfSendSupervisorBtn = document.getElementById('mfvf-send-supervisor-btn');
+    if (mfvfSendSupervisorBtn) mfvfSendSupervisorBtn.addEventListener('click', sendMfvfToSupervisor);
 
     if (pdfDownloadBtn) {
         pdfDownloadBtn.addEventListener('click', () => {
