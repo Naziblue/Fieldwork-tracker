@@ -1856,8 +1856,8 @@ const sendMfvfToSupervisor = async (options = {}) => {
     // If no draft PDF — prompt trainee to download first
     if (!draftPdfUrl) {
         const go = await CustomModal.confirm(
-            'No downloaded PDF found for this month. Please click "Download PDF" first to generate and save your filled form, then send it to your supervisor.',
-            'Download Required'
+            'No saved form found for this month. Please click "Save to Cloud" first to generate and save your filled form, then send it to your supervisor.',
+            'Save to Cloud Required'
         );
         if (go) {
             if (typeof window.openMfvfPdfViewer === 'function') window.openMfvfPdfViewer();
@@ -4222,57 +4222,62 @@ function init() {
 
         const filename = `MFVF_${(profileData.name || 'Trainee').replace(/\s+/g, '_')}_${selectedMonth}.pdf`;
 
-        // ─── Trigger local download of the FILLED PDF ───
-        try {
-            doc.save(filename);
-        } catch (err) {
-            console.warn('M-FVF local download failed:', err);
+        // ─── Save the filled PDF to Firebase Cloud (so it can be sent to the supervisor) ───
+        if (!userId || userId === 'guest') {
+            await CustomModal.alert('Please sign in to save your M-FVF to the cloud.', 'Sign In Required');
+            return;
+        }
+        if (!storage) {
+            await CustomModal.alert('Firebase Storage is not ready yet. Please refresh and try again.', 'Storage Not Ready');
+            return;
         }
 
-        // ─── Upload to Firebase Storage ───
-        if (userId && userId !== 'guest' && storage) {
-            try {
-                const pdfBlob = doc.output('blob');
-                const storagePath = `mfvf/${userId}/${selectedMonth}/draft.pdf`;
-                const fileRef = storageRef(storage, storagePath);
-                await uploadBytes(fileRef, pdfBlob, { contentType: 'application/pdf' });
-                const downloadUrl = await getDownloadURL(fileRef);
+        try {
+            const pdfBlob = doc.output('blob');
+            const storagePath = `mfvf/${userId}/${selectedMonth}/draft.pdf`;
+            const fileRef = storageRef(storage, storagePath);
+            await uploadBytes(fileRef, pdfBlob, { contentType: 'application/pdf' });
+            const downloadUrl = await getDownloadURL(fileRef);
 
-                await setDoc(getMfvfVerificationRef(userId, selectedMonth), {
-                    status: 'draft',
-                    month: selectedMonth,
-                    monthLabel,
-                    traineeId: userId,
-                    traineeName: profileData.name || '',
-                    traineeEmail: profileData.email || auth.currentUser?.email || '',
-                    bacbId: profileData.rbtNumber || '',
-                    supervisorName: supervisorProfile?.name || topSupervisorName || '',
-                    supervisorEmail: supervisorProfile?.email || '',
-                    supervisorCert: supervisorProfile?.cert || '',
-                    draftPdfPath: storagePath,
-                    draftPdfUrl: downloadUrl,
-                    draftPdfName: filename,
-                    formData: {
-                        state: stateEntry?.state || '',
-                        country: countryEntry?.country || 'United States',
-                        independentHours: summary.unsupervised,
-                        supervisedHours: summary.supervised,
-                        totalHours: summary.total,
-                        restrictedHours: summary.restricted,
-                        unrestrictedHours: summary.unrestricted,
-                        observationMinutes: summary.observationMinutes,
-                        supervisionPercentage: summary.percentage,
-                        individualSupervision: summary.individualSupervision,
-                        groupSupervision: summary.groupSupervision
-                    },
-                    entryCount: monthEntries.length,
-                    updatedAt: new Date().toISOString()
-                }, { merge: true });
+            await setDoc(getMfvfVerificationRef(userId, selectedMonth), {
+                status: 'draft',
+                month: selectedMonth,
+                monthLabel,
+                traineeId: userId,
+                traineeName: profileData.name || '',
+                traineeEmail: profileData.email || auth.currentUser?.email || '',
+                bacbId: profileData.rbtNumber || '',
+                supervisorName: supervisorProfile?.name || topSupervisorName || '',
+                supervisorEmail: supervisorProfile?.email || '',
+                supervisorCert: supervisorProfile?.cert || '',
+                draftPdfPath: storagePath,
+                draftPdfUrl: downloadUrl,
+                draftPdfName: filename,
+                formData: {
+                    state: stateEntry?.state || '',
+                    country: countryEntry?.country || 'United States',
+                    independentHours: summary.unsupervised,
+                    supervisedHours: summary.supervised,
+                    totalHours: summary.total,
+                    restrictedHours: summary.restricted,
+                    unrestrictedHours: summary.unrestricted,
+                    observationMinutes: summary.observationMinutes,
+                    supervisionPercentage: summary.percentage,
+                    individualSupervision: summary.individualSupervision,
+                    groupSupervision: summary.groupSupervision
+                },
+                entryCount: monthEntries.length,
+                updatedAt: new Date().toISOString()
+            }, { merge: true });
 
-                showPdfSendToast('PDF downloaded & saved ✓');
-            } catch (err) {
-                console.warn('M-FVF draft upload failed (non-critical):', err);
-            }
+            showPdfSendToast('Saved to cloud ✓ — ready to send');
+        } catch (err) {
+            console.error('M-FVF cloud save failed:', err);
+            await CustomModal.alert(
+                'Could not save your M-FVF to the cloud. Please check your connection and try again.\n\n' + (err?.message || err),
+                'Cloud Save Failed'
+            );
+            throw err;
         }
     }
 
