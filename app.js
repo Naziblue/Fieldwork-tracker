@@ -4194,47 +4194,371 @@ function init() {
         }
     }
 
-    function openPdfViewer() {
+    // ===== CUSTOM INTERACTIVE M-FVF EDITOR (PDF.js render + form overlay + signature) =====
+    const LOCAL_TEMPLATE_URL = 'mfvf-template.pdf';
+    let mfvfEditorState = { month: null, scale: 1, pageW: 612, pageH: 792, fields: [], signatures: {}, templateBytes: null };
+    let signaturePadInstance = null;
+    let signatureTargetField = null;
 
-        if (!pdfPreviewModal || !pdfIframe) return;
+    // Gather all computed context for a given month (shared by editor + save)
+    function getMfvfContext(selectedMonth) {
+        const [year, month] = selectedMonth.split('-').map(Number);
+        const monthEntries = allEntries.filter(e => {
+            const d = dayjs(e.date);
+            return d.year() === year && (d.month() + 1) === month;
+        });
+        const summary = calculateSummaryData(monthEntries);
+        const monthLabel = dayjs(`${year}-${String(month).padStart(2, '0')}-01`).format('MMMM YYYY');
+
+        const supervisorHoursMap = {};
+        monthEntries.forEach(e => {
+            if (e.supervisorName && e.supervisionType !== 'No Supervision') {
+                const h = calculateHours(e.startTime, e.endTime);
+                supervisorHoursMap[e.supervisorName] = (supervisorHoursMap[e.supervisorName] || 0) + h;
+            }
+        });
+        const topSupervisorName = Object.entries(supervisorHoursMap).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
+        const supervisorProfile = profileData.supervisors?.find(s => s.name === topSupervisorName);
+        const stateEntry = monthEntries.find(e => e.state);
+        const countryEntry = monthEntries.find(e => e.country);
+
+        return { year, month, monthEntries, summary, monthLabel, supervisorHoursMap, topSupervisorName, supervisorProfile, stateEntry, countryEntry };
+    }
+
+    // Map computed data to the real BACB form field names
+    function computeMfvfFieldValues(selectedMonth) {
+        const ctx = getMfvfContext(selectedMonth);
+        const { summary, supervisorProfile, topSupervisorName, stateEntry, countryEntry, year, month } = ctx;
+        const fmtHH = (hrs) => String(Math.floor(hrs)).padStart(2, '0');
+        const fmtMM = (hrs) => String(Math.round((hrs % 1) * 60)).padStart(2, '0');
+        const obsTotal = Math.round(summary.observationMinutes || 0);
+
+        return {
+            'TRAINEE_NAME': profileData.name || '',
+            'TRAINEE_BACB_ID': profileData.rbtNumber || '',
+            'TRAINEE_CERTIFICATE_MONTH/YEAR': `${String(month).padStart(2, '0')}/${year}`,
+            'TRAINEE_FIELDWORK_STATE': stateEntry?.state || '',
+            'TRAINEE_FIELDWORK_COUNTRY': countryEntry?.country || 'United States',
+            'RESPONSIBLE_SUPERVISOR_NAME': supervisorProfile?.name || topSupervisorName || '',
+            'RESPONSIBLE_SUPERVISOR_BACB_ID': supervisorProfile?.cert || '',
+            'Independent_Hours': fmtHH(summary.unsupervised),
+            'Independent_Minutes': fmtMM(summary.unsupervised),
+            'Supervised_Hours': fmtHH(summary.supervised),
+            'Supervised_Minutes': fmtMM(summary.supervised),
+            'Observation_Hours': String(Math.floor(obsTotal / 60)).padStart(2, '0'),
+            'Independent_Minutes 3': String(obsTotal % 60).padStart(2, '0'),
+            'Total_Fieldwork_Hours': fmtHH(summary.total),
+            'Total_Fieldwork_Minutes': fmtMM(summary.total),
+            'PERCENT_HOURS_SUPERVISED': `${summary.percentage.toFixed(2)}%`,
+            'TRAINEE_SIGNATURE_DATE': '',
+            'SUPERVISOR_SIGNATURE_DATE': ''
+        };
+    }
+
+    // Render the BACB template to canvas and overlay interactive inputs over each real field
+    async function renderMfvfEditor(selectedMonth) {
+        const stage = document.getElementById('pdf-editor-stage');
+        const canvas = document.getElementById('pdf-editor-canvas');
+        const overlay = document.getElementById('pdf-overlay-layer');
+        const loading = document.getElementById('pdf-editor-loading');
+        const scroll = document.getElementById('pdf-editor-scroll');
+        if (!stage || !canvas || !overlay) return;
+
+        if (pdfIframe) pdfIframe.classList.add('hidden');
+        if (pdfFallback) pdfFallback.classList.add('hidden');
+        stage.style.display = 'none';
+        overlay.innerHTML = '';
+        if (loading) loading.classList.remove('hidden');
+
+        try {
+            if (!window.pdfjsLib || !window.PDFLib) throw new Error('PDF libraries not loaded');
+
+            const resp = await fetch(LOCAL_TEMPLATE_URL);
+            if (!resp.ok) throw new Error(`Template fetch failed: ${resp.status}`);
+            const buf = await resp.arrayBuffer();
+            mfvfEditorState.templateBytes = buf.slice(0);
+            mfvfEditorState.month = selectedMonth;
+            mfvfEditorState.signatures = {};
+
+            // 1) Render page 1 with PDF.js
+            const pdfjsDoc = await window.pdfjsLib.getDocument({ data: buf.slice(0) }).promise;
+            const page = await pdfjsDoc.getPage(1);
+            const baseViewport = page.getViewport({ scale: 1 });
+            mfvfEditorState.pageW = baseViewport.width;
+            mfvfEditorState.pageH = baseViewport.height;
+
+            const avail = (scroll?.clientWidth || 760) - 32;
+            let scale = avail / baseViewport.width;
+            scale = Math.max(1.0, Math.min(scale, 2.0));
+            mfvfEditorState.scale = scale;
+
+            const viewport = page.getViewport({ scale });
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = Math.floor(viewport.width * dpr);
+            canvas.height = Math.floor(viewport.height * dpr);
+            canvas.style.width = viewport.width + 'px';
+            canvas.style.height = viewport.height + 'px';
+            stage.style.width = viewport.width + 'px';
+            stage.style.height = viewport.height + 'px';
+            const ctx2d = canvas.getContext('2d');
+            ctx2d.setTransform(dpr, 0, 0, dpr, 0, 0);
+            await page.render({ canvasContext: ctx2d, viewport }).promise;
+
+            // 2) Read real field rectangles with pdf-lib and build overlay inputs
+            const { PDFDocument } = window.PDFLib;
+            const libDoc = await PDFDocument.load(mfvfEditorState.templateBytes.slice(0));
+            const form = libDoc.getForm();
+            const fields = form.getFields();
+            const values = computeMfvfFieldValues(selectedMonth);
+            mfvfEditorState.fields = [];
+
+            for (const f of fields) {
+                const name = f.getName();
+                const type = f.constructor.name;
+                if (type !== 'PDFTextField' && type !== 'PDFSignature') continue;
+                let widgets = [];
+                try { widgets = f.acroField.getWidgets(); } catch (e) { /* none */ }
+                const w0 = widgets[0];
+                if (!w0) continue;
+                const r = w0.getRectangle();
+                const left = r.x * scale;
+                const top = (mfvfEditorState.pageH - (r.y + r.height)) * scale;
+                const width = r.width * scale;
+                const height = r.height * scale;
+                mfvfEditorState.fields.push({ name, type, rect: r });
+
+                if (type === 'PDFTextField') {
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.dataset.fieldName = name;
+                    input.value = values[name] || '';
+                    input.className = 'mfvf-overlay-input';
+                    input.style.position = 'absolute';
+                    input.style.left = left + 'px';
+                    input.style.top = top + 'px';
+                    input.style.width = width + 'px';
+                    input.style.height = height + 'px';
+                    input.style.fontSize = Math.max(7, Math.min(height * 0.72, 13)) + 'px';
+                    overlay.appendChild(input);
+                } else {
+                    // Signature field → interactive zone
+                    const zone = document.createElement('div');
+                    zone.dataset.sigField = name;
+                    zone.className = 'mfvf-sig-zone';
+                    zone.style.position = 'absolute';
+                    zone.style.left = left + 'px';
+                    zone.style.top = top + 'px';
+                    zone.style.width = width + 'px';
+                    zone.style.height = height + 'px';
+                    if (name === 'TRAINEE_SIGNATURE') {
+                        zone.innerHTML = '<span class="mfvf-sig-label"><i class="ph-fill ph-pen-nib"></i> Tap to sign</span>';
+                        zone.addEventListener('click', () => openSignaturePad('TRAINEE_SIGNATURE'));
+                    } else {
+                        zone.innerHTML = '<span class="mfvf-sig-label" style="color:#94a3b8;">Supervisor signs</span>';
+                        zone.style.pointerEvents = 'none';
+                        zone.style.borderColor = 'rgba(148,163,184,0.4)';
+                        zone.style.background = 'rgba(148,163,184,0.06)';
+                    }
+                    overlay.appendChild(zone);
+                }
+            }
+
+            stage.style.display = 'block';
+        } catch (err) {
+            console.error('M-FVF editor render failed:', err);
+            if (pdfFallback) pdfFallback.classList.remove('hidden');
+        } finally {
+            if (loading) loading.classList.add('hidden');
+        }
+    }
+
+    // Signature pad modal
+    function openSignaturePad(fieldName) {
+        signatureTargetField = fieldName;
+        const modal = document.getElementById('signature-modal');
+        const cv = document.getElementById('signature-pad-canvas');
+        if (!modal || !cv) return;
+        modal.classList.remove('hidden');
+        // Size the canvas to its displayed box (now that it's visible)
+        const ratio = window.devicePixelRatio || 1;
+        cv.width = cv.offsetWidth * ratio;
+        cv.height = cv.offsetHeight * ratio;
+        const cctx = cv.getContext('2d');
+        cctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+        if (window.SignaturePad) {
+            // Transparent background → exported PNG contains only the strokes (no white box over the form line)
+            signaturePadInstance = new window.SignaturePad(cv, { penColor: '#0f172a', backgroundColor: 'rgba(255,255,255,0)' });
+        }
+    }
+
+    function closeSignaturePad() {
+        const modal = document.getElementById('signature-modal');
+        if (modal) modal.classList.add('hidden');
+        if (signaturePadInstance) { signaturePadInstance.off?.(); signaturePadInstance = null; }
+        signatureTargetField = null;
+    }
+
+    function applySignature() {
+        if (!signaturePadInstance || signaturePadInstance.isEmpty()) {
+            closeSignaturePad();
+            return;
+        }
+        const dataUrl = signaturePadInstance.toDataURL('image/png');
+        const fieldName = signatureTargetField;
+        mfvfEditorState.signatures[fieldName] = dataUrl;
+
+        const overlay = document.getElementById('pdf-overlay-layer');
+        const zone = overlay?.querySelector(`[data-sig-field="${fieldName}"]`);
+        if (zone) {
+            zone.innerHTML = `<img src="${dataUrl}" style="width:100%;height:100%;object-fit:contain;" alt="signature"/>`;
+            zone.classList.add('signed');
+        }
+        if (fieldName === 'TRAINEE_SIGNATURE') {
+            const dateInput = overlay?.querySelector('[data-field-name="TRAINEE_SIGNATURE_DATE"]');
+            if (dateInput && !dateInput.value) dateInput.value = dayjs().format('MM/DD/YYYY');
+        }
+        closeSignaturePad();
+    }
+
+    // Save: fill template fields + draw signature → upload to cloud + auto-download
+    async function saveMfvfEditor() {
+        const selectedMonth = mfvfEditorState.month || pdfMonthSelector?.value || monthSelector?.value;
+        if (!selectedMonth) {
+            await CustomModal.alert('Please select a month first.', 'No Month Selected');
+            return;
+        }
+        if (!userId || userId === 'guest') {
+            await CustomModal.alert('Please sign in to save your M-FVF to the cloud.', 'Sign In Required');
+            return;
+        }
+        if (!storage) {
+            await CustomModal.alert('Firebase Storage is not ready yet. Please refresh and try again.', 'Storage Not Ready');
+            return;
+        }
+        if (!mfvfEditorState.templateBytes) {
+            await CustomModal.alert('The form is still loading. Please wait a moment and try again.', 'Please Wait');
+            return;
+        }
+
+        try {
+            const { PDFDocument } = window.PDFLib;
+            const doc = await PDFDocument.load(mfvfEditorState.templateBytes.slice(0));
+            const form = doc.getForm();
+
+            // Fill text fields from the overlay inputs
+            const overlay = document.getElementById('pdf-overlay-layer');
+            const inputs = overlay ? overlay.querySelectorAll('input[data-field-name]') : [];
+            inputs.forEach(inp => {
+                const name = inp.dataset.fieldName;
+                const val = inp.value;
+                if (!val) return;
+                try { form.getTextField(name).setText(val); } catch (e) { /* not a text field */ }
+            });
+
+            // Draw any captured signatures at their field rectangles
+            const page = doc.getPages()[0];
+            for (const [fieldName, dataUrl] of Object.entries(mfvfEditorState.signatures)) {
+                const f = mfvfEditorState.fields.find(x => x.name === fieldName);
+                if (!f) continue;
+                const png = await doc.embedPng(dataUrl);
+                const r = f.rect;
+                const pad = 2;
+                const maxW = r.width - 2 * pad;
+                const maxH = r.height - 2 * pad;
+                const ar = png.width / png.height;
+                let dw = maxW;
+                let dh = dw / ar;
+                if (dh > maxH) { dh = maxH; dw = dh * ar; }
+                page.drawImage(png, { x: r.x + (r.width - dw) / 2, y: r.y + (r.height - dh) / 2, width: dw, height: dh });
+            }
+
+            // Flatten so values render in every viewer (browsers, Google viewer, etc.)
+            try { form.flatten(); } catch (e) { console.warn('Flatten failed (non-critical):', e); }
+
+            const bytes = await doc.save();
+            const blob = new Blob([bytes], { type: 'application/pdf' });
+
+            // Upload to cloud
+            const filename = `MFVF_${(profileData.name || 'Trainee').replace(/\s+/g, '_')}_${selectedMonth}.pdf`;
+            const storagePath = `mfvf/${userId}/${selectedMonth}/draft.pdf`;
+            const fileRef = storageRef(storage, storagePath);
+            await uploadBytes(fileRef, blob, { contentType: 'application/pdf' });
+            const downloadUrl = await getDownloadURL(fileRef);
+
+            // Save verification record (status stays 'draft' → ready to Send to Supervisor)
+            const ctx = getMfvfContext(selectedMonth);
+            const { summary, monthLabel, supervisorProfile, topSupervisorName, stateEntry, countryEntry, monthEntries } = ctx;
+            const hasTraineeSignature = !!mfvfEditorState.signatures['TRAINEE_SIGNATURE'];
+            await setDoc(getMfvfVerificationRef(userId, selectedMonth), {
+                status: 'draft',
+                month: selectedMonth,
+                monthLabel,
+                traineeId: userId,
+                traineeName: profileData.name || '',
+                traineeEmail: profileData.email || auth.currentUser?.email || '',
+                bacbId: profileData.rbtNumber || '',
+                supervisorName: supervisorProfile?.name || topSupervisorName || '',
+                supervisorEmail: supervisorProfile?.email || '',
+                supervisorCert: supervisorProfile?.cert || '',
+                draftPdfPath: storagePath,
+                draftPdfUrl: downloadUrl,
+                draftPdfName: filename,
+                traineeSigned: hasTraineeSignature,
+                formData: {
+                    state: stateEntry?.state || '',
+                    country: countryEntry?.country || 'United States',
+                    independentHours: summary.unsupervised,
+                    supervisedHours: summary.supervised,
+                    totalHours: summary.total,
+                    restrictedHours: summary.restricted,
+                    unrestrictedHours: summary.unrestricted,
+                    observationMinutes: summary.observationMinutes,
+                    supervisionPercentage: summary.percentage,
+                    individualSupervision: summary.individualSupervision,
+                    groupSupervision: summary.groupSupervision
+                },
+                entryCount: monthEntries.length,
+                updatedAt: new Date().toISOString()
+            }, { merge: true });
+
+            // Auto-download the filled official form
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+
+            showPdfSendToast('Saved to cloud & downloaded ✓');
+        } catch (err) {
+            console.error('M-FVF editor save failed:', err);
+            await CustomModal.alert(
+                'Could not save your M-FVF. Please check your connection and try again.\n\n' + (err?.message || err),
+                'Save Failed'
+            );
+            throw err;
+        }
+    }
+
+    function openPdfViewer() {
+        if (!pdfPreviewModal) return;
 
         // Populate month picker & auto-fill panel
         populatePdfMonthSelector();
-        renderAutofillPanel(pdfMonthSelector.value || monthSelector.value);
+        const month = pdfMonthSelector.value || monthSelector.value;
+        renderAutofillPanel(month);
         renderPdfSupervisorSendMenu();
         setPdfSupervisorSendVisible(true);
         if (pdfSendSupervisorMenu) pdfSendSupervisorMenu.classList.add('hidden');
         if (pdfSendToast) pdfSendToast.classList.add('hidden');
 
-        // Reset iframe state
-        pdfIframe.classList.remove('hidden');
-        if (pdfFallback) pdfFallback.classList.add('hidden');
-        pdfIframe.src = BACB_PDF_URL;
-
-        // Show modal
+        // Show modal first so the editor can measure its container width
         pdfPreviewModal.classList.remove('hidden');
         pdfPreviewModal.classList.add('flex');
         document.body.style.overflow = 'hidden';
 
-        // Detect iframe load issues
-        let loadTimer = setTimeout(() => {
-            try { const _ = pdfIframe.contentWindow.location.href; } catch (e) { /* cross-origin fine */ }
-        }, 3000);
-
-        pdfIframe.onload = () => {
-            clearTimeout(loadTimer);
-            try {
-                const doc = pdfIframe.contentDocument || pdfIframe.contentWindow.document;
-                if (doc && doc.body && doc.body.innerHTML.trim() === '') {
-                    pdfIframe.src = `https://docs.google.com/viewer?url=${encodeURIComponent(BACB_PDF_URL)}&embedded=true`;
-                }
-            } catch (e) { /* cross-origin success */ }
-        };
-        pdfIframe.onerror = () => {
-            clearTimeout(loadTimer);
-            pdfIframe.classList.add('hidden');
-            if (pdfFallback) pdfFallback.classList.remove('hidden');
-        };
+        // Render the interactive editor
+        renderMfvfEditor(month);
     }
     window.openMfvfPdfViewer = openPdfViewer;
     window.openMfvfRequestPdfViewer = openMfvfRequestPdfViewer;
@@ -4245,13 +4569,23 @@ function init() {
         pdfPreviewModal.classList.remove('flex');
         document.body.style.overflow = '';
         if (pdfIframe) pdfIframe.src = '';
+        const overlay = document.getElementById('pdf-overlay-layer');
+        if (overlay) overlay.innerHTML = '';
+        const stage = document.getElementById('pdf-editor-stage');
+        if (stage) stage.style.display = 'none';
     }
 
-    // Month change → re-render panel
+    // Signature modal button wiring
+    document.getElementById('signature-clear-btn')?.addEventListener('click', () => { signaturePadInstance?.clear(); });
+    document.getElementById('signature-cancel-btn')?.addEventListener('click', closeSignaturePad);
+    document.getElementById('signature-apply-btn')?.addEventListener('click', applySignature);
+
+    // Month change → re-render panel + editor
     if (pdfMonthSelector) {
         pdfMonthSelector.addEventListener('change', () => {
             renderAutofillPanel(pdfMonthSelector.value);
             renderPdfSupervisorSendMenu();
+            renderMfvfEditor(pdfMonthSelector.value);
         });
     }
 
@@ -4308,7 +4642,7 @@ function init() {
             const origHtml = pdfDownloadBtnEl.innerHTML;
             pdfDownloadBtnEl.innerHTML = '<i class="ph-fill ph-spinner-gap animate-spin text-sm"></i> Saving...';
             try {
-                await generateAndDownloadMfvfPdf();
+                await saveMfvfEditor();
             } finally {
                 pdfDownloadBtnEl.disabled = false;
                 pdfDownloadBtnEl.innerHTML = origHtml;

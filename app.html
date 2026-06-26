@@ -46,6 +46,63 @@
     <script src="tailwind-config.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="style.css?v=unread_chat_highlight_20260614">
+
+    <!-- M-FVF interactive editor overlay styling -->
+    <style>
+        #pdf-overlay-layer .mfvf-overlay-input {
+            box-sizing: border-box;
+            border: 1px solid rgba(99, 102, 241, 0.45);
+            background: rgba(99, 102, 241, 0.08);
+            color: #0f172a;
+            font-weight: 600;
+            font-family: 'Inter', system-ui, sans-serif;
+            padding: 0 3px;
+            border-radius: 2px;
+            outline: none;
+            line-height: 1;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        #pdf-overlay-layer .mfvf-overlay-input:hover {
+            background: rgba(99, 102, 241, 0.14);
+        }
+        #pdf-overlay-layer .mfvf-overlay-input:focus {
+            background: rgba(255, 255, 255, 0.95);
+            border-color: #6366f1;
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.35);
+        }
+        #pdf-overlay-layer .mfvf-sig-zone {
+            box-sizing: border-box;
+            border: 1.5px dashed rgba(16, 185, 129, 0.6);
+            background: rgba(16, 185, 129, 0.08);
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            overflow: hidden;
+            transition: background 0.15s;
+        }
+        #pdf-overlay-layer .mfvf-sig-zone:hover {
+            background: rgba(16, 185, 129, 0.16);
+        }
+        #pdf-overlay-layer .mfvf-sig-zone.signed {
+            border-style: solid;
+            border-color: rgba(16, 185, 129, 0.35);
+            background: transparent;
+            cursor: pointer;
+        }
+        #pdf-overlay-layer .mfvf-sig-label {
+            font-size: 9px;
+            font-weight: 700;
+            color: #059669;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            white-space: nowrap;
+        }
+    </style>
 </head>
 
 <body class="bg-background text-text antialiased h-screen overflow-hidden flex flex-col md:flex-row">
@@ -1122,10 +1179,23 @@
                 </div>
             </div>
 
-            <!-- ===== RIGHT PANEL: PDF Viewer ===== -->
-            <div class="flex-1 relative overflow-hidden p-3">
+            <!-- ===== RIGHT PANEL: Interactive PDF Editor ===== -->
+            <div id="pdf-editor-scroll" class="flex-1 relative overflow-auto p-4" style="background: rgba(255,255,255,0.03);">
+                <!-- Custom interactive editor stage (canvas render + form overlay) -->
+                <div id="pdf-editor-stage" class="mx-auto relative shadow-2xl rounded-lg overflow-hidden" style="display:none; background:#fff;">
+                    <canvas id="pdf-editor-canvas" class="block"></canvas>
+                    <div id="pdf-overlay-layer" class="absolute inset-0"></div>
+                </div>
+
+                <!-- Loading state -->
+                <div id="pdf-editor-loading" class="absolute inset-0 flex flex-col items-center justify-center gap-3 text-text-muted">
+                    <i class="ph-fill ph-spinner-gap text-3xl animate-spin"></i>
+                    <p class="text-sm">Loading editable form…</p>
+                </div>
+
+                <!-- Iframe retained for supervisor read-only request view -->
                 <iframe id="pdf-iframe"
-                    class="w-full h-full rounded-xl shadow-2xl border border-white/10"
+                    class="hidden w-full h-full rounded-xl shadow-2xl border border-white/10"
                     style="background: #fff;"
                     title="BACB 2027 Monthly Fieldwork Verification Form">
                 </iframe>
@@ -1155,8 +1225,41 @@
     <!-- We are removing the old edit modal and using the slide-over for both add and edit -->
     <div id="edit-modal" class="hidden"></div>
 
+    <!-- Signature capture modal -->
+    <div id="signature-modal" class="hidden fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="glass-panel rounded-2xl p-5 w-[440px] max-w-[92vw] border border-white/10 shadow-2xl">
+            <div class="flex items-center gap-2 mb-1">
+                <i class="ph-fill ph-pen-nib text-emerald-400 text-lg"></i>
+                <h3 class="text-lg font-bold text-white">Draw Your Signature</h3>
+            </div>
+            <p class="text-xs text-text-muted mb-3">Sign in the box below using your mouse, trackpad, or finger.</p>
+            <div class="rounded-xl bg-white overflow-hidden border border-white/10">
+                <canvas id="signature-pad-canvas" style="width:100%; height:180px; display:block; touch-action:none;"></canvas>
+            </div>
+            <div class="flex items-center justify-between mt-4 gap-2">
+                <button id="signature-clear-btn" class="px-4 py-2 rounded-xl text-sm font-medium text-text-muted hover:text-white border border-white/10 transition-colors">
+                    <i class="ph ph-eraser mr-1"></i>Clear
+                </button>
+                <div class="flex gap-2">
+                    <button id="signature-cancel-btn" class="px-4 py-2 rounded-xl text-sm font-medium text-text-muted hover:text-white border border-white/10 transition-colors">Cancel</button>
+                    <button id="signature-apply-btn" class="px-5 py-2 rounded-xl text-sm font-semibold text-white transition-all hover:scale-105" style="background:linear-gradient(135deg,#10b981,#059669);">
+                        <i class="ph-fill ph-check mr-1"></i>Apply Signature
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-    <script type="module" src="app.js?v=cloud_function_region_fix_20260625"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+    <script>
+        // Configure PDF.js worker (matches the library version above)
+        if (window.pdfjsLib) {
+            window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+    </script>
+    <script type="module" src="app.js?v=custom_pdf_editor_20260626"></script>
 
 
     <!-- Responsive Sidebar Script -->
