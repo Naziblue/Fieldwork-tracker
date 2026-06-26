@@ -4220,8 +4220,14 @@ function init() {
         );
 
 
-        // ─── Upload to Firebase Storage (no local download) ───
         const filename = `MFVF_${(profileData.name || 'Trainee').replace(/\s+/g, '_')}_${selectedMonth}.pdf`;
+
+        // ─── Trigger local download of the FILLED PDF ───
+        try {
+            doc.save(filename);
+        } catch (err) {
+            console.warn('M-FVF local download failed:', err);
+        }
 
         // ─── Upload to Firebase Storage ───
         if (userId && userId !== 'guest' && storage) {
