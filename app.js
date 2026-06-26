@@ -754,6 +754,7 @@ const switchView = async (viewId) => {
             case 'monthly': updateMonthlyView(); break;
             case 'yearly': updateYearlyView(); break;
             case 'all-time': updateAllTimeView(); break;
+            case 'archived-mfvf': loadArchivedMfvfList(); break;
             case 'supervisor-dashboard': showTraineeList(); break;
             case 'chat': updateChatView(); break;
         }
@@ -2561,6 +2562,117 @@ const requestMfvfChanges = async (month, request) => {
     } catch (error) {
         console.error("Error requesting M-FVF changes:", error);
         await CustomModal.alert("Failed to request changes: " + error.message, "Request Error");
+    }
+};
+
+// --- Archived M-FVF List ---
+
+const loadArchivedMfvfList = async () => {
+    if (!userId || userId === 'guest') return;
+
+    const container = document.getElementById('archived-mfvf-list');
+    if (!container) return;
+
+    try {
+        const verificationsRef = collection(db, 'users', userId, 'verifications');
+        const querySnapshot = await getDocs(verificationsRef);
+
+        if (querySnapshot.empty) {
+            container.innerHTML = `
+                <div class="glass-panel rounded-xl p-8 text-center text-text-muted">
+                    <i class="ph ph-file-archive text-4xl mb-3 opacity-50"></i>
+                    <p>No archived M-FVF forms yet. Save one to get started!</p>
+                </div>
+            `;
+            return;
+        }
+
+        const verifications = [];
+        querySnapshot.forEach(doc => {
+            verifications.push({ id: doc.id, ...doc.data() });
+        });
+
+        // Sort by month descending (newest first)
+        verifications.sort((a, b) => b.month.localeCompare(a.month));
+
+        // Create status color mapping
+        const statusColors = {
+            'not_started': { icon: 'file-plus', textClass: 'text-slate-300', bgClass: 'bg-slate-500/10' },
+            'draft': { icon: 'pencil-simple', textClass: 'text-blue-300', bgClass: 'bg-blue-500/10' },
+            'submitted': { icon: 'paper-plane-tilt', textClass: 'text-amber-300', bgClass: 'bg-amber-500/10' },
+            'changes_requested': { icon: 'warning-circle', textClass: 'text-orange-300', bgClass: 'bg-orange-500/10' },
+            'signed': { icon: 'check-circle', textClass: 'text-green-300', bgClass: 'bg-green-500/10' },
+            'rejected': { icon: 'x-circle', textClass: 'text-red-300', bgClass: 'bg-red-500/10' }
+        };
+
+        container.innerHTML = verifications.map(v => {
+            const [label, , , ] = getMfvfStatusConfig(v.status);
+            const colors = statusColors[v.status] || statusColors.not_started;
+
+            return `
+                <div class="glass-panel rounded-xl p-5 border border-white/5 hover:border-primary/30 transition-all">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex items-start gap-4 flex-1">
+                            <div class="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${colors.bgClass}">
+                                <i class="ph ph-${colors.icon} text-lg ${colors.textClass}"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-3 mb-2 flex-wrap">
+                                    <h3 class="text-lg font-bold text-white">${v.monthLabel || v.month}</h3>
+                                    <span class="px-2.5 py-1 rounded-lg text-xs font-semibold ${colors.textClass} ${colors.bgClass} border border-white/10">
+                                        ${label}
+                                    </span>
+                                </div>
+                                <div class="grid grid-cols-2 gap-3 text-sm text-text-muted">
+                                    <div>
+                                        <span class="text-text-muted">Supervisor:</span>
+                                        <p class="text-white font-medium">${v.supervisorName || '-'}</p>
+                                    </div>
+                                    <div>
+                                        <span class="text-text-muted">Total Hours:</span>
+                                        <p class="text-white font-medium">${v.formData?.totalHours?.toFixed(2) || '-'} hh</p>
+                                    </div>
+                                    <div>
+                                        <span class="text-text-muted">Supervised:</span>
+                                        <p class="text-white font-medium">${v.formData?.supervisionPercentage?.toFixed(2) || '-'}%</p>
+                                    </div>
+                                    <div>
+                                        <span class="text-text-muted">Submitted:</span>
+                                        <p class="text-white font-medium">${v.traineeSubmittedAt ? dayjs(v.traineeSubmittedAt).format('MMM D, YYYY') : '-'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 flex-shrink-0">
+                            ${v.draftPdfUrl ? `
+                                <a href="${v.draftPdfUrl}" target="_blank" rel="noopener noreferrer" class="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-primary/20 transition-colors" title="Download PDF">
+                                    <i class="ph ph-download text-lg text-primary"></i>
+                                </a>
+                            ` : ''}
+                            ${v.status === 'signed' && v.signedPdfUrl ? `
+                                <a href="${v.signedPdfUrl}" target="_blank" rel="noopener noreferrer" class="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-emerald-500/20 transition-colors" title="View Signed PDF">
+                                    <i class="ph ph-file-pdf text-lg text-emerald-400"></i>
+                                </a>
+                            ` : ''}
+                        </div>
+                    </div>
+                    ${v.supervisorComments ? `
+                        <div class="bg-white/5 rounded-lg p-3 text-sm">
+                            <p class="text-text-muted mb-1">Supervisor Comments:</p>
+                            <p class="text-white">${v.supervisorComments}</p>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }).join('');
+    } catch (err) {
+        console.error('Error loading archived M-FVFs:', err);
+        container.innerHTML = `
+            <div class="glass-panel rounded-xl p-8 text-center text-red-400">
+                <i class="ph ph-warning-circle text-4xl mb-3"></i>
+                <p>Error loading archived forms</p>
+            </div>
+        `;
     }
 };
 

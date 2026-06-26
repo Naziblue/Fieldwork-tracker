@@ -218,6 +218,12 @@
                     </button>
                     <button
                         class="view-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-muted hover:text-sidebar-text hover:bg-sidebar-text/5 transition-all group"
+                        data-view="archived-mfvf">
+                        <i class="ph ph-file-archive text-lg group-hover:text-emerald-400 transition-colors"></i>
+                        <span>Archived M-FVF</span>
+                    </button>
+                    <button
+                        class="view-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-muted hover:text-sidebar-text hover:bg-sidebar-text/5 transition-all group"
                         data-view="chat">
                         <i class="ph ph-chat-centered-text text-lg group-hover:text-primary transition-colors"></i>
                         <span>Messages</span>
@@ -634,6 +640,21 @@
                                     Digitally Sign Month
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ARCHIVED M-FVF VIEW -->
+                <div id="archived-mfvf-view" class="view-container hidden animate-fade-in max-w-7xl mx-auto">
+                    <div class="mb-6">
+                        <h2 class="text-3xl font-bold text-text tracking-tight">Archived M-FVF Forms</h2>
+                        <p class="text-text-muted mt-1">All your submitted Monthly Fieldwork Verification Forms.</p>
+                    </div>
+
+                    <div id="archived-mfvf-list" class="space-y-4">
+                        <div class="glass-panel rounded-xl p-8 text-center text-text-muted">
+                            <i class="ph ph-file-archive text-4xl mb-3 opacity-50"></i>
+                            <p>No archived M-FVF forms yet. Save one to get started!</p>
                         </div>
                     </div>
                 </div>
@@ -1134,7 +1155,7 @@
     <!-- We are removing the old edit modal and using the slide-over for both add and edit -->
     <div id="edit-modal" class="hidden"></div>
 
-    <script type="module" src="app.js?v=fill_bacb_form_20260625"></script>
+    <script type="module" src="app.js?v=archived_mfvf_view_20260625"></script>
 
     <!-- Responsive Sidebar Script -->
     <script>
