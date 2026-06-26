@@ -4105,7 +4105,8 @@ function init() {
             const countryEntry = monthEntries.find(e => e.country);
 
             // Call Cloud Function to fill BACB PDF (server-side, no CORS issues)
-            const functions = getFunctions();
+            // Specify region to match deployed function location
+            const functions = getFunctions(app, 'us-central1');
             const fillBACBForm = httpsCallable(functions, 'fillBACBForm');
 
             console.log('Calling Cloud Function to fill BACB form...');
