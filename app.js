@@ -2,6 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebas
 import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, signInAnonymously, signInWithCustomToken, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, setDoc, getDoc, query, where, getDocs, collectionGroup, serverTimestamp, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 
 // --- Config & State ---
 let firebaseConfig;
@@ -4099,88 +4100,57 @@ function init() {
         }
 
         try {
-            // Fetch the official BACB PDF
-            const pdfResponse = await fetch('https://www.bacb.com/wp-content/uploads/2025/03/2027-Monthly-Fieldwork-Verification-Form-Individual_260213-2-a.pdf');
-            if (!pdfResponse.ok) throw new Error('Failed to fetch BACB PDF');
-            const pdfArrayBuffer = await pdfResponse.arrayBuffer();
-
-            // Load the PDF with pdf-lib
-            const { PDFDocument } = window.PDFLib;
-            const pdfDoc = await PDFDocument.load(pdfArrayBuffer);
-            const form = pdfDoc.getForm();
-
             // Find state/country from entries
             const stateEntry = monthEntries.find(e => e.state);
             const countryEntry = monthEntries.find(e => e.country);
 
-            // List all available fields for debugging
-            const allFields = form.getFields();
-            console.log('Available PDF fields:', allFields.map(f => f.getName()));
+            // Call Cloud Function to fill BACB PDF (server-side, no CORS issues)
+            const functions = getFunctions();
+            const fillBACBForm = httpsCallable(functions, 'fillBACBForm');
 
-            // Fill form fields — mapping common BACB field names
-            const fieldMapping = {
-                'trainee.name': profileData.name || '',
-                'trainee.bacbId': profileData.rbtNumber || '',
-                'trainee.month': dayjs(`${year}-${String(month).padStart(2,'0')}-01`).format('MM/DD/YYYY'),
-                'trainee.state': stateEntry?.state || '',
-                'trainee.country': countryEntry?.country || 'United States',
-                'supervisor.name': supervisorProfile?.name || topSupervisorName || '',
-                'supervisor.cert': supervisorProfile?.cert || '',
-                'hours.independent.hours': fmtHH(summary.unsupervised),
-                'hours.independent.minutes': fmtMM(summary.unsupervised),
-                'hours.supervised.hours': fmtHH(summary.supervised),
-                'hours.supervised.minutes': fmtMM(summary.supervised),
-                'hours.observation.minutes': Math.round(summary.observationMinutes).toString(),
-                'hours.total.hours': fmtHH(summary.total),
-                'hours.total.minutes': fmtMM(summary.total),
-                'supervision.percentage': summary.percentage.toFixed(2),
-                'supervision.individual': `${fmtHH(summary.individualSupervision)} ${fmtMM(summary.individualSupervision)}`,
-                'supervision.group': `${fmtHH(summary.groupSupervision)} ${fmtMM(summary.groupSupervision)}`
-            };
+            console.log('Calling Cloud Function to fill BACB form...');
+            const result = await fillBACBForm({
+                traineeName: profileData.name || '',
+                bacbId: profileData.rbtNumber || '',
+                monthYear: dayjs(`${year}-${String(month).padStart(2,'0')}-01`).format('MM/DD/YYYY'),
+                state: stateEntry?.state || '',
+                country: countryEntry?.country || 'United States',
+                supervisorName: supervisorProfile?.name || topSupervisorName || '',
+                supervisorCert: supervisorProfile?.cert || '',
+                independentHours: fmtHH(summary.unsupervised),
+                independentMinutes: fmtMM(summary.unsupervised),
+                supervisedHours: fmtHH(summary.supervised),
+                supervisedMinutes: fmtMM(summary.supervised),
+                observationMinutes: Math.round(summary.observationMinutes).toString(),
+                totalHours: fmtHH(summary.total),
+                totalMinutes: fmtMM(summary.total),
+                supervisionPercentage: summary.percentage.toFixed(2),
+                individualSupervision: `${fmtHH(summary.individualSupervision)} ${fmtMM(summary.individualSupervision)}`,
+                groupSupervision: `${fmtHH(summary.groupSupervision)} ${fmtMM(summary.groupSupervision)}`
+            });
 
-            // Attempt to fill fields by name
-            for (const [fieldName, value] of Object.entries(fieldMapping)) {
-                try {
-                    const field = form.getFieldMaybe(fieldName);
-                    if (field) field.setText(String(value));
-                } catch (e) {
-                    console.warn(`Could not fill field "${fieldName}":`, e.message);
-                }
+            console.log('Cloud Function result:', result.data);
+
+            if (!result.data.success) {
+                throw new Error('Cloud Function did not return success');
             }
 
-            // Also try common alternative names
-            const altNames = {
-                'TraineeName': profileData.name || '',
-                'BACBID': profileData.rbtNumber || '',
-                'MonthYear': dayjs(`${year}-${String(month).padStart(2,'0')}-01`).format('MM/DD/YYYY'),
-                'State': stateEntry?.state || '',
-                'Country': countryEntry?.country || 'United States',
-                'SupervisorName': supervisorProfile?.name || topSupervisorName || '',
-                'CertificationNumber': supervisorProfile?.cert || '',
-                'IndependentHours': fmtHH(summary.unsupervised),
-                'IndependentMinutes': fmtMM(summary.unsupervised),
-                'SupervisedHours': fmtHH(summary.supervised),
-                'SupervisedMinutes': fmtMM(summary.supervised),
-                'PercentageSupervised': summary.percentage.toFixed(2),
-                'ObservationMinutes': Math.round(summary.observationMinutes).toString()
-            };
-
-            for (const [fieldName, value] of Object.entries(altNames)) {
-                try {
-                    const field = form.getFieldMaybe(fieldName);
-                    if (field) field.setText(String(value));
-                } catch (e) {
-                    // Silent fail for alternative names
-                }
+            // Decode base64 PDF back to blob
+            const pdfBase64 = result.data.pdfBase64;
+            const binaryString = atob(pdfBase64);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
             }
+            const pdfBlob = new Blob([bytes], { type: 'application/pdf' });
 
-            // Save to blob
-            const pdfBlob = await pdfDoc.save().then(bytes => new Blob([bytes], { type: 'application/pdf' }));
+            // Upload filled PDF to Firebase Storage
             const storagePath = `mfvf/${userId}/${selectedMonth}/draft.pdf`;
             const fileRef = storageRef(storage, storagePath);
             await uploadBytes(fileRef, pdfBlob, { contentType: 'application/pdf' });
             const downloadUrl = await getDownloadURL(fileRef);
 
+            // Save verification record to Firestore
             await setDoc(getMfvfVerificationRef(userId, selectedMonth), {
                 status: 'draft',
                 month: selectedMonth,
@@ -4212,7 +4182,7 @@ function init() {
                 updatedAt: new Date().toISOString()
             }, { merge: true });
 
-            showPdfSendToast('Filled BACB form saved to cloud ✓');
+            showPdfSendToast('Official BACB form filled & saved ✓');
         } catch (err) {
             console.error('M-FVF cloud save failed:', err);
             await CustomModal.alert(
