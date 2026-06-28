@@ -4239,7 +4239,7 @@ function init() {
             'TRAINEE_CERTIFICATE_MONTH/YEAR': `${String(month).padStart(2, '0')}/${year}`,
             'TRAINEE_FIELDWORK_STATE': stateEntry?.state || '',
             'TRAINEE_FIELDWORK_COUNTRY': countryEntry?.country || 'United States',
-            'RESPONSIBLE_SUPERVISOR_NAME': supervisorProfile?.name || topSupervisorName || '',
+            'RESPONSIBLE_SUPERVISOR_NAME': '', // left blank by design — filled by trainee/supervisor
             'RESPONSIBLE_SUPERVISOR_BACB_ID': supervisorProfile?.cert || '',
             'Independent_Hours': fmtHH(summary.unsupervised),
             'Independent_Minutes': fmtMM(summary.unsupervised),
@@ -4253,6 +4253,51 @@ function init() {
             'TRAINEE_SIGNATURE_DATE': '',
             'SUPERVISOR_SIGNATURE_DATE': ''
         };
+    }
+
+    // --- Live calculation: Total Fieldwork Hours + Percentage Supervised ---
+    const mfvfInputEl = (overlay, name) => overlay.querySelector(`input[data-field-name="${name}"]`);
+    const mfvfNum = (overlay, name) => {
+        const n = parseInt(mfvfInputEl(overlay, name)?.value, 10);
+        return Number.isFinite(n) && n >= 0 ? n : 0;
+    };
+    const mfvfSetVal = (overlay, name, value) => {
+        const el = mfvfInputEl(overlay, name);
+        if (el) el.value = value;
+    };
+
+    function recomputeMfvfTotals(overlay) {
+        const iH = mfvfNum(overlay, 'Independent_Hours');
+        const iM = mfvfNum(overlay, 'Independent_Minutes');
+        const sH = mfvfNum(overlay, 'Supervised_Hours');
+        const sM = mfvfNum(overlay, 'Supervised_Minutes');
+
+        // Carry minutes into hours (e.g. 45 + 30 = 75 → +1h 15m)
+        const totalMinRaw = iM + sM;
+        const totalMin = totalMinRaw % 60;
+        const totalH = iH + sH + Math.floor(totalMinRaw / 60);
+        const pad2 = (v) => String(v).padStart(2, '0');
+        mfvfSetVal(overlay, 'Total_Fieldwork_Hours', pad2(totalH));
+        mfvfSetVal(overlay, 'Total_Fieldwork_Minutes', pad2(totalMin));
+
+        // Percentage supervised = supervised / total * 100
+        const supervisedDec = sH + sM / 60;
+        const totalDec = iH + iM / 60 + supervisedDec;
+        const pct = totalDec > 0 ? (supervisedDec / totalDec) * 100 : 0;
+        mfvfSetVal(overlay, 'PERCENT_HOURS_SUPERVISED', `${pct.toFixed(2)}%`);
+    }
+
+    function wireMfvfLiveCalc(overlay) {
+        ['Independent_Hours', 'Independent_Minutes', 'Supervised_Hours', 'Supervised_Minutes'].forEach(name => {
+            const el = mfvfInputEl(overlay, name);
+            if (el) el.addEventListener('input', () => recomputeMfvfTotals(overlay));
+        });
+        // Calculated fields are derived — make them read-only so they can't be edited out of sync
+        ['Total_Fieldwork_Hours', 'Total_Fieldwork_Minutes', 'PERCENT_HOURS_SUPERVISED'].forEach(name => {
+            const el = mfvfInputEl(overlay, name);
+            if (el) el.readOnly = true;
+        });
+        recomputeMfvfTotals(overlay);
     }
 
     // Render the BACB template to canvas and overlay interactive inputs over each real field
@@ -4365,6 +4410,9 @@ function init() {
                     overlay.appendChild(zone);
                 }
             }
+
+            // Wire live Total + Percentage calculation
+            wireMfvfLiveCalc(overlay);
 
             stage.style.display = 'block';
         } catch (err) {
