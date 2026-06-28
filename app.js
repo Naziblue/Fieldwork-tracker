@@ -4305,7 +4305,8 @@ function init() {
             await page.render({ canvasContext: ctx2d, viewport }).promise;
 
             // 2) Read real field rectangles with pdf-lib and build overlay inputs
-            const { PDFDocument } = window.PDFLib;
+            // NOTE: use instanceof (not constructor.name) — the minified pdf-lib build mangles class names
+            const { PDFDocument, PDFTextField, PDFSignature } = window.PDFLib;
             const libDoc = await PDFDocument.load(mfvfEditorState.templateBytes.slice(0));
             const form = libDoc.getForm();
             const fields = form.getFields();
@@ -4314,8 +4315,10 @@ function init() {
 
             for (const f of fields) {
                 const name = f.getName();
-                const type = f.constructor.name;
-                if (type !== 'PDFTextField' && type !== 'PDFSignature') continue;
+                const isText = PDFTextField && f instanceof PDFTextField;
+                const isSig = PDFSignature && f instanceof PDFSignature;
+                if (!isText && !isSig) continue;
+                const type = isText ? 'PDFTextField' : 'PDFSignature';
                 let widgets = [];
                 try { widgets = f.acroField.getWidgets(); } catch (e) { /* none */ }
                 const w0 = widgets[0];
@@ -4327,7 +4330,7 @@ function init() {
                 const height = r.height * scale;
                 mfvfEditorState.fields.push({ name, type, rect: r });
 
-                if (type === 'PDFTextField') {
+                if (isText) {
                     const input = document.createElement('input');
                     input.type = 'text';
                     input.dataset.fieldName = name;
