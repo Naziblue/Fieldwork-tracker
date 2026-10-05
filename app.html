@@ -108,6 +108,49 @@
             gap: 3px;
             white-space: nowrap;
         }
+        /* M-FVF Center */
+        .mfvf-tab { display:inline-flex; align-items:center; gap:4px; padding:6px 14px; border-radius:9999px; font-size:12px; font-weight:600; color:rgba(255,255,255,0.45); background:transparent; border:1px solid rgba(255,255,255,0.08); cursor:pointer; transition:all .15s; }
+        .mfvf-tab:hover { color:rgba(255,255,255,0.7); border-color:rgba(255,255,255,0.15); }
+        .mfvf-tab-active { color:#fff; background:rgba(255,255,255,0.08); border-color:rgba(255,255,255,0.18); }
+        .mfvf-tab-count { font-size:10px; min-width:18px; text-align:center; padding:1px 5px; border-radius:9999px; background:rgba(255,255,255,0.08); }
+        .mfvf-tab-active .mfvf-tab-count { background:rgba(255,255,255,0.15); }
+        .mfvf-pill { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:8px; font-size:11px; font-weight:600; color:var(--pill-color); background:color-mix(in srgb, var(--pill-color) 10%, transparent); border:1px solid color-mix(in srgb, var(--pill-color) 15%, transparent); }
+        .mfvf-pill-dot { width:6px; height:6px; border-radius:50%; background:var(--pill-color); }
+        .mfvf-card { display:flex; align-items:stretch; gap:0; border-radius:12px; background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.06); transition:all .15s; overflow:hidden; }
+        .mfvf-card:hover { border-color:rgba(124,58,237,0.25); background:rgba(255,255,255,0.04); }
+        .mfvf-card-strip { width:4px; flex-shrink:0; border-radius:4px 0 0 4px; }
+        .mfvf-card-thumb { width:56px; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:rgba(255,255,255,0.02); }
+        .mfvf-card-body { flex:1; min-width:0; padding:12px 14px; }
+        .mfvf-card-actions { display:flex; align-items:center; gap:6px; padding:8px 14px; flex-shrink:0; flex-wrap:wrap; justify-content:flex-end; }
+        .mfvf-act-btn { display:inline-flex; align-items:center; padding:5px 12px; border-radius:8px; font-size:11px; font-weight:600; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.04); color:rgba(255,255,255,0.6); cursor:pointer; transition:all .15s; white-space:nowrap; }
+        .mfvf-act-btn:hover { background:rgba(255,255,255,0.08); color:#fff; }
+        .mfvf-act-primary { color:#a78bfa; border-color:rgba(124,58,237,0.3); background:rgba(124,58,237,0.1); }
+        .mfvf-act-primary:hover { background:rgba(124,58,237,0.2); color:#c4b5fd; }
+        .mfvf-act-warn { color:#fdba74; border-color:rgba(249,115,22,0.25); background:rgba(249,115,22,0.08); }
+        .mfvf-act-warn:hover { background:rgba(249,115,22,0.15); color:#fed7aa; }
+        .mfvf-act-signed { color:#86efac; border-color:rgba(34,197,94,0.25); background:rgba(34,197,94,0.08); }
+        .mfvf-act-signed:hover { background:rgba(34,197,94,0.15); color:#bbf7d0; }
+        .mfvf-act-outline { color:#fcd34d; border-color:rgba(234,179,8,0.25); background:transparent; }
+        .mfvf-act-outline:hover { background:rgba(234,179,8,0.08); }
+        .mfvf-act-icon { display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:8px; border:none; background:transparent; cursor:pointer; transition:all .15s; font-size:14px; }
+        @media (max-width:768px) {
+            .mfvf-card { flex-direction:column; }
+            .mfvf-card-strip { width:100%; height:3px; border-radius:3px 3px 0 0; }
+            .mfvf-card-thumb { display:none; }
+            .mfvf-card-actions { justify-content:flex-start; padding:8px 14px 12px; }
+        }
+        /* Month Calendar Picker */
+        .mcal-tile { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:8px 4px; border-radius:10px; border:1.5px solid rgba(255,255,255,0.08); cursor:pointer; transition:all .15s; min-height:60px; background:rgba(255,255,255,0.03); gap:2px; }
+        .mcal-tile:hover { border-color:rgba(255,255,255,0.2); background:rgba(255,255,255,0.07); }
+        .mcal-tile-active { border-color:#7c3aed !important; background:rgba(124,58,237,0.18) !important; box-shadow:0 0 0 2px rgba(124,58,237,0.35); }
+        .mcal-green { background:rgba(34,197,94,0.15); border-color:rgba(34,197,94,0.4); }
+        .mcal-green:hover { background:rgba(34,197,94,0.22); }
+        .mcal-yellow { background:rgba(245,158,11,0.14); border-color:rgba(245,158,11,0.4); }
+        .mcal-yellow:hover { background:rgba(245,158,11,0.22); }
+        .mcal-red { background:rgba(239,68,68,0.14); border-color:rgba(239,68,68,0.4); }
+        .mcal-red:hover { background:rgba(239,68,68,0.22); }
+        .mcal-gray { background:rgba(100,116,139,0.08); border-color:rgba(100,116,139,0.2); }
+        .mcal-gray:hover { background:rgba(100,116,139,0.14); }
     </style>
 </head>
 
@@ -282,8 +325,8 @@
                     <button
                         class="view-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-muted hover:text-sidebar-text hover:bg-sidebar-text/5 transition-all group"
                         data-view="archived-mfvf">
-                        <i class="ph ph-file-archive text-lg group-hover:text-emerald-400 transition-colors"></i>
-                        <span>Archived M-FVF</span>
+                        <i class="ph ph-stack text-lg group-hover:text-emerald-400 transition-colors"></i>
+                        <span>M-FVF Center</span>
                     </button>
                     <button
                         class="view-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-muted hover:text-sidebar-text hover:bg-sidebar-text/5 transition-all group"
@@ -301,8 +344,33 @@
                     <button
                         class="view-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-muted hover:text-sidebar-text hover:bg-sidebar-text/5 transition-all group"
                         data-view="supervisor-dashboard">
-                        <i class="ph ph-users-three text-lg group-hover:text-primary transition-colors"></i>
-                        <span>My Trainees</span>
+                        <i class="ph ph-gauge text-lg group-hover:text-primary transition-colors"></i>
+                        <span>Command Center</span>
+                    </button>
+                    <!-- Expandable Trainees section -->
+                    <div>
+                        <button id="sidebar-trainees-toggle"
+                            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-muted hover:text-sidebar-text hover:bg-sidebar-text/5 transition-all group">
+                            <i class="ph ph-users-three text-lg group-hover:text-primary transition-colors"></i>
+                            <span class="flex-1 text-left">Trainees</span>
+                            <i id="sidebar-trainees-chevron" class="ph ph-caret-down text-xs text-sidebar-muted transition-transform duration-200"></i>
+                        </button>
+                        <div id="sidebar-trainees-list" class="hidden ml-6 mr-2 mt-0.5 space-y-0.5 border-l border-white/5 pl-3">
+                            <p class="text-xs text-sidebar-muted py-2 px-2">No trainees yet</p>
+                        </div>
+                    </div>
+                    <button
+                        class="view-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-muted hover:text-sidebar-text hover:bg-sidebar-text/5 transition-all group"
+                        data-view="mfvf-queue">
+                        <i class="ph ph-tray text-lg group-hover:text-primary transition-colors"></i>
+                        <span>M-FVF Queue</span>
+                        <span id="mfvf-queue-badge" class="hidden ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1.5 text-[10px] font-bold text-white ring-2 ring-sidebar">0</span>
+                    </button>
+                    <button
+                        class="view-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-muted hover:text-sidebar-text hover:bg-sidebar-text/5 transition-all group"
+                        data-view="trainee-compare">
+                        <i class="ph ph-chart-bar text-lg group-hover:text-primary transition-colors"></i>
+                        <span>Compare</span>
                     </button>
                     <button
                         class="view-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sidebar-muted hover:text-sidebar-text hover:bg-sidebar-text/5 transition-all group"
@@ -619,90 +687,120 @@
                     </div>
                 </div>
 
-                <!-- SUPERVISOR DASHBOARD VIEW -->
+                <!-- SUPERVISOR DASHBOARD VIEW (Command Center) -->
                 <div id="supervisor-dashboard-view" class="view-container hidden animate-fade-in max-w-7xl mx-auto">
-                    <div class="mb-8">
-                        <h2 class="text-3xl font-bold text-white tracking-tight">Supervisor Dashboard</h2>
-                        <p class="text-text-muted mt-1">Manage your trainees and review their fieldwork logs.</p>
-                    </div>
-
-                    <!-- Trainee List Container -->
-                    <div id="trainee-list-container" class="space-y-4 max-w-4xl mx-auto">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-sm font-semibold text-primary uppercase tracking-wider">My Trainees</h3>
+                    <!-- Command Center Home -->
+                    <div id="trainee-list-container" class="space-y-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h2 class="text-3xl font-bold text-white tracking-tight">Command Center</h2>
+                                <p class="text-text-muted mt-1">Overview of all trainees and pending actions.</p>
+                            </div>
                             <button id="add-trainee-btn"
                                 class="px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary hover:text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all">
-                                <i class="ph ph-plus text-sm"></i> Add Trainee by Email
+                                <i class="ph ph-plus text-sm"></i> Add Trainee
                             </button>
                         </div>
-                        <div id="trainees-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <!-- Populated by JS -->
-                            <div class="col-span-full p-4 rounded-xl bg-white/5 border border-white/5 text-center py-10">
-                                <i class="ph ph-users text-3xl text-text-muted mb-2"></i>
-                                <p class="text-sm text-text-muted">No trainees linked yet.</p>
+                        <!-- Needs Attention Panel -->
+                        <div id="needs-attention-panel" class="hidden"></div>
+                        <!-- Trainee Cards Grid -->
+                        <div id="trainees-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                            <div class="col-span-full p-8 rounded-xl bg-white/5 border border-white/5 text-center">
+                                <i class="ph ph-circle-notch animate-spin text-3xl text-text-muted mb-2"></i>
+                                <p class="text-sm text-text-muted">Loading trainees...</p>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Trainee Review Container (hidden by default) -->
-                    <div id="trainee-review-container" class="hidden space-y-6 max-w-7xl mx-auto animate-fade-in">
-                        <!-- Back button and title info -->
+                    <!-- Trainee Detail View (hidden by default) -->
+                    <div id="trainee-review-container" class="hidden space-y-5 animate-fade-in">
                         <div class="flex items-center justify-between">
                             <button id="back-to-trainees-btn"
-                                class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-300 bg-white/5 hover:bg-white/10 hover:text-white border border-white/5 rounded-xl transition-all shadow-sm">
-                                <i class="ph-bold ph-arrow-left"></i> Back to Trainees List
+                                class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-300 bg-white/5 hover:bg-white/10 hover:text-white border border-white/5 rounded-xl transition-all">
+                                <i class="ph-bold ph-arrow-left"></i> Command Center
                             </button>
+                            <div class="relative mr-12">
+                                <button id="review-month-trigger"
+                                    class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all min-w-[220px] justify-between">
+                                    <span id="review-month-label">Select Month</span>
+                                    <i class="ph ph-calendar-blank text-base text-text-muted"></i>
+                                </button>
+                                <div id="review-month-calendar" class="hidden absolute right-0 top-full mt-2 z-[300] rounded-2xl p-0" style="width:360px;background:#0b1022;border:1px solid rgba(255,255,255,0.1);box-shadow:0 25px 80px rgba(0,0,0,0.8),0 0 0 1px rgba(255,255,255,0.05);backdrop-filter:blur(24px);">
+                                </div>
+                            </div>
                         </div>
 
-                        <div id="trainee-review-content" class="space-y-6">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-4">
-                                    <div
-                                        class="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary">
-                                        <i class="ph-fill ph-user text-2xl"></i>
-                                    </div>
-                                    <div>
-                                        <h3 id="review-trainee-name" class="text-xl font-bold text-white">Jane Doe</h3>
-                                        <p id="review-trainee-email" class="text-sm text-text-muted">jane@example.com</p>
-                                    </div>
-                                </div>
-                                <div class="flex gap-2">
-                                    <select id="review-month-selector"
-                                        class="input-field rounded-lg px-3 py-1.5 text-sm bg-surface">
-                                        <!-- Populated by JS -->
-                                    </select>
-                                </div>
+                        <!-- Trainee Snapshot Card -->
+                        <div id="trainee-snapshot" class="glass-panel rounded-2xl p-5 border border-white/5">
+                            <!-- Populated by JS -->
+                        </div>
+
+                        <!-- Review Tabs -->
+                        <div class="flex items-center gap-1 border-b border-white/10 overflow-x-auto" id="review-tabs">
+                            <button class="review-tab-btn px-4 py-2.5 text-sm font-semibold border-b-2 transition-all whitespace-nowrap" data-tab="overview">Overview</button>
+                            <button class="review-tab-btn px-4 py-2.5 text-sm font-semibold border-b-2 transition-all whitespace-nowrap" data-tab="entries">Entries</button>
+                            <button class="review-tab-btn px-4 py-2.5 text-sm font-semibold border-b-2 transition-all whitespace-nowrap" data-tab="mfvf">M-FVF</button>
+                            <button class="review-tab-btn px-4 py-2.5 text-sm font-semibold border-b-2 transition-all whitespace-nowrap" data-tab="feedback">Feedback</button>
+                        </div>
+
+                        <!-- Tab Panels -->
+                        <div id="tab-overview" class="review-tab-panel space-y-5">
+                            <div id="review-stats-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+                            <div id="trainee-warnings-panel"></div>
+                            <div id="review-quick-actions" class="flex flex-wrap gap-2"></div>
+                        </div>
+                        <div id="tab-entries" class="review-tab-panel hidden space-y-4">
+                            <div class="flex items-center justify-between gap-3 flex-wrap">
+                                <div id="entry-filters" class="flex flex-wrap gap-2 text-xs flex-1"></div>
+                                <button id="export-csv-btn" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-text-muted hover:text-white text-xs font-semibold transition-all flex-shrink-0">
+                                    <i class="ph ph-download-simple"></i> Export CSV
+                                </button>
                             </div>
-
-                            <div id="review-stats-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                                <!-- Populated by JS -->
-                            </div>
-
-                            <div id="supervisor-mfvf-review-panel" class="hidden"></div>
-
-                            <div class="glass-panel rounded-2xl overflow-hidden flex flex-col h-[400px]">
+                            <div class="glass-panel rounded-2xl overflow-hidden flex flex-col" style="max-height:500px;">
                                 <div class="overflow-auto flex-1">
                                     <table class="w-full text-sm text-left">
-                                        <thead
-                                            class="text-xs text-sidebar-text uppercase table-header-theme sticky top-0 z-10 backdrop-blur-md">
-                                            <tr id="review-table-header">
-                                                <!-- Headers injected by JS -->
-                                            </tr>
+                                        <thead class="text-xs text-sidebar-text uppercase sticky top-0 z-10" style="background:#0f172a;">
+                                            <tr id="review-table-header"></tr>
                                         </thead>
-                                        <tbody id="review-table-body" class="divide-y divide-white/5">
-                                            <!-- Rows injected by JS -->
-                                        </tbody>
+                                        <tbody id="review-table-body" class="divide-y divide-white/5"></tbody>
                                     </table>
                                 </div>
                             </div>
+                        </div>
+                        <div id="tab-mfvf" class="review-tab-panel hidden space-y-4">
+                            <div id="supervisor-mfvf-review-panel"></div>
+                            <div id="mfvf-action-buttons" class="flex flex-wrap gap-3"></div>
+                        </div>
+                        <div id="tab-feedback" class="review-tab-panel hidden">
+                            <div id="feedback-entries-list" class="space-y-3"></div>
+                        </div>
+                    </div>
+                </div>
 
-                            <div class="flex justify-end gap-4">
-                                <button id="sign-month-btn"
-                                    class="px-6 py-3 bg-primary hover:bg-primary-hover text-white font-bold rounded-xl shadow-glow transition-all flex items-center gap-2">
-                                    <i class="ph-fill ph-pencil-line"></i>
-                                    Digitally Sign Month
-                                </button>
-                            </div>
+                <!-- M-FVF QUEUE VIEW -->
+                <div id="mfvf-queue-view" class="view-container hidden animate-fade-in max-w-7xl mx-auto">
+                    <div class="mb-6">
+                        <h2 class="text-3xl font-bold text-white tracking-tight">M-FVF Queue</h2>
+                        <p class="text-text-muted mt-1">All trainee monthly forms at a glance.</p>
+                    </div>
+                    <div id="mfvf-queue-filters" class="flex flex-wrap gap-2 mb-4 text-xs"></div>
+                    <div id="mfvf-queue-list" class="space-y-3"></div>
+                </div>
+
+                <!-- TRAINEE COMPARE VIEW -->
+                <div id="trainee-compare-view" class="view-container hidden animate-fade-in max-w-7xl mx-auto">
+                    <div class="mb-6">
+                        <h2 class="text-3xl font-bold text-white tracking-tight">Trainee Comparison</h2>
+                        <p class="text-text-muted mt-1">Compare all trainees side-by-side.</p>
+                    </div>
+                    <div class="glass-panel rounded-2xl overflow-hidden">
+                        <div class="overflow-auto">
+                            <table class="w-full text-sm text-left" id="compare-table">
+                                <thead class="text-xs text-sidebar-text uppercase table-header-theme sticky top-0 z-10 backdrop-blur-md">
+                                    <tr id="compare-table-header"></tr>
+                                </thead>
+                                <tbody id="compare-table-body" class="divide-y divide-white/5"></tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -710,8 +808,8 @@
                 <!-- ARCHIVED M-FVF VIEW -->
                 <div id="archived-mfvf-view" class="view-container hidden animate-fade-in max-w-7xl mx-auto">
                     <div class="mb-6">
-                        <h2 class="text-3xl font-bold text-text tracking-tight">Archived M-FVF Forms</h2>
-                        <p class="text-text-muted mt-1">All your submitted Monthly Fieldwork Verification Forms.</p>
+                        <h2 class="text-3xl font-bold text-text tracking-tight">M-FVF Center</h2>
+                        <p class="text-text-muted mt-1">Track, send, and manage all your Monthly Fieldwork Verification Forms.</p>
                     </div>
 
                     <div id="archived-mfvf-list" class="space-y-4">
@@ -1107,6 +1205,12 @@
                     <i class="ph-fill ph-arrow-square-out text-blue-400 text-sm"></i>
                     New Tab
                 </a>
+                <button id="pdf-local-download-btn"
+                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-all hover:scale-105"
+                    style="background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1);">
+                    <i class="ph-fill ph-download-simple text-sky-300 text-sm"></i>
+                    Download
+                </button>
                 <button id="pdf-download-btn"
                     class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-all hover:scale-105"
                     style="background: linear-gradient(135deg, #6366f1, #8b5cf6); border: 1px solid rgba(139,92,246,0.4);">
@@ -1265,7 +1369,7 @@
             window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         }
     </script>
-    <script type="module" src="app.js?v=live_calc_sig_fix_20260628"></script>
+    <script type="module" src="app.js?v=detail_fix_20260628"></script>
 
 
     <!-- Responsive Sidebar Script -->

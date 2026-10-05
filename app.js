@@ -270,8 +270,8 @@ function setupTableHeaders() {
         <th class="px-4 py-3 font-medium text-text-muted">Supervision</th>
         <th class="px-4 py-3 font-medium text-text-muted">Supervisor</th>
         <th class="px-4 py-3 font-medium text-text-muted hidden md:table-cell">Notes</th>
-        <th class="px-4 py-3 font-medium text-text-muted text-center">Feedback</th>
-        <th class="px-4 py-3 font-medium text-text-muted text-right">Note</th>
+        <th class="px-4 py-3 font-medium text-text-muted">Feedback</th>
+        <th class="px-4 py-3 font-medium text-text-muted text-right">Actions</th>
     `;
     if (tableHeaders.monthly) tableHeaders.monthly.innerHTML = tableHeaderHTML;
     if (tableHeaders.yearly) tableHeaders.yearly.innerHTML = tableHeaderHTML;
@@ -750,6 +750,11 @@ const switchView = async (viewId) => {
                 btn.classList.add('text-sidebar-muted');
             }
         });
+        const traineesToggle = document.getElementById('sidebar-trainees-toggle');
+        if (traineesToggle) {
+            traineesToggle.classList.remove('bg-primary', 'text-sidebar-text', 'shadow-md', 'ring-1', 'ring-white/10');
+            traineesToggle.classList.add('text-sidebar-muted');
+        }
 
         switch (viewId) {
             case 'monthly': updateMonthlyView(); break;
@@ -757,6 +762,8 @@ const switchView = async (viewId) => {
             case 'all-time': updateAllTimeView(); break;
             case 'archived-mfvf': loadArchivedMfvfList(); break;
             case 'supervisor-dashboard': showTraineeList(); break;
+            case 'mfvf-queue': renderMfvfQueue(); break;
+            case 'trainee-compare': renderTraineeCompare(); break;
             case 'chat': updateChatView(); break;
         }
     } catch (e) {
@@ -946,12 +953,20 @@ const renderTable = (entries, tableBodyElement) => {
 
         let notesCellContent = notesDisplay;
 
+        const fbStatus = getFeedbackStatus(entry);
+        const hasFb = hasFeedback(entry);
         let feedbackCellContent = '';
-        if (hasSupervisorNote) {
+        if (hasFb) {
+            const fbConf = getFeedbackStatusConfig(fbStatus);
+            const areas = entry.feedbackIssueAreas || [];
+            const areaPreview = areas.length > 0 ? areas.slice(0, 2).map(getFeedbackIssueLabel).join(' \u2022 ') : '';
+            const notePreview = entry.supervisorNote ? (entry.supervisorNote.length > 25 ? entry.supervisorNote.substring(0, 25) + '...' : entry.supervisorNote) : '';
+            const previewText = [areaPreview, notePreview].filter(Boolean).join(': ');
             feedbackCellContent = `
-                <span class="inline-flex items-center justify-center ${isFixed ? 'text-white' : 'text-pink-500'} font-bold hover:scale-110 transition-transform" title="${isFixed ? 'Feedback Resolved' : 'Feedback Pending'}">
-                    <i class="ph-fill ph-envelope text-sm ${isFixed ? '' : 'animate-bounce-slow'}"></i>
-                </span>
+                <div class="text-left space-y-0.5">
+                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${fbConf.bg} ${fbConf.text}"><i class="ph-fill ph-${fbConf.icon}"></i> ${fbConf.label}</span>
+                    ${previewText ? `<p class="text-[10px] ${fbConf.text} opacity-70 truncate max-w-[140px]">${previewText}</p>` : ''}
+                </div>
             `;
         }
 
@@ -1010,6 +1025,48 @@ const getMfvfStatusConfig = (status) => {
     return config[normalized] || config.not_started;
 };
 
+
+const FEEDBACK_ISSUE_AREAS = [
+    { id: 'supervisor', label: 'Supervisor' },
+    { id: 'activity_type', label: 'Type of Activity' },
+    { id: 'restricted_type', label: 'Restricted/Unrestricted Type' },
+    { id: 'hours_time', label: 'Hours/Time' },
+    { id: 'client', label: 'Client' },
+    { id: 'supervision_status', label: 'Supervision Status' },
+    { id: 'observation', label: 'Observation' },
+    { id: 'notes', label: 'Notes' },
+    { id: 'duplicate', label: 'Duplicate Entry' },
+    { id: 'missing_info', label: 'Missing Information' },
+    { id: 'other', label: 'Other' }
+];
+
+const getFeedbackIssueLabel = (id) => FEEDBACK_ISSUE_AREAS.find(a => a.id === id)?.label || id;
+
+const getFeedbackStatusConfig = (status) => {
+    const map = {
+        pending: { label: 'Pending', color: 'pink', icon: 'envelope', bg: 'bg-pink-500/15', text: 'text-pink-400' },
+        read: { label: 'Read', color: 'yellow', icon: 'eye', bg: 'bg-yellow-500/15', text: 'text-yellow-400' },
+        resolved: { label: 'Resolved', color: 'green', icon: 'check-circle', bg: 'bg-green-500/15', text: 'text-green-400' },
+        deleted: { label: 'Entry Deleted', color: 'slate', icon: 'trash', bg: 'bg-slate-500/15', text: 'text-slate-400' },
+        entry_deleted: { label: 'Entry Deleted', color: 'slate', icon: 'trash', bg: 'bg-slate-500/15', text: 'text-slate-400' }
+    };
+    return map[status] || map.pending;
+};
+
+const hasFeedback = (entry) => !!(entry.supervisorNote || (entry.feedbackIssueAreas && entry.feedbackIssueAreas.length > 0));
+
+const getFeedbackStatus = (entry) => {
+    if (entry.feedbackStatus === 'entry_deleted' || entry.feedbackStatus === 'deleted') return entry.feedbackStatus;
+    if (entry.feedbackStatus) return entry.feedbackStatus;
+    if (!hasFeedback(entry)) return null;
+    if (entry.feedbackFixed) return 'resolved';
+    return 'pending';
+};
+
+const renderFeedbackIssueBadges = (areas) => {
+    if (!areas || areas.length === 0) return '';
+    return areas.map(a => `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-white/8 text-slate-300 border border-white/8">${getFeedbackIssueLabel(a)}</span>`).join(' ');
+};
 const renderMfvfWorkflowStatus = async (month, entries) => {
     const panel = document.getElementById('mfvf-workflow-status');
     if (!panel || !userId || userId === 'guest' || !month) return;
@@ -1213,35 +1270,40 @@ const handleDeleteEntry = async () => {
         switchView(document.querySelector('.view-btn.bg-white\\/10').dataset.view);
     } else {
         try {
-            await deleteDoc(doc(db, `users/${userId}/entries`, entryId));
+            const entry = allEntries.find(e => e.id === entryId);
+            if (entry && hasFeedback(entry)) {
+                const snapshot = { date: entry.date, startTime: entry.startTime, endTime: entry.endTime, clientName: entry.clientName, activityType: entry.activityType, unrestrictedActivityType: entry.unrestrictedActivityType, supervisionType: entry.supervisionType, supervisorName: entry.supervisorName, notes: entry.notes };
+                await updateDoc(doc(db, `users/${userId}/entries`, entryId), {
+                    feedbackStatus: 'entry_deleted',
+                    feedbackDeletedAt: new Date().toISOString(),
+                    feedbackEntrySnapshot: entry.feedbackEntrySnapshot || snapshot,
+                    entryDeleted: true
+                });
+            } else {
+                await deleteDoc(doc(db, `users/${userId}/entries`, entryId));
+            }
         } catch (error) { console.error("Error deleting doc:", error); }
     }
     closeSlideOver();
 };
 
 const handleTableClick = async (e) => {
-    // Handle Click on Feedback Cell (Envelope)
+    // Handle Click on Feedback Cell
     const feedbackCell = e.target.closest('.feedback-cell');
     if (feedbackCell) {
-        const feedback = feedbackCell.dataset.feedback || '';
         const entryId = feedbackCell.dataset.id;
-        const isFixed = feedbackCell.dataset.fixed === 'true';
-        
-        if (feedback.trim() && entryId) {
-            if (profileData.role === 'supervisor') {
-                CustomModal.alert(feedback, "Supervisor Feedback", "ph-envelope-simple-open");
-            } else {
-                await CustomModal.feedback(feedback, isFixed, async (isChecked) => {
-                    const entryRef = doc(db, `users/${userId}/entries/${entryId}`);
-                    try {
-                        await updateDoc(entryRef, { feedbackFixed: isChecked });
-                        feedbackCell.dataset.fixed = isChecked ? 'true' : 'false';
-                    } catch (error) {
-                        console.error("Error updating feedback fixed status:", error);
-                        await CustomModal.alert("Failed to update status: " + error.message, "Error");
-                    }
-                });
-            }
+        if (!entryId) return;
+
+        let entry = allEntries.find(en => en.id === entryId);
+        if (!entry && selectedTraineeId && supervisorCache.entries[selectedTraineeId]) {
+            entry = supervisorCache.entries[selectedTraineeId].find(en => en.id === entryId);
+        }
+        if (!entry || !hasFeedback(entry)) return;
+
+        if (profileData.role === 'supervisor') {
+            openFeedbackDetailModal(entry, false);
+        } else {
+            openFeedbackDetailModal(entry, true);
         }
         return;
     }
@@ -1260,23 +1322,44 @@ const handleTableClick = async (e) => {
     const addSupNoteBtn = e.target.closest('.add-supervisor-note-btn');
     if (addSupNoteBtn) {
         const entryId = addSupNoteBtn.dataset.id;
-        const existingNote = addSupNoteBtn.dataset.supervisorNote || '';
-        
+
         if (selectedTraineeId) {
-            const newNote = await CustomModal.prompt(
-                "Enter your feedback or notes for this activity log entry:",
-                existingNote,
-                "Supervisor Feedback"
-            );
-            if (newNote !== null) {
+            const cached = supervisorCache.entries[selectedTraineeId];
+            const entry = cached ? cached.find(x => x.id === entryId) : null;
+            const existing = {
+                issueAreas: entry?.feedbackIssueAreas || [],
+                note: entry?.supervisorNote || '',
+                requestedAction: entry?.feedbackRequestedAction || '',
+                otherText: entry?.feedbackOtherText || ''
+            };
+            const result = await openSupervisorFeedbackModal(existing);
+            if (result) {
                 const entryRef = doc(db, `users/${selectedTraineeId}/entries/${entryId}`);
                 try {
-                    await updateDoc(entryRef, { supervisorNote: newNote });
-                    await CustomModal.alert("Supervisor note saved successfully!", "Note Saved", "ph-check-circle");
-                    selectTrainee(selectedTraineeId);
+                    const isNew = !existing.note.trim() && !existing.issueAreas.length;
+                    const entrySnapshot = entry ? { date: entry.date, startTime: entry.startTime, endTime: entry.endTime, clientName: entry.clientName, activityType: entry.activityType, unrestrictedActivityType: entry.unrestrictedActivityType, supervisionType: entry.supervisionType, supervisorName: entry.supervisorName, notes: entry.notes } : {};
+                    const updateData = {
+                        supervisorNote: result.note,
+                        feedbackIssueAreas: result.issueAreas,
+                        feedbackRequestedAction: result.requestedAction || '',
+                        feedbackOtherText: result.otherText || '',
+                        feedbackStatus: entry?.feedbackStatus === 'resolved' ? 'pending' : (entry?.feedbackStatus || 'pending'),
+                        feedbackFixed: false,
+                        updatedAt: new Date().toISOString()
+                    };
+                    if (isNew) {
+                        updateData.feedbackSentAt = new Date().toISOString();
+                        updateData.feedbackEntrySnapshot = entrySnapshot;
+                    }
+                    await updateDoc(entryRef, updateData);
+                    if (cached) {
+                        const idx = cached.findIndex(x => x.id === entryId);
+                        if (idx !== -1) Object.assign(cached[idx], updateData);
+                    }
+                    await refreshCurrentMonth();
                 } catch (error) {
-                    console.error("Error saving supervisor note:", error);
-                    await CustomModal.alert("Failed to save note: " + error.message, "Error");
+                    console.error("Error saving supervisor feedback:", error);
+                    await CustomModal.alert("Failed to save feedback: " + error.message, "Error");
                 }
             }
         }
@@ -1287,21 +1370,34 @@ const handleTableClick = async (e) => {
     const deleteSupNoteBtn = e.target.closest('.delete-supervisor-note-btn');
     if (deleteSupNoteBtn) {
         const entryId = deleteSupNoteBtn.dataset.id;
-        
+
         if (selectedTraineeId) {
             const confirmed = await CustomModal.confirm(
-                "Are you sure you want to delete your feedback/note for this entry? This will also remove it from the trainee's page.",
-                "Delete Supervisor Note"
+                "Are you sure you want to delete your feedback for this entry? This will also remove it from the trainee's page.",
+                "Delete Supervisor Feedback"
             );
             if (confirmed) {
                 const entryRef = doc(db, `users/${selectedTraineeId}/entries/${entryId}`);
                 try {
-                    await updateDoc(entryRef, { supervisorNote: "" });
-                    await CustomModal.alert("Supervisor note deleted successfully!", "Note Deleted", "ph-trash");
-                    selectTrainee(selectedTraineeId);
+                    await updateDoc(entryRef, {
+                        supervisorNote: "", feedbackSentAt: "", feedbackIssueAreas: [],
+                        feedbackRequestedAction: "", feedbackOtherText: "",
+                        feedbackStatus: "", feedbackFixed: false, traineeResponse: "",
+                        feedbackEntrySnapshot: {}
+                    });
+                    const cached = supervisorCache.entries[selectedTraineeId];
+                    if (cached) {
+                        const idx = cached.findIndex(x => x.id === entryId);
+                        if (idx !== -1) {
+                            cached[idx].supervisorNote = ''; cached[idx].feedbackSentAt = '';
+                            cached[idx].feedbackIssueAreas = []; cached[idx].feedbackStatus = '';
+                            cached[idx].feedbackFixed = false; cached[idx].traineeResponse = '';
+                        }
+                    }
+                    await refreshCurrentMonth();
                 } catch (error) {
-                    console.error("Error deleting supervisor note:", error);
-                    await CustomModal.alert("Failed to delete note: " + error.message, "Error");
+                    console.error("Error deleting supervisor feedback:", error);
+                    await CustomModal.alert("Failed to delete feedback: " + error.message, "Error");
                 }
             }
         }
@@ -2105,79 +2201,227 @@ const isUserAccessBlocked = (profile) => {
     return profile?.accessEnabled === false || ['deactivated', 'disabled', 'suspended'].includes(status);
 };
 
-// --- Supervisor Dashboard Logic ---
+// --- Supervisor Command Center ---
 let myTrainees = [];
 let selectedTraineeId = null;
+let supervisorCache = { entries: {}, verifications: {}, summaries: {}, warnings: {} };
+let activeReviewTab = 'overview';
+let activeEntryFilters = new Set();
+let currentReviewEntries = [];
+let currentReviewMonth = null;
+let currentRenderMonth = null;
+
+const MONTHLY_HOUR_CAP = 130;
+const SUPERVISION_MIN_PCT = 5;
+
+const formatHoursForDisplay = (hours) => {
+    const h = Math.floor(hours || 0);
+    const m = Math.round(((hours || 0) % 1) * 60);
+    return `${h}h ${m}m`;
+};
+
+const openSubmittedMfvfPdf = async (request) => {
+    const url = request?.submittedPdfUrl || request?.signedPdfUrl || request?.draftPdfUrl;
+    if (!url) { await CustomModal.alert("No PDF attached to this request yet.", "PDF Not Found"); return; }
+    window.open(url, '_blank', 'noopener,noreferrer');
+};
+
+const generateAuditWarnings = (trainee, entries, currentMonthSummary, verification) => {
+    const warnings = [];
+    const s = currentMonthSummary;
+    if (!trainee.name) warnings.push({ severity: 'red', label: 'Missing Name', icon: 'ph-user' });
+    if (!trainee.rbtNumber && !trainee.bacbId) warnings.push({ severity: 'yellow', label: 'Missing BACB/RBT ID', icon: 'ph-identification-card' });
+    if (!trainee.fieldworkType) warnings.push({ severity: 'yellow', label: 'Missing Fieldwork Type', icon: 'ph-info' });
+    if (entries.length === 0) { warnings.push({ severity: 'red', label: 'No Entries This Month', icon: 'ph-calendar-blank' }); return warnings; }
+    if (s.total > MONTHLY_HOUR_CAP) warnings.push({ severity: 'red', label: 'Over Monthly Cap', icon: 'ph-warning-circle' });
+    if (s.percentage < SUPERVISION_MIN_PCT && s.total > 0) warnings.push({ severity: 'red', label: 'Low Supervision', icon: 'ph-users-three' });
+    if (s.observationMinutes < 1 && s.total > 0) warnings.push({ severity: 'yellow', label: 'Missing Observation', icon: 'ph-eye' });
+    if (s.unrestricted < 1 && s.total > 10) warnings.push({ severity: 'yellow', label: 'Low Unrestricted', icon: 'ph-brain' });
+    const vStatus = verification?.status || 'not_started';
+    if (vStatus === 'not_started' || vStatus === 'draft') warnings.push({ severity: 'yellow', label: 'Missing M-FVF', icon: 'ph-file-plus' });
+    if (vStatus === 'submitted') warnings.push({ severity: 'yellow', label: 'Pending Signature', icon: 'ph-pencil-line' });
+    const unresolvedCount = entries.filter(e => hasFeedback(e) && getFeedbackStatus(e) === 'pending').length;
+    if (unresolvedCount > 0) warnings.push({ severity: 'yellow', label: `${unresolvedCount} Unresolved Note${unresolvedCount > 1 ? 's' : ''}`, icon: 'ph-envelope' });
+    const missingClient = entries.filter(e => !e.clientName).length;
+    if (missingClient > 3) warnings.push({ severity: 'yellow', label: 'Missing Clients', icon: 'ph-user-circle' });
+    const missingSupervisor = entries.filter(e => e.supervisionType !== 'No Supervision' && !e.supervisorName).length;
+    if (missingSupervisor > 0) warnings.push({ severity: 'yellow', label: 'Missing Supervisor Name', icon: 'ph-user-list' });
+    return warnings;
+};
+
+const renderWarningBadges = (warnings, compact = false) => {
+    if (!warnings.length) return compact ? '' : '<span class="text-xs text-green-400"><i class="ph ph-check-circle"></i> All clear</span>';
+    return warnings.map(w => {
+        const color = w.severity === 'red' ? 'text-red-400 bg-red-500/10 border-red-500/20' : 'text-amber-400 bg-amber-500/10 border-amber-500/20';
+        return `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold border ${color}"><i class="ph ${w.icon}"></i>${compact ? '' : ` ${w.label}`}</span>`;
+    }).join(' ');
+};
 
 const updateSupervisorDashboard = async () => {
     const traineesList = document.getElementById('trainees-list');
     if (!userId || profileData.role !== 'supervisor' || !traineesList) return;
-
     const userEmail = (profileData && profileData.email) || auth.currentUser.email;
-    traineesList.innerHTML = '<div class="p-4 text-center text-text-muted"><i class="ph ph-circle-notch animate-spin"></i> Loading...</div>';
+    traineesList.innerHTML = '<div class="col-span-full p-8 text-center text-text-muted"><i class="ph ph-circle-notch animate-spin text-3xl mb-2"></i><p class="text-sm">Loading trainees...</p></div>';
 
     try {
         const q = query(collection(db, 'users'), where('supervisorEmails', 'array-contains', userEmail));
         const querySnapshot = await getDocs(q);
+        myTrainees = querySnapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }));
+        const currentMonth = dayjs().format('YYYY-MM');
 
-        myTrainees = querySnapshot.docs.map(docSnap => {
-            const data = docSnap.data();
-            // In the new schema, the document itself is the user profile, so ID is doc.id
-            return { id: docSnap.id, ...data };
-        });
+        await Promise.all(myTrainees.map(async (t) => {
+            try {
+                const entriesSnap = await getDocs(collection(db, `users/${t.id}/entries`));
+                const allE = migrateLegacyExplanations(entriesSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+                supervisorCache.entries[t.id] = allE;
+                const monthE = allE.filter(e => dayjs(e.date).format('YYYY-MM') === currentMonth);
+                supervisorCache.summaries[t.id] = calculateSummaryData(monthE);
+                const verifSnap = await getDoc(doc(db, `users/${t.id}/verifications/${currentMonth}`));
+                supervisorCache.verifications[t.id] = verifSnap.exists() ? verifSnap.data() : null;
+                supervisorCache.warnings[t.id] = generateAuditWarnings(t, monthE, supervisorCache.summaries[t.id], supervisorCache.verifications[t.id]);
+            } catch (e) { console.warn('Failed to load data for trainee', t.id, e); }
+        }));
 
-        renderTraineesList();
+        renderCommandCenter();
+        renderSidebarTrainees();
+        renderMfvfQueueBadge();
         initializeNotifications();
     } catch (error) {
         console.error("Error updating supervisor dashboard:", error);
-        if (error.code === 'permission-denied') {
-            traineesList.innerHTML = `
-                <div class="p-5 rounded-2xl bg-red-500/10 border border-red-500/25 text-center py-8">
-                    <i class="ph ph-warning-circle text-3xl text-red-400 mb-3 block"></i>
-                    <p class="text-sm font-bold text-red-400 mb-1">Database Access Denied</p>
-                    <p class="text-xs text-slate-300 mt-2 leading-relaxed px-4">
-                        Your Firebase Security Rules are blocking supervisors from loading trainee documents.
-                    </p>
-                    <div class="mt-4">
-                        <a href="DB_UPDATE_INSTRUCTIONS.md" class="inline-block bg-red-500/20 hover:bg-red-500/35 border border-red-500/40 text-red-300 text-xs font-semibold py-2 px-4 rounded-xl transition-all" target="_blank">
-                            <i class="ph ph-shield-warning mr-1"></i> Read Update Instructions
-                        </a>
-                    </div>
-                </div>`;
-        } else {
-            traineesList.innerHTML = `<div class="p-4 text-center text-red-400">Error loading trainees: ${error.message}</div>`;
-        }
+        traineesList.innerHTML = error.code === 'permission-denied'
+            ? `<div class="col-span-full p-5 rounded-2xl bg-red-500/10 border border-red-500/25 text-center py-8"><i class="ph ph-warning-circle text-3xl text-red-400 mb-3 block"></i><p class="text-sm font-bold text-red-400">Database Access Denied</p><p class="text-xs text-slate-300 mt-2">Your Firebase Security Rules are blocking supervisors from loading trainee documents.</p></div>`
+            : `<div class="col-span-full p-4 text-center text-red-400">Error: ${error.message}</div>`;
     }
 };
 
-const renderTraineesList = () => {
+const renderCommandCenter = () => {
     const traineesList = document.getElementById('trainees-list');
+    const attentionPanel = document.getElementById('needs-attention-panel');
     if (!traineesList) return;
 
     if (myTrainees.length === 0) {
-        traineesList.innerHTML = `
-            <div class="col-span-full p-4 rounded-xl bg-white/5 border border-white/5 text-center py-10">
-                <i class="ph ph-users text-3xl text-text-muted mb-2"></i>
-                <p class="text-sm text-text-muted">No trainees linked yet.</p>
-            </div>`;
+        traineesList.innerHTML = `<div class="col-span-full p-8 rounded-xl bg-white/5 border border-white/5 text-center"><i class="ph ph-users text-3xl text-text-muted mb-2"></i><p class="text-sm text-text-muted">No trainees linked yet. Trainees add your email in their Settings.</p></div>`;
+        if (attentionPanel) { attentionPanel.classList.add('hidden'); attentionPanel.innerHTML = ''; }
         return;
     }
 
-    traineesList.innerHTML = myTrainees.map(trainee => `
-        <button class="trainee-item w-full p-4 rounded-xl bg-white/5 border border-white/5 hover:border-primary/50 hover:bg-primary/5 transition-all text-left flex items-center gap-3 group" data-id="${trainee.id}">
-            <div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-                <i class="ph-fill ph-user"></i>
-            </div>
-            <div class="flex-1 min-w-0">
-                <p class="text-sm font-bold text-white truncate">${trainee.name || 'Unknown Trainee'}</p>
-                <p class="text-xs text-text-muted truncate">${trainee.email}</p>
-            </div>
-            <i class="ph ph-caret-right text-text-muted"></i>
-        </button>
-    `).join('');
+    // Needs Attention Panel
+    if (attentionPanel) {
+        const items = [];
+        let pendingSigs = 0, lowSupervision = 0, overCap = 0, unresolvedNotes = 0, missingMfvf = 0;
+        myTrainees.forEach(t => {
+            const v = supervisorCache.verifications[t.id];
+            const s = supervisorCache.summaries[t.id];
+            const entries = supervisorCache.entries[t.id] || [];
+            if (v?.status === 'submitted') pendingSigs++;
+            if (s && s.percentage < SUPERVISION_MIN_PCT && s.total > 0) lowSupervision++;
+            if (s && s.total > MONTHLY_HOUR_CAP) overCap++;
+            if (!v || v.status === 'not_started') missingMfvf++;
+            unresolvedNotes += entries.filter(e => dayjs(e.date).format('YYYY-MM') === dayjs().format('YYYY-MM') && hasFeedback(e) && getFeedbackStatus(e) === 'pending').length;
+        });
+        if (pendingSigs) items.push({ count: pendingSigs, label: 'M-FVF awaiting signature', icon: 'ph-pencil-line', color: 'text-amber-400', action: 'mfvf-queue' });
+        if (lowSupervision) items.push({ count: lowSupervision, label: `trainee${lowSupervision > 1 ? 's' : ''} below ${SUPERVISION_MIN_PCT}% supervision`, icon: 'ph-users-three', color: 'text-red-400', action: 'trainee-compare' });
+        if (overCap) items.push({ count: overCap, label: `trainee${overCap > 1 ? 's' : ''} over monthly hour cap`, icon: 'ph-warning-circle', color: 'text-red-400', action: 'trainee-compare' });
+        if (missingMfvf) items.push({ count: missingMfvf, label: `trainee${missingMfvf > 1 ? 's' : ''} missing M-FVF`, icon: 'ph-file-plus', color: 'text-amber-400', action: 'mfvf-queue' });
+        if (unresolvedNotes) items.push({ count: unresolvedNotes, label: 'entries with unresolved notes', icon: 'ph-envelope', color: 'text-pink-400', action: null });
 
-    document.querySelectorAll('.trainee-item').forEach(btn => {
+        if (items.length > 0) {
+            attentionPanel.classList.remove('hidden');
+            attentionPanel.innerHTML = `
+                <div class="glass-panel rounded-2xl p-4 border border-amber-500/20 bg-amber-500/5">
+                    <div class="flex items-center gap-2 mb-3">
+                        <i class="ph-fill ph-bell-ringing text-amber-400"></i>
+                        <h3 class="text-sm font-bold text-amber-300 uppercase tracking-wider">Needs Attention</h3>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                        ${items.map(it => `
+                            <button class="attention-item flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 transition-all text-left" ${it.action ? `data-action="${it.action}"` : ''}>
+                                <i class="ph ${it.icon} text-lg ${it.color}"></i>
+                                <span class="text-sm text-white"><strong>${it.count}</strong> ${it.label}</span>
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>`;
+            attentionPanel.querySelectorAll('.attention-item[data-action]').forEach(btn => {
+                btn.addEventListener('click', () => switchView(btn.dataset.action));
+            });
+        } else {
+            attentionPanel.classList.remove('hidden');
+            attentionPanel.innerHTML = `<div class="rounded-xl p-3 bg-green-500/5 border border-green-500/20 flex items-center gap-2"><i class="ph-fill ph-check-circle text-green-400"></i><span class="text-sm text-green-300 font-medium">All trainees on track this month.</span></div>`;
+        }
+    }
+
+    // Trainee Cards
+    const currentMonth = dayjs().format('YYYY-MM');
+    traineesList.innerHTML = myTrainees.map(t => {
+        const s = supervisorCache.summaries[t.id] || { total: 0, supervised: 0, percentage: 0, restricted: 0, unrestricted: 0 };
+        const v = supervisorCache.verifications[t.id];
+        const entries = supervisorCache.entries[t.id] || [];
+        const warnings = supervisorCache.warnings[t.id] || [];
+        const monthEntries = entries.filter(e => dayjs(e.date).format('YYYY-MM') === currentMonth);
+        const lastEntry = [...entries].sort((a, b) => b.date.localeCompare(a.date))[0];
+        const pendingFeedback = monthEntries.filter(e => hasFeedback(e) && getFeedbackStatus(e) === 'pending').length;
+        const [statusLabel, statusTextClass] = getMfvfStatusConfig(v?.status);
+        const pctColor = s.percentage >= SUPERVISION_MIN_PCT ? 'text-green-400' : (s.total > 0 ? 'text-red-400' : 'text-text-muted');
+        const redWarnings = warnings.filter(w => w.severity === 'red').length;
+        const yellowWarnings = warnings.filter(w => w.severity === 'yellow').length;
+
+        return `
+            <button class="trainee-card w-full p-4 rounded-xl bg-white/5 border border-white/5 hover:border-primary/40 hover:bg-primary/5 transition-all text-left group" data-id="${t.id}">
+                <div class="flex items-start gap-3 mb-3">
+                    <div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary flex-shrink-0">
+                        <i class="ph-fill ph-user"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-bold text-white truncate">${t.name || 'Unknown Trainee'}</p>
+                        <p class="text-[11px] text-text-muted truncate">${t.email || ''}</p>
+                    </div>
+                    ${redWarnings > 0 ? `<span class="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">${redWarnings}</span>` : ''}
+                    ${yellowWarnings > 0 && redWarnings === 0 ? `<span class="flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-bold text-white">${yellowWarnings}</span>` : ''}
+                </div>
+                <div class="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+                    <div><span class="text-text-muted">Hours:</span> <span class="text-white font-medium">${s.total.toFixed(1)}h</span></div>
+                    <div><span class="text-text-muted">Supervised:</span> <span class="${pctColor} font-medium">${s.percentage.toFixed(1)}%</span></div>
+                    <div><span class="text-text-muted">M-FVF:</span> <span class="${statusTextClass} font-medium">${statusLabel}</span></div>
+                    <div><span class="text-text-muted">Feedback:</span> <span class="${pendingFeedback > 0 ? 'text-pink-400' : 'text-text-muted'} font-medium">${pendingFeedback > 0 ? pendingFeedback + ' pending' : 'None'}</span></div>
+                    <div class="col-span-2"><span class="text-text-muted">Last log:</span> <span class="text-text-muted">${lastEntry ? dayjs(lastEntry.date).format('MMM D') : 'Never'}</span></div>
+                </div>
+                ${warnings.length > 0 ? `<div class="mt-2.5 flex flex-wrap gap-1">${renderWarningBadges(warnings, true)}</div>` : ''}
+            </button>`;
+    }).join('');
+
+    traineesList.querySelectorAll('.trainee-card').forEach(btn => {
         btn.addEventListener('click', () => selectTrainee(btn.dataset.id));
+    });
+};
+
+const renderSidebarTrainees = () => {
+    const container = document.getElementById('sidebar-trainees-list');
+    if (!container) return;
+    if (myTrainees.length === 0) { container.innerHTML = '<p class="text-xs text-sidebar-muted py-2 px-2">No trainees yet</p>'; return; }
+    container.innerHTML = myTrainees.map(t => {
+        const w = (supervisorCache.warnings[t.id] || []).filter(x => x.severity === 'red').length;
+        return `<button class="sidebar-trainee-item w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-sidebar-muted hover:text-sidebar-text hover:bg-sidebar-text/5 transition-all truncate" data-trainee-id="${t.id}">
+            <i class="ph-fill ph-user text-xs"></i><span class="truncate flex-1">${t.name || 'Unknown'}</span>${w > 0 ? `<span class="w-2 h-2 rounded-full bg-red-500 flex-shrink-0"></span>` : ''}
+        </button>`;
+    }).join('');
+    container.querySelectorAll('.sidebar-trainee-item').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const supView = document.getElementById('supervisor-dashboard-view');
+            if (!supView || supView.classList.contains('hidden')) switchView('supervisor-dashboard');
+            selectTrainee(btn.dataset.traineeId);
+        });
+    });
+    highlightSidebarTrainee(selectedTraineeId);
+};
+
+const highlightSidebarTrainee = (traineeId) => {
+    document.querySelectorAll('.sidebar-trainee-item').forEach(btn => {
+        const active = btn.dataset.traineeId === traineeId;
+        btn.classList.toggle('text-primary', active);
+        btn.classList.toggle('bg-primary/10', active);
+        btn.classList.toggle('text-sidebar-muted', !active);
     });
 };
 
@@ -2187,306 +2431,1117 @@ const showTraineeList = () => {
     if (listContainer) listContainer.classList.remove('hidden');
     if (reviewContainer) reviewContainer.classList.add('hidden');
     selectedTraineeId = null;
+    highlightSidebarTrainee(null);
 };
 
 const selectTrainee = async (traineeId) => {
     const listContainer = document.getElementById('trainee-list-container');
     const reviewContainer = document.getElementById('trainee-review-container');
-    const reviewTraineeName = document.getElementById('review-trainee-name');
-    const reviewTraineeEmail = document.getElementById('review-trainee-email');
-
     selectedTraineeId = traineeId;
+    highlightSidebarTrainee(traineeId);
     const trainee = myTrainees.find(t => t.id === traineeId);
     if (!trainee) return;
-
     if (listContainer) listContainer.classList.add('hidden');
     if (reviewContainer) reviewContainer.classList.remove('hidden');
-    if (reviewTraineeName) reviewTraineeName.textContent = trainee.name || 'Unknown Trainee';
-    if (reviewTraineeEmail) reviewTraineeEmail.textContent = trainee.email;
 
-    const entriesRef = collection(db, `users/${traineeId}/entries`);
-    const snapshot = await getDocs(entriesRef);
-    const entries = migrateLegacyExplanations(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-
-    renderTraineeReview(entries);
+    let entries = supervisorCache.entries[traineeId];
+    if (!entries) {
+        const snap = await getDocs(collection(db, `users/${traineeId}/entries`));
+        entries = migrateLegacyExplanations(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        supervisorCache.entries[traineeId] = entries;
+    }
+    currentReviewEntries = entries;
+    activeEntryFilters.clear();
+    activeReviewTab = 'overview';
+    renderTraineeDetail(trainee, entries);
 };
 
-const renderTraineeReview = async (entries) => {
-    const reviewMonthSelector = document.getElementById('review-month-selector');
-    const reviewStatsGrid = document.getElementById('review-stats-grid');
-    const reviewTableBody = document.getElementById('review-table-body');
-    const signMonthBtn = document.getElementById('sign-month-btn');
+const renderTraineeDetail = async (trainee, entries) => {
+    const trigger = document.getElementById('review-month-trigger');
+    const label = document.getElementById('review-month-label');
+    const calendarEl = document.getElementById('review-month-calendar');
+    if (!trigger || !calendarEl) return;
 
-    if (!reviewMonthSelector) return;
+    const entryMonths = [...new Set(entries.map(e => dayjs(e.date).format('YYYY-MM')))].sort();
+    const allMonths = new Set(entryMonths);
+    allMonths.add(dayjs().format('YYYY-MM'));
 
-    if (!entries || entries.length === 0) {
-        // Handle empty cloud log states gracefully
-        reviewMonthSelector.innerHTML = '<option value="">No Months Available</option>';
-        if (signMonthBtn) {
-            signMonthBtn.innerHTML = '<i class="ph-fill ph-pencil-line"></i> Digitally Sign Month';
-            signMonthBtn.classList.add('bg-primary');
-            signMonthBtn.classList.remove('bg-green-500');
-            signMonthBtn.disabled = true;
+    const verifCache = {};
+    await Promise.all([...allMonths].map(async (m) => {
+        try {
+            const snap = await getDoc(doc(db, `users/${trainee.id}/verifications/${m}`));
+            verifCache[m] = snap.exists() ? snap.data() : null;
+        } catch (e) { verifCache[m] = null; }
+    }));
+
+    const getMonthStatus = (m) => {
+        const monthEntries = entries.filter(e => dayjs(e.date).format('YYYY-MM') === m);
+        const v = verifCache[m];
+        const hasEntries = monthEntries.length > 0;
+        const hasVerif = v && v.status;
+        if (hasVerif && v.status === 'signed') return { tier: 'green', label: 'Signed & Returned', cls: 'mcal-green', dotCls: 'bg-green-400' };
+        if (hasVerif && v.status !== 'signed') {
+            const [sl] = getMfvfStatusConfig(v.status);
+            return { tier: 'yellow', label: sl, cls: 'mcal-yellow', dotCls: 'bg-yellow-400' };
         }
-        if (reviewStatsGrid) {
-            reviewStatsGrid.innerHTML = `
-                ${createStatCard('Total', '0.00', null, 'ph ph-clock', 'bg-blue-500 text-blue-400')}
-                ${createStatCard('Restricted', '0.00', null, 'ph ph-hand-heart', 'bg-pink-500 text-pink-400')}
-                ${createStatCard('Unrestricted', '0.00', null, 'ph ph-brain', 'bg-purple-500 text-purple-400')}
-                ${createStatCard('Supervised', '0.00', '0.0%', 'ph ph-users-three', 'bg-teal-500 text-teal-400')}
-            `;
-        }
-        if (reviewTableBody) {
-            reviewTableBody.innerHTML = `
-                <tr>
-                    <td colspan="11" class="px-4 py-8 text-center text-text-muted">
-                        <i class="ph ph-note-blank text-3xl mb-2 block mx-auto opacity-30"></i>
-                        No activities logged by this trainee in the cloud yet.
-                    </td>
-                </tr>`;
-        }
-        return;
-    }
-
-    const months = [...new Set(entries.map(e => dayjs(e.date).format('YYYY-MM')))].sort().reverse();
-    reviewMonthSelector.innerHTML = months.map(m => `<option value="${m}">${dayjs(m).format('MMMM YYYY')}</option>`).join('');
-
-    const updateReviewTable = async () => {
-        const selectedMonth = reviewMonthSelector.value;
-        if (!selectedMonth) return;
-
-        const [year, month] = selectedMonth.split('-');
-        const filtered = entries.filter(e => {
-            const d = dayjs(e.date);
-            return d.year() == year && (d.month() + 1) == month;
-        }).sort((a, b) => new Date(b.date) - new Date(a.date));
-
-        const verificationRef = doc(db, `users/${selectedTraineeId}/verifications/${selectedMonth}`);
-        const verifSnap = await getDoc(verificationRef);
-        const verificationData = verifSnap.exists() ? verifSnap.data() : null;
-        const isSigned = verificationData?.status === 'signed';
-        renderSupervisorMfvfReviewPanel(selectedMonth, verificationData);
-
-        if (signMonthBtn) {
-            if (isSigned) {
-                signMonthBtn.innerHTML = '<i class="ph-fill ph-check-circle"></i> Digitally Signed';
-                signMonthBtn.classList.add('bg-green-500');
-                signMonthBtn.classList.remove('bg-primary');
-                signMonthBtn.disabled = true;
-            } else {
-                signMonthBtn.innerHTML = '<i class="ph-fill ph-pencil-line"></i> Digitally Sign Month';
-                signMonthBtn.classList.add('bg-primary');
-                signMonthBtn.classList.remove('bg-green-500');
-                signMonthBtn.disabled = false;
-            }
-        }
-
-        const data = calculateSummaryData(filtered);
-        if (reviewStatsGrid) {
-            reviewStatsGrid.innerHTML = `
-                ${createStatCard('Total', data.total.toFixed(2), null, 'ph ph-clock', 'bg-blue-500 text-blue-400')}
-                ${createStatCard('Restricted', data.restricted.toFixed(2), null, 'ph ph-hand-heart', 'bg-pink-500 text-pink-400')}
-                ${createStatCard('Unrestricted', data.unrestricted.toFixed(2), null, 'ph ph-brain', 'bg-purple-500 text-purple-400')}
-                ${createStatCard('Supervised', data.supervised.toFixed(2), `${data.percentage.toFixed(1)}%`, 'ph ph-users-three', 'bg-teal-500 text-teal-400')}
-            `;
-        }
-
-        if (reviewTableBody) {
-            reviewTableBody.innerHTML = filtered.map(entry => {
-                let notesDisplay = entry.notes || '';
-                if (entry.activityType === 'Unrestricted' && entry.unrestrictedActivityType) {
-                    notesDisplay = `[${entry.unrestrictedActivityType}] ${notesDisplay}`;
-                }
-
-                const hasSupervisorNote = !!entry.supervisorNote;
-                const isFixed = !!entry.feedbackFixed;
-                let rowClass = 'hover:bg-surface-hover transition-colors';
-                if (hasSupervisorNote) {
-                    rowClass = isFixed 
-                        ? 'green-row transition-all duration-200' 
-                        : 'mustard-row transition-all duration-200';
-                }
-
-                let combinedNotes = notesDisplay;
-                if (hasSupervisorNote) {
-                    combinedNotes += `\n\n💬 [Supervisor Note]: ${entry.supervisorNote}`;
-                }
-
-                // In supervisor dashboard, we do not show the magenta row or envelope icon 
-                // since this is the supervisor view, not the trainee recipient view.
-                // Instead, we show a mustard yellow row so she can see which rows already have notes on them.
-                let notesCellContent = notesDisplay;
-
-                let feedbackCellContent = '';
-                if (hasSupervisorNote) {
-                    feedbackCellContent = `
-                        <span class="inline-flex items-center justify-center ${isFixed ? 'text-white' : 'text-pink-500'} font-bold hover:scale-110 transition-transform" title="${isFixed ? 'Feedback Resolved' : 'Feedback Pending'}">
-                            <i class="ph-fill ph-envelope text-sm ${isFixed ? '' : 'animate-bounce-slow'}"></i>
-                        </span>
-                    `;
-                }
-
-                return `
-                    <tr class="${rowClass}">
-                        <td class="px-4 py-3 text-white">${dayjs(entry.date).format('MMM D')}</td>
-                        <td class="px-4 py-3 text-text-muted text-xs">${entry.startTime} - ${entry.endTime}</td>
-                        <td class="px-4 py-3 text-white font-medium">${calculateHours(entry.startTime, entry.endTime).toFixed(2)}</td>
-                        <td class="px-4 py-3 text-text-muted">${entry.clientName || '-'}</td>
-                        <td class="px-4 py-3">
-                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${entry.activityType === 'Restricted' ? 'bg-pink-500/10 text-pink-400' : 'bg-purple-500/10 text-purple-400'}">
-                                ${entry.activityType}
-                            </span>
-                        </td>
-                        <td class="px-4 py-3 text-text-muted text-xs hidden sm:table-cell">${entry.activityType === 'Unrestricted' ? (entry.unrestrictedActivityType || 'General') : '-'}</td>
-                        <td class="px-4 py-3 text-xs ${entry.supervisionType === 'No Supervision' ? 'text-text-muted' : 'text-teal-400 font-medium'}">
-                            ${entry.supervisionType}
-                        </td>
-                        <td class="px-4 py-3 text-text-muted text-xs">${entry.supervisorName || '-'}</td>
-                        <td class="note-cell px-4 py-3 text-text-muted text-xs hidden md:table-cell max-w-xs truncate cursor-pointer hover:text-white transition-all duration-200" data-has-feedback="${hasSupervisorNote}" data-feedback="${(entry.supervisorNote || '').replace(/"/g, '&quot;')}" data-notes="${notesDisplay.replace(/"/g, '&quot;')}" title="${hasSupervisorNote ? 'Click to read supervisor note' : 'Click to view full note'}">${notesCellContent}</td>
-                        <td class="feedback-cell px-4 py-3 text-center cursor-pointer" data-id="${entry.id}" data-fixed="${isFixed}" data-feedback="${(entry.supervisorNote || '').replace(/"/g, '&quot;')}">${feedbackCellContent}</td>
-                        <td class="px-4 py-3 text-right">
-                            <div class="flex justify-end gap-1">
-                                <button class="add-supervisor-note-btn p-2 rounded-lg hover:bg-surface-hover text-primary hover:text-white transition-all duration-200" data-id="${entry.id}" data-supervisor-note="${(entry.supervisorNote || '').replace(/"/g, '&quot;')}" title="Add/Edit Supervisor Note">
-                                    <i class="ph-bold ph-note-pencil"></i>
-                                </button>
-                                ${hasSupervisorNote ? `
-                                <button class="delete-supervisor-note-btn p-2 rounded-lg hover:bg-surface-hover text-red-400 hover:text-red-500 transition-all duration-200" data-id="${entry.id}" title="Delete Supervisor Note">
-                                    <i class="ph-bold ph-trash"></i>
-                                </button>
-                                ` : ''}
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        }
+        if (hasEntries && !hasVerif) return { tier: 'red', label: 'Missing M-FVF', cls: 'mcal-red', dotCls: 'bg-red-400' };
+        return { tier: 'gray', label: 'Not Started', cls: 'mcal-gray', dotCls: 'bg-slate-500' };
     };
 
-    reviewMonthSelector.onchange = updateReviewTable;
-    updateReviewTable();
+    const updateLabel = (m) => {
+        const st = getMonthStatus(m);
+        const dotColor = { green: '#22c55e', yellow: '#f59e0b', red: '#ef4444', gray: '#64748b' }[st.tier];
+        label.innerHTML = `<span class="inline-block w-2 h-2 rounded-full mr-2 flex-shrink-0" style="background:${dotColor}"></span>${dayjs(m + '-01').format('MMM YYYY')} — ${st.label}`;
+    };
+
+    let calYear = parseInt(dayjs().format('YYYY'));
+    const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    const renderCalendar = () => {
+        let html = `<div style="padding:16px 16px 12px;">
+        <div class="flex items-center justify-between mb-4">
+            <button class="mcal-prev-yr w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/10 text-slate-300 hover:text-white transition-all"><i class="ph-bold ph-caret-left"></i></button>
+            <span class="text-base font-bold text-white">${calYear}</span>
+            <button class="mcal-next-yr w-8 h-8 rounded-lg flex items-center justify-center hover:bg-white/10 text-slate-300 hover:text-white transition-all"><i class="ph-bold ph-caret-right"></i></button>
+        </div>`;
+        html += `<div class="grid grid-cols-4 gap-2">`;
+        for (let mi = 0; mi < 12; mi++) {
+            const m = `${calYear}-${String(mi + 1).padStart(2, '0')}`;
+            const st = getMonthStatus(m);
+            const monthEntries = entries.filter(e => dayjs(e.date).format('YYYY-MM') === m);
+            const isActive = m === currentReviewMonth;
+            const statusColor = st.tier === 'green' ? 'text-green-300' : st.tier === 'yellow' ? 'text-amber-300' : st.tier === 'red' ? 'text-red-300' : 'text-slate-500';
+            html += `<button class="mcal-tile ${st.cls} ${isActive ? 'mcal-tile-active' : ''}" data-month="${m}">
+                <span class="text-xs font-bold text-white">${MONTH_NAMES[mi]}</span>
+                <span class="text-[9px] font-semibold ${statusColor}" style="line-height:1.2">${st.label}</span>
+                ${monthEntries.length > 0 ? `<span class="text-[8px] text-slate-400">${monthEntries.length} entr${monthEntries.length === 1 ? 'y' : 'ies'}</span>` : ''}
+            </button>`;
+        }
+        html += `</div>`;
+        html += `<div class="flex items-center justify-between mt-4 pt-3 border-t border-white/[0.08]">
+            <button class="mcal-today text-[11px] font-semibold text-primary hover:text-white transition-colors px-2 py-1 rounded-md hover:bg-primary/20"><i class="ph ph-arrow-counter-clockwise mr-1"></i>This Month</button>
+            <div class="flex items-center gap-2.5 text-[9px] text-slate-400">
+                <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full" style="background:#f87171"></span>Missing</span>
+                <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full" style="background:#fbbf24"></span>Waiting</span>
+                <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full" style="background:#4ade80"></span>Signed</span>
+                <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full" style="background:#64748b"></span>None</span>
+            </div>
+        </div></div>`;
+        calendarEl.innerHTML = html;
+
+        calendarEl.querySelectorAll('.mcal-tile').forEach(tile => {
+            tile.addEventListener('click', async () => {
+                const m = tile.dataset.month;
+                currentReviewMonth = m;
+                if (!verifCache[m] && verifCache[m] !== null) {
+                    try {
+                        const snap = await getDoc(doc(db, `users/${trainee.id}/verifications/${m}`));
+                        verifCache[m] = snap.exists() ? snap.data() : null;
+                    } catch (e) { verifCache[m] = null; }
+                }
+                updateLabel(m);
+                calendarEl.classList.add('hidden');
+                await renderMonth();
+                renderCalendar();
+            });
+        });
+        calendarEl.querySelector('.mcal-prev-yr')?.addEventListener('click', (e) => { e.stopPropagation(); calYear--; renderCalendar(); });
+        calendarEl.querySelector('.mcal-next-yr')?.addEventListener('click', (e) => { e.stopPropagation(); calYear++; renderCalendar(); });
+        calendarEl.querySelector('.mcal-today')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const now = dayjs().format('YYYY-MM');
+            calYear = parseInt(dayjs().format('YYYY'));
+            currentReviewMonth = now;
+            if (!verifCache[now] && verifCache[now] !== null) {
+                getDoc(doc(db, `users/${trainee.id}/verifications/${now}`)).then(snap => {
+                    verifCache[now] = snap.exists() ? snap.data() : null;
+                }).catch(() => { verifCache[now] = null; });
+            }
+            updateLabel(now);
+            calendarEl.classList.add('hidden');
+            renderMonth();
+            renderCalendar();
+        });
+    };
+
+    trigger.onclick = (e) => {
+        e.stopPropagation();
+        calendarEl.classList.toggle('hidden');
+        if (!calendarEl.classList.contains('hidden')) renderCalendar();
+    };
+    calendarEl.onclick = (e) => e.stopPropagation();
+    if (!window._mcalDismissWired) {
+        window._mcalDismissWired = true;
+        document.addEventListener('click', () => {
+            document.getElementById('review-month-calendar')?.classList.add('hidden');
+        });
+    }
+
+    currentReviewMonth = dayjs().format('YYYY-MM');
+    if (entryMonths.length > 0) currentReviewMonth = entryMonths[entryMonths.length - 1];
+
+    const renderMonth = async () => {
+        if (!currentReviewMonth) return;
+        const [y, mo] = currentReviewMonth.split('-');
+        const filtered = entries.filter(e => { const d = dayjs(e.date); return d.year() == y && (d.month() + 1) == mo; }).sort((a, b) => b.date.localeCompare(a.date));
+        const verification = verifCache[currentReviewMonth] || null;
+        const summary = calculateSummaryData(filtered);
+
+        renderTraineeSnapshot(trainee, summary, verification, entries);
+        renderOverviewTab(summary, filtered, verification, trainee);
+        renderEntriesTab(filtered);
+        renderMfvfTab(currentReviewMonth, verification);
+        renderFeedbackTab(filtered);
+        renderQuickActions(currentReviewMonth, verification);
+        switchReviewTab(activeReviewTab);
+    };
+
+    currentRenderMonth = renderMonth;
+    updateLabel(currentReviewMonth);
+    await renderMonth();
 };
 
-const renderSupervisorMfvfReviewPanel = (month, request) => {
+const refreshCurrentMonth = async () => {
+    if (currentRenderMonth) await currentRenderMonth();
+};
+
+const renderTraineeSnapshot = (trainee, summary, verification, allEntries) => {
+    const el = document.getElementById('trainee-snapshot');
+    if (!el) return;
+    const missingFields = [];
+    if (!trainee.name) missingFields.push('Name');
+    if (!trainee.rbtNumber && !trainee.bacbId) missingFields.push('BACB/RBT ID');
+    if (!trainee.fieldworkType) missingFields.push('Fieldwork Type');
+    if (!trainee.fieldworkStartDate) missingFields.push('Start Date');
+
+    const allTimeSummary = calculateSummaryData(allEntries);
+
+    el.innerHTML = `
+        <div class="flex flex-col sm:flex-row sm:items-start gap-4">
+            <div class="w-14 h-14 rounded-full bg-primary/20 flex items-center justify-center text-primary flex-shrink-0">
+                <i class="ph-fill ph-user text-2xl"></i>
+            </div>
+            <div class="flex-1 min-w-0 space-y-3">
+                <div>
+                    <h3 class="text-xl font-bold text-white">${trainee.name || '<span class="text-red-400">No Name</span>'}</h3>
+                    <p class="text-sm text-text-muted">${trainee.email || ''}</p>
+                </div>
+                <div class="grid grid-cols-3 gap-x-6 gap-y-2 text-xs">
+                    <div><span class="text-text-muted">BACB/RBT ID:</span><p class="text-white font-medium">${trainee.rbtNumber || trainee.bacbId || '<span class="text-red-400">Missing</span>'}</p></div>
+                    <div><span class="text-text-muted">Fieldwork Type:</span><p class="text-white font-medium">${trainee.fieldworkType || '<span class="text-amber-400">Not Set</span>'}</p></div>
+                    <div><span class="text-text-muted">All-Time Hours:</span><p class="text-white font-medium">${allTimeSummary.total.toFixed(1)}h</p></div>
+                </div>
+                ${missingFields.length > 0 ? `<div class="flex items-center gap-2 text-xs text-amber-400"><i class="ph ph-warning"></i> Missing: ${missingFields.join(', ')}</div>` : ''}
+            </div>
+        </div>`;
+};
+
+const switchReviewTab = (tab) => {
+    activeReviewTab = tab;
+    document.querySelectorAll('.review-tab-btn').forEach(btn => {
+        const isActive = btn.dataset.tab === tab;
+        btn.classList.toggle('border-primary', isActive);
+        btn.classList.toggle('text-primary', isActive);
+        btn.classList.toggle('border-transparent', !isActive);
+        btn.classList.toggle('text-text-muted', !isActive);
+    });
+    document.querySelectorAll('.review-tab-panel').forEach(p => p.classList.add('hidden'));
+    const panel = document.getElementById(`tab-${tab}`);
+    if (panel) panel.classList.remove('hidden');
+};
+
+const renderOverviewTab = (summary, entries, verification, trainee) => {
+    const grid = document.getElementById('review-stats-grid');
+    const warningsPanel = document.getElementById('trainee-warnings-panel');
+    if (grid) {
+        grid.innerHTML = `
+            ${createStatCard('Total', summary.total.toFixed(2), null, 'ph ph-clock', 'bg-blue-500 text-blue-400')}
+            ${createStatCard('Restricted', summary.restricted.toFixed(2), null, 'ph ph-hand-heart', 'bg-pink-500 text-pink-400')}
+            ${createStatCard('Unrestricted', summary.unrestricted.toFixed(2), null, 'ph ph-brain', 'bg-purple-500 text-purple-400')}
+            ${createStatCard('Supervised', summary.supervised.toFixed(2), `${summary.percentage.toFixed(1)}%`, 'ph ph-users-three', 'bg-teal-500 text-teal-400')}
+        `;
+    }
+    if (warningsPanel) {
+        const warnings = generateAuditWarnings(trainee, entries, summary, verification);
+        if (warnings.length > 0) {
+            warningsPanel.innerHTML = `<div class="glass-panel rounded-xl p-4 border border-white/5 space-y-2">
+                <h4 class="text-xs font-bold text-text-muted uppercase tracking-wider mb-2">Audit Checks</h4>
+                <div class="flex flex-wrap gap-2">${renderWarningBadges(warnings, false)}</div>
+            </div>`;
+        } else {
+            warningsPanel.innerHTML = `<div class="flex items-center gap-2 text-sm text-green-400"><i class="ph-fill ph-check-circle"></i> All audit checks passed for this month.</div>`;
+        }
+    }
+};
+
+const ENTRY_FILTERS = [
+    { id: 'restricted', label: 'Restricted', test: e => e.activityType === 'Restricted' },
+    { id: 'unrestricted', label: 'Unrestricted', test: e => e.activityType === 'Unrestricted' },
+    { id: 'supervised', label: 'Supervised', test: e => e.supervisionType !== 'No Supervision' },
+    { id: 'unsupervised', label: 'No Supervision', test: e => e.supervisionType === 'No Supervision' },
+    { id: 'has-note', label: 'Has Feedback', test: e => hasFeedback(e) },
+    { id: 'unresolved', label: 'Unresolved', test: e => hasFeedback(e) && getFeedbackStatus(e) === 'pending' },
+    { id: 'observation', label: 'Observation', test: e => e.supervisionType?.includes('Observation') },
+    { id: 'client', label: 'Client Present', test: e => e.clientPresent === 'Yes' },
+];
+
+const renderEntriesTab = (allFiltered) => {
+    const filtersEl = document.getElementById('entry-filters');
+    const reviewTableBody = document.getElementById('review-table-body');
+
+    if (filtersEl) {
+        filtersEl.innerHTML = ENTRY_FILTERS.map(f => {
+            const active = activeEntryFilters.has(f.id);
+            return `<button class="entry-filter-btn px-2.5 py-1 rounded-lg border transition-all ${active ? 'bg-primary/20 border-primary/40 text-primary font-semibold' : 'bg-white/5 border-white/10 text-text-muted hover:text-white hover:border-white/20'}" data-filter="${f.id}">${f.label}</button>`;
+        }).join('');
+        filtersEl.querySelectorAll('.entry-filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const fid = btn.dataset.filter;
+                if (activeEntryFilters.has(fid)) activeEntryFilters.delete(fid); else activeEntryFilters.add(fid);
+                renderEntriesTab(allFiltered);
+            });
+        });
+    }
+
+    let filtered = allFiltered;
+    if (activeEntryFilters.size > 0) {
+        filtered = allFiltered.filter(e => {
+            return [...activeEntryFilters].every(fid => {
+                const f = ENTRY_FILTERS.find(x => x.id === fid);
+                return f ? f.test(e) : true;
+            });
+        });
+    }
+
+    if (reviewTableBody) {
+        if (filtered.length === 0) {
+            reviewTableBody.innerHTML = `<tr><td colspan="11" class="px-4 py-8 text-center text-text-muted"><i class="ph ph-funnel text-2xl mb-2 block opacity-30"></i>${activeEntryFilters.size > 0 ? 'No entries match filters.' : 'No entries this month.'}</td></tr>`;
+            return;
+        }
+        reviewTableBody.innerHTML = filtered.map(entry => {
+            let notesDisplay = entry.notes || '';
+            if (entry.activityType === 'Unrestricted' && entry.unrestrictedActivityType) notesDisplay = `[${entry.unrestrictedActivityType}] ${notesDisplay}`;
+            const hasSupervisorNote = !!entry.supervisorNote;
+            const isFixed = !!entry.feedbackFixed;
+            const supFbStatus = getFeedbackStatus(entry);
+            const supHasFb = hasFeedback(entry);
+            let rowClass = 'hover:bg-surface-hover transition-colors';
+            if (supHasFb) {
+                if (supFbStatus === 'resolved') rowClass = 'green-row transition-all duration-200';
+                else if (supFbStatus === 'entry_deleted' || supFbStatus === 'deleted') rowClass = 'opacity-50 bg-slate-500/5 transition-all duration-200';
+                else if (supFbStatus === 'read') rowClass = 'bg-yellow-500/5 border-l-2 border-yellow-500/30 transition-all duration-200';
+                else rowClass = 'magenta-row transition-all duration-200';
+            }
+
+            let feedbackCellContent = '';
+            if (supHasFb) {
+                const fbConf = getFeedbackStatusConfig(supFbStatus);
+                const areas = entry.feedbackIssueAreas || [];
+                const areaPreview = areas.length > 0 ? areas.slice(0, 2).map(getFeedbackIssueLabel).join(' \u2022 ') : '';
+                const notePreview = entry.supervisorNote ? (entry.supervisorNote.length > 25 ? entry.supervisorNote.substring(0, 25) + '...' : entry.supervisorNote) : '';
+                const previewText = [areaPreview, notePreview].filter(Boolean).join(': ');
+                feedbackCellContent = `<div class="text-left space-y-0.5">
+                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${fbConf.bg} ${fbConf.text}"><i class="ph-fill ph-${fbConf.icon}"></i> ${fbConf.label}</span>
+                    ${previewText ? `<p class="text-[10px] ${fbConf.text} opacity-70 truncate max-w-[160px]">${previewText}</p>` : ''}
+                    ${entry.traineeResponse ? '<span class="text-[9px] text-teal-400"><i class="ph ph-chat-text"></i> Response</span>' : ''}
+                </div>`;
+            }
+
+            return `<tr class="${rowClass}">
+                <td class="px-4 py-3 text-white">${dayjs(entry.date).format('MMM D')}</td>
+                <td class="px-4 py-3 text-text-muted text-xs">${entry.startTime} - ${entry.endTime}</td>
+                <td class="px-4 py-3 text-white font-medium">${calculateHours(entry.startTime, entry.endTime).toFixed(2)}</td>
+                <td class="px-4 py-3 text-text-muted">${entry.clientName || '-'}</td>
+                <td class="px-4 py-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${entry.activityType === 'Restricted' ? 'bg-pink-500/10 text-pink-400' : 'bg-purple-500/10 text-purple-400'}">${entry.activityType}</span></td>
+                <td class="px-4 py-3 text-text-muted text-xs hidden sm:table-cell">${entry.activityType === 'Unrestricted' ? (entry.unrestrictedActivityType || 'General') : '-'}</td>
+                <td class="px-4 py-3 text-xs ${entry.supervisionType === 'No Supervision' ? 'text-text-muted' : 'text-teal-400 font-medium'}">${entry.supervisionType}</td>
+                <td class="px-4 py-3 text-text-muted text-xs">${entry.supervisorName || '-'}</td>
+                <td class="note-cell px-4 py-3 text-text-muted text-xs hidden md:table-cell max-w-xs truncate cursor-pointer hover:text-white" data-has-feedback="${hasSupervisorNote}" data-feedback="${(entry.supervisorNote || '').replace(/"/g, '&quot;')}" data-notes="${notesDisplay.replace(/"/g, '&quot;')}">${notesDisplay}</td>
+                <td class="feedback-cell px-4 py-3 cursor-pointer" data-id="${entry.id}" data-fixed="${isFixed}" data-feedback="${(entry.supervisorNote || '').replace(/"/g, '&quot;')}">${feedbackCellContent}</td>
+                <td class="px-4 py-3 text-right"><div class="flex justify-end gap-1">
+                    <button class="add-supervisor-note-btn p-2 rounded-lg hover:bg-surface-hover text-primary hover:text-white transition-all" data-id="${entry.id}" data-supervisor-note="${(entry.supervisorNote || '').replace(/"/g, '&quot;')}" title="Add/Edit Note"><i class="ph-bold ph-note-pencil"></i></button>
+                    ${hasSupervisorNote ? `<button class="delete-supervisor-note-btn p-2 rounded-lg hover:bg-surface-hover text-red-400 hover:text-red-500 transition-all" data-id="${entry.id}" title="Delete Note"><i class="ph-bold ph-trash"></i></button>` : ''}
+                </div></td>
+            </tr>`;
+        }).join('');
+    }
+
+    const csvBtn = document.getElementById('export-csv-btn');
+    if (csvBtn) {
+        csvBtn.onclick = () => exportEntriesCsv(filtered);
+    }
+};
+
+const exportEntriesCsv = (entries) => {
+    if (!entries || entries.length === 0) { CustomModal.alert('No entries to export.', 'Export'); return; }
+    const trainee = myTrainees?.find(t => t.id === selectedTraineeId);
+    const traineeName = (trainee?.name || 'Trainee').replace(/[^a-zA-Z0-9]/g, '_');
+    const monthLabel = currentReviewMonth ? dayjs(currentReviewMonth + '-01').format('MMM_YYYY') : 'entries';
+    const esc = (v) => { const s = String(v ?? '').replace(/"/g, '""'); return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s}"` : s; };
+    const headers = ['Date','Start','End','Hours','Client','Type','Unrestricted Type','Supervision','Supervisor','Notes','Feedback Status','Feedback Issues','Supervisor Feedback'];
+    const rows = entries.map(e => {
+        const hrs = calculateHours(e.startTime, e.endTime);
+        const fbSt = getFeedbackStatus(e);
+        const fbConf = fbSt ? getFeedbackStatusConfig(fbSt) : null;
+        const areas = (e.feedbackIssueAreas || []).map(getFeedbackIssueLabel).join('; ');
+        return [
+            dayjs(e.date).format('YYYY-MM-DD'), e.startTime, e.endTime, hrs.toFixed(2),
+            e.clientName || '', e.activityType || '', e.activityType === 'Unrestricted' ? (e.unrestrictedActivityType || '') : '',
+            e.supervisionType || '', e.supervisorName || '', e.notes || '',
+            fbConf ? fbConf.label : '', areas, e.supervisorNote || ''
+        ].map(esc).join(',');
+    });
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `${traineeName}_entries_${monthLabel}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+};
+
+const renderMfvfTab = (month, request) => {
     const panel = document.getElementById('supervisor-mfvf-review-panel');
+    const actionsEl = document.getElementById('mfvf-action-buttons');
     if (!panel) return;
 
-    if (!request || !['submitted', 'changes_requested', 'signed', 'rejected'].includes(request.status)) {
-        panel.classList.add('hidden');
-        panel.innerHTML = '';
+    if (!request || request.status === 'not_started') {
+        panel.innerHTML = `<div class="glass-panel rounded-xl p-6 text-center border border-white/5"><i class="ph ph-file-plus text-3xl text-text-muted mb-2"></i><p class="text-sm text-text-muted">No M-FVF submitted for ${dayjs(month).format('MMMM YYYY')} yet.</p></div>`;
+        if (actionsEl) actionsEl.innerHTML = '';
         return;
     }
 
     const [label, textClass, boxClass, icon] = getMfvfStatusConfig(request.status);
     const data = request.formData || {};
     const canReview = request.status === 'submitted' || request.status === 'changes_requested';
-    const signedLine = request.status === 'signed'
-        ? `<p class="text-xs text-green-300 mt-2">Signed by ${request.supervisorSignatureName || request.supervisorName || 'Supervisor'} on ${dayjs(request.signedAt).format('MMM D, YYYY h:mm A')}.</p>`
-        : '';
+    const signedLine = request.status === 'signed' ? `<p class="text-xs text-green-300 mt-2">Signed by ${request.supervisorSignatureName || request.supervisorName || 'Supervisor'} on ${dayjs(request.signedAt).format('MMM D, YYYY h:mm A')}.</p>` : '';
 
     panel.innerHTML = `
         <div class="rounded-2xl border ${boxClass} p-5">
             <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
                 <div class="flex items-start gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center ${textClass}">
-                        <i class="${icon} text-xl"></i>
-                    </div>
+                    <div class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center ${textClass}"><i class="${icon} text-xl"></i></div>
                     <div>
-                        <p class="text-xs uppercase tracking-widest font-bold ${textClass}">M-FVF Request: ${label}</p>
+                        <p class="text-xs uppercase tracking-widest font-bold ${textClass}">M-FVF: ${label}</p>
                         <h4 class="text-lg font-bold text-white mt-1">${request.traineeName || 'Trainee'} • ${request.monthLabel || dayjs(month).format('MMMM YYYY')}</h4>
-                        <p class="text-xs text-text-muted mt-1">Submitted to ${request.supervisorName || 'Supervisor'}${request.traineeSubmittedAt ? ` on ${dayjs(request.traineeSubmittedAt).format('MMM D, YYYY h:mm A')}` : ''}</p>
-                        ${request.traineeNote ? `<p class="text-sm text-slate-200 mt-3">Trainee note: ${request.traineeNote}</p>` : ''}
-                        ${request.supervisorComments ? `<p class="text-sm text-orange-200 mt-3">Supervisor note: ${request.supervisorComments}</p>` : ''}
+                        <p class="text-xs text-text-muted mt-1">${request.traineeSubmittedAt ? `Submitted ${dayjs(request.traineeSubmittedAt).format('MMM D, YYYY h:mm A')}` : ''}</p>
+                        ${request.supervisorComments ? `<p class="text-sm text-orange-200 mt-3">Your note: ${request.supervisorComments}</p>` : ''}
                         ${signedLine}
                     </div>
                 </div>
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs min-w-full lg:min-w-[420px]">
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs min-w-full lg:min-w-[400px]">
                     <div class="rounded-xl bg-white/5 border border-white/5 p-3"><p class="text-text-muted uppercase tracking-wider">Total</p><p class="text-white font-bold mt-1">${formatHoursForDisplay(data.totalHours || 0)}</p></div>
                     <div class="rounded-xl bg-white/5 border border-white/5 p-3"><p class="text-text-muted uppercase tracking-wider">Supervised</p><p class="text-white font-bold mt-1">${formatHoursForDisplay(data.supervisedHours || 0)}</p></div>
                     <div class="rounded-xl bg-white/5 border border-white/5 p-3"><p class="text-text-muted uppercase tracking-wider">Observation</p><p class="text-white font-bold mt-1">${Math.round(data.observationMinutes || 0)}m</p></div>
                     <div class="rounded-xl bg-white/5 border border-white/5 p-3"><p class="text-text-muted uppercase tracking-wider">Location</p><p class="text-white font-bold mt-1">${data.state || '-'} / ${data.country || '-'}</p></div>
                 </div>
             </div>
-            <div class="flex flex-wrap justify-end gap-3 mt-5">
-                ${canReview ? `
-                    <button id="mfvf-request-changes-btn" class="px-4 py-2 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 text-orange-200 border border-orange-500/25 text-sm font-semibold transition-colors">
-                        <i class="ph ph-chat-teardrop-text"></i> Request Changes
-                    </button>
-                ` : ''}
-                <button id="mfvf-open-submitted-pdf-btn" class="px-4 py-2 rounded-xl bg-green-500 hover:bg-green-600 text-white text-sm font-bold transition-colors shadow-lg">
-                    <i class="ph ph-file-pdf"></i> Open Submitted PDF
-                </button>
-            </div>
-        </div>
-    `;
-    panel.classList.remove('hidden');
+        </div>`;
 
-    document.getElementById('mfvf-open-submitted-pdf-btn')?.addEventListener('click', () => openSubmittedMfvfPdf(request));
-    document.getElementById('mfvf-request-changes-btn')?.addEventListener('click', () => requestMfvfChanges(month, request));
+    if (actionsEl) {
+        actionsEl.innerHTML = `
+            ${(request.submittedPdfUrl || request.signedPdfUrl || request.draftPdfUrl) ? `<button id="mfvf-open-submitted-pdf-btn" class="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-semibold transition-colors border border-white/10"><i class="ph ph-file-pdf"></i> Open PDF</button>` : ''}
+            ${canReview ? `<button id="mfvf-request-changes-btn" class="px-4 py-2 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 text-orange-200 border border-orange-500/25 text-sm font-semibold transition-colors"><i class="ph ph-chat-teardrop-text"></i> Request Changes</button>` : ''}
+            ${canReview ? `<button id="mfvf-sign-btn" class="px-4 py-2 rounded-xl bg-green-500 hover:bg-green-600 text-white text-sm font-bold transition-colors shadow-lg"><i class="ph ph-pencil-line"></i> Review & Sign</button>` : ''}
+        `;
+        document.getElementById('mfvf-open-submitted-pdf-btn')?.addEventListener('click', () => openSubmittedMfvfPdf(request));
+        document.getElementById('mfvf-request-changes-btn')?.addEventListener('click', () => requestMfvfChanges(month, request));
+        document.getElementById('mfvf-sign-btn')?.addEventListener('click', () => openSupervisorReviewModal(month, request));
+    }
 };
 
-const openSubmittedMfvfPdf = async (request) => {
-    const url = request?.submittedPdfUrl || request?.signedPdfUrl;
-    if (!url) {
-        await CustomModal.alert("No uploaded PDF is attached to this request yet.", "PDF Not Found");
+const renderFeedbackTab = (entries) => {
+    const el = document.getElementById('feedback-entries-list');
+    if (!el) return;
+    const withFeedback = entries.filter(e => hasFeedback(e));
+    if (withFeedback.length === 0) {
+        el.innerHTML = `<div class="glass-panel rounded-xl p-6 text-center border border-white/5"><i class="ph ph-chat-circle text-3xl text-text-muted mb-2"></i><p class="text-sm text-text-muted">No supervisor feedback this month.</p></div>`;
         return;
     }
-    window.open(url, '_blank', 'noopener,noreferrer');
+    const pending = withFeedback.filter(e => { const s = getFeedbackStatus(e); return s === 'pending' || s === 'read'; });
+    const resolved = withFeedback.filter(e => getFeedbackStatus(e) === 'resolved');
+    const deleted = withFeedback.filter(e => { const s = getFeedbackStatus(e); return s === 'deleted' || s === 'entry_deleted'; });
+
+    const renderCard = (e) => {
+        const fbStatus = getFeedbackStatus(e);
+        const fbConf = getFeedbackStatusConfig(fbStatus);
+        const isDeleted = fbStatus === 'deleted' || fbStatus === 'entry_deleted';
+        const borderColor = isDeleted ? 'border-slate-500/20' : (fbStatus === 'resolved' ? 'border-green-500/20' : 'border-pink-500/20');
+        const bgColor = isDeleted ? 'bg-slate-500/5 opacity-60' : (fbStatus === 'resolved' ? 'bg-green-500/5' : 'bg-pink-500/5');
+        const areas = e.feedbackIssueAreas || [];
+        const totalHrs = calculateHours(e.startTime, e.endTime);
+        const statusBadge = `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${fbConf.bg} ${fbConf.text}"><i class="ph-fill ph-${fbConf.icon}"></i> ${fbConf.label}</span>`;
+        const cardId = `fb-card-${e.id}`;
+        const snap = e.feedbackEntrySnapshot || {};
+        const hasSnapshot = snap.date || snap.notes || snap.activityType;
+
+        return `<div class="glass-panel rounded-xl p-4 border ${borderColor} ${bgColor}">
+            <div class="flex items-start justify-between gap-3">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-2 flex-wrap">
+                        <span class="text-xs text-white font-medium">${dayjs(e.date).format('MMM D, YYYY')}</span>
+                        <span class="text-xs text-text-muted">${e.startTime} – ${e.endTime}</span>
+                        <span class="text-xs text-text-muted font-medium">${totalHrs.toFixed(2)} hrs</span>
+                        ${e.clientName ? `<span class="text-xs text-text-muted">${e.clientName}</span>` : ''}
+                        ${statusBadge}
+                    </div>
+                    ${isDeleted ? '<div class="flex items-center gap-1.5 mb-2 px-2.5 py-1.5 rounded-lg bg-slate-500/10 border border-slate-500/15"><i class="ph-fill ph-trash text-slate-400 text-xs"></i><span class="text-[11px] text-slate-400 font-medium">This entry was deleted by trainee.</span></div>' : ''}
+                    ${areas.length > 0 ? `<div class="mb-2"><span class="text-[10px] text-text-muted/60 uppercase tracking-wider font-semibold">Issue</span><div class="flex flex-wrap gap-1 mt-1">${renderFeedbackIssueBadges(areas)}</div></div>` : ''}
+                    ${e.supervisorNote ? `<div class="mb-2"><span class="text-[10px] text-text-muted/60 uppercase tracking-wider font-semibold">Supervisor Feedback</span><p class="text-sm text-white mt-0.5 whitespace-pre-line">${e.supervisorNote}</p></div>` : ''}
+                    ${e.feedbackRequestedAction ? `<div class="mb-2"><span class="text-[10px] text-text-muted/60 uppercase tracking-wider font-semibold">Requested Action</span><p class="text-xs text-amber-300/80 mt-0.5">${e.feedbackRequestedAction}</p></div>` : ''}
+                    ${e.traineeResponse ? `<div class="mb-2 pl-3 border-l-2 border-teal-500/30"><span class="text-[10px] text-teal-400/80 uppercase tracking-wider font-semibold">Trainee Response</span><p class="text-xs text-teal-200/80 mt-0.5 whitespace-pre-line">${e.traineeResponse}</p></div>` : ''}
+                    <div class="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-text-muted mt-2 pt-2 border-t border-white/5">
+                        ${e.feedbackSentAt ? `<span><i class="ph ph-paper-plane-tilt"></i> Sent ${dayjs(e.feedbackSentAt).format('MMM D, h:mm A')}</span>` : ''}
+                        ${e.feedbackResolvedAt ? `<span><i class="ph-fill ph-check-circle"></i> Resolved ${dayjs(e.feedbackResolvedAt).format('MMM D, h:mm A')}</span>` : ''}
+                        ${e.feedbackDeletedAt ? `<span><i class="ph ph-trash"></i> Deleted ${dayjs(e.feedbackDeletedAt).format('MMM D, h:mm A')}</span>` : ''}
+                    </div>
+                    ${hasSnapshot ? `<div class="mt-2"><button class="fb-toggle-snapshot text-[10px] text-text-muted/50 hover:text-text-muted transition-colors flex items-center gap-1" data-target="${cardId}"><i class="ph ph-caret-right text-[8px] fb-caret"></i> View entry details</button><div id="${cardId}" class="hidden mt-1.5 pl-3 border-l border-white/5 text-[11px] text-text-muted/60 space-y-0.5">${snap.activityType ? `<p><span class="text-text-muted/40">Type:</span> ${snap.activityType}${snap.unrestrictedActivityType ? ' / ' + snap.unrestrictedActivityType : ''}</p>` : ''}${snap.supervisionType ? `<p><span class="text-text-muted/40">Supervision:</span> ${snap.supervisionType}</p>` : ''}${snap.supervisorName ? `<p><span class="text-text-muted/40">Supervisor:</span> ${snap.supervisorName}</p>` : ''}${snap.notes ? `<p><span class="text-text-muted/40">Note:</span> ${snap.notes}</p>` : ''}</div></div>` : ''}
+                </div>
+                <div class="flex flex-col gap-1 flex-shrink-0">
+                    ${!isDeleted ? `<button class="add-supervisor-note-btn p-2 rounded-lg hover:bg-surface-hover text-primary hover:text-white transition-all" data-id="${e.id}" title="Edit Feedback"><i class="ph-bold ph-note-pencil"></i></button>
+                    <button class="delete-supervisor-note-btn p-2 rounded-lg hover:bg-surface-hover text-red-400 hover:text-red-500 transition-all" data-id="${e.id}" title="Delete Feedback"><i class="ph-bold ph-trash"></i></button>` : ''}
+                </div>
+            </div>
+        </div>`;
+    };
+
+    const renderSection = (title, icon, colorClass, items) => {
+        if (items.length === 0) return '';
+        return `<div class="space-y-2"><h4 class="text-xs font-bold ${colorClass} uppercase tracking-wider flex items-center gap-1.5"><i class="ph-fill ph-${icon}"></i> ${title} (${items.length})</h4>${items.map(renderCard).join('')}</div>`;
+    };
+
+    el.innerHTML = [
+        renderSection('Pending', 'envelope', 'text-pink-400', pending),
+        renderSection('Resolved', 'check-circle', 'text-green-400', resolved),
+        renderSection('Deleted Entries', 'trash', 'text-slate-400', deleted)
+    ].filter(Boolean).join('<div class="mt-5"></div>');
+
+    el.querySelectorAll('.fb-toggle-snapshot').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const target = document.getElementById(btn.dataset.target);
+            if (!target) return;
+            const hidden = target.classList.toggle('hidden');
+            const caret = btn.querySelector('.fb-caret');
+            if (caret) caret.style.transform = hidden ? '' : 'rotate(90deg)';
+            btn.childNodes[btn.childNodes.length - 1].textContent = hidden ? ' View entry details' : ' Hide entry details';
+        });
+    });
 };
 
-const formatHoursForDisplay = (hours) => {
-    const h = Math.floor(hours);
-    const m = Math.round((hours % 1) * 60);
-    return `${h}h ${m}m`;
+const renderQuickActions = (month, verification) => {
+    const el = document.getElementById('review-quick-actions');
+    if (!el) return;
+    const hasPdf = verification?.submittedPdfUrl || verification?.signedPdfUrl || verification?.draftPdfUrl;
+    const canSign = verification?.status === 'submitted' || verification?.status === 'changes_requested';
+    el.innerHTML = `
+        ${hasPdf ? `<button class="qa-open-pdf px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-semibold transition-all border border-white/10"><i class="ph ph-file-pdf mr-1"></i> Open PDF</button>` : ''}
+        ${canSign ? `<button class="qa-request-changes px-3 py-2 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 text-orange-200 text-xs font-semibold transition-all border border-orange-500/20"><i class="ph ph-chat-teardrop-text mr-1"></i> Request Changes</button>` : ''}
+        <button class="qa-add-note px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-semibold transition-all border border-white/10"><i class="ph ph-note mr-1"></i> Add Summary Note</button>
+        ${canSign ? `<button class="qa-sign px-3 py-2 rounded-xl bg-green-500/20 hover:bg-green-500/30 text-green-300 text-xs font-bold transition-all border border-green-500/30"><i class="ph ph-pencil-line mr-1"></i> Review & Sign</button>` : ''}
+        <button class="qa-message px-3 py-2 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold transition-all border border-primary/20"><i class="ph ph-chat-centered-text mr-1"></i> Message Trainee</button>
+    `;
+    el.querySelector('.qa-open-pdf')?.addEventListener('click', () => openSubmittedMfvfPdf(verification));
+    el.querySelector('.qa-request-changes')?.addEventListener('click', () => requestMfvfChanges(month, verification));
+    el.querySelector('.qa-sign')?.addEventListener('click', () => openSupervisorReviewModal(month, verification));
+    el.querySelector('.qa-add-note')?.addEventListener('click', async () => {
+        const note = await CustomModal.prompt("Add a summary note for this month:", verification?.supervisorComments || '', "Summary Note");
+        if (note !== null) {
+            await setDoc(getMfvfVerificationRef(selectedTraineeId, month), { supervisorComments: note.trim(), updatedAt: new Date().toISOString() }, { merge: true });
+            selectTrainee(selectedTraineeId);
+        }
+    });
+    el.querySelector('.qa-message')?.addEventListener('click', () => { switchView('chat'); });
 };
+
+// --- M-FVF Queue View ---
+const renderMfvfQueue = async () => {
+    const list = document.getElementById('mfvf-queue-list');
+    const filtersEl = document.getElementById('mfvf-queue-filters');
+    if (!list) return;
+    if (myTrainees.length === 0) { list.innerHTML = '<p class="text-sm text-text-muted text-center py-8">No trainees loaded yet.</p>'; return; }
+
+    list.innerHTML = '<div class="text-center py-8 text-text-muted"><i class="ph ph-circle-notch animate-spin text-xl"></i></div>';
+    const queueItems = [];
+    const currentMonth = dayjs().format('YYYY-MM');
+    const last6 = Array.from({ length: 6 }, (_, i) => dayjs().subtract(i, 'month').format('YYYY-MM'));
+
+    for (const t of myTrainees) {
+        for (const m of last6) {
+            try {
+                let v = null;
+                if (m === currentMonth && supervisorCache.verifications[t.id] !== undefined) {
+                    v = supervisorCache.verifications[t.id];
+                } else {
+                    const snap = await getDoc(doc(db, `users/${t.id}/verifications/${m}`));
+                    v = snap.exists() ? snap.data() : null;
+                }
+                queueItems.push({ trainee: t, month: m, verification: v, status: v?.status || 'not_started' });
+            } catch (e) {
+                queueItems.push({ trainee: t, month: m, verification: null, status: 'not_started' });
+            }
+        }
+    }
+
+    const statusOrder = { submitted: 0, changes_requested: 1, draft: 2, not_started: 3, signed: 4, rejected: 5 };
+    queueItems.sort((a, b) => (statusOrder[a.status] ?? 9) - (statusOrder[b.status] ?? 9) || b.month.localeCompare(a.month));
+
+    const statusFilters = ['all', 'submitted', 'changes_requested', 'draft', 'not_started', 'signed'];
+    let activeQueueFilter = 'all';
+
+    const renderFiltered = () => {
+        const items = activeQueueFilter === 'all' ? queueItems : queueItems.filter(q => q.status === activeQueueFilter);
+        if (filtersEl) {
+            filtersEl.innerHTML = statusFilters.map(sf => {
+                const [label] = sf === 'all' ? ['All'] : getMfvfStatusConfig(sf);
+                const count = sf === 'all' ? queueItems.length : queueItems.filter(q => q.status === sf).length;
+                const active = activeQueueFilter === sf;
+                return `<button class="queue-filter-btn px-2.5 py-1 rounded-lg border transition-all ${active ? 'bg-primary/20 border-primary/40 text-primary font-semibold' : 'bg-white/5 border-white/10 text-text-muted hover:text-white'}" data-filter="${sf}">${label} (${count})</button>`;
+            }).join('');
+            filtersEl.querySelectorAll('.queue-filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => { activeQueueFilter = btn.dataset.filter; renderFiltered(); });
+            });
+        }
+
+        if (items.length === 0) { list.innerHTML = '<p class="text-sm text-text-muted text-center py-8">No items match this filter.</p>'; return; }
+        list.innerHTML = items.map(q => {
+            const [label, textClass, boxClass, icon] = getMfvfStatusConfig(q.status);
+            const v = q.verification;
+            const hasPdf = v?.submittedPdfUrl || v?.signedPdfUrl || v?.draftPdfUrl;
+            const canReview = q.status === 'submitted' || q.status === 'changes_requested';
+            return `<div class="glass-panel rounded-xl p-4 border border-white/5 flex flex-col sm:flex-row sm:items-center gap-3">
+                <div class="flex items-center gap-3 flex-1 min-w-0">
+                    <div class="w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center ${textClass} flex-shrink-0"><i class="${icon}"></i></div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="text-sm font-bold text-white">${q.trainee.name || 'Unknown'}</span>
+                            <span class="text-xs text-text-muted">${dayjs(q.month).format('MMM YYYY')}</span>
+                            <span class="px-2 py-0.5 rounded-lg text-[10px] font-semibold ${textClass} ${boxClass} border border-white/10">${label}</span>
+                        </div>
+                        <p class="text-xs text-text-muted mt-0.5">${v?.traineeSubmittedAt ? `Submitted ${dayjs(v.traineeSubmittedAt).format('MMM D')}` : v?.savedAt ? `Saved ${dayjs(v.savedAt).format('MMM D')}` : 'Not submitted'}</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 flex-shrink-0">
+                    ${hasPdf ? `<button class="queue-open-pdf px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-white text-xs font-semibold border border-white/10" data-trainee="${q.trainee.id}" data-month="${q.month}"><i class="ph ph-file-pdf"></i> PDF</button>` : ''}
+                    ${canReview ? `<button class="queue-sign px-3 py-1.5 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-300 text-xs font-bold border border-green-500/30" data-trainee="${q.trainee.id}" data-month="${q.month}"><i class="ph ph-pencil-line"></i> Review & Sign</button>` : ''}
+                    ${canReview ? `<button class="queue-changes px-3 py-1.5 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 text-orange-200 text-xs font-semibold border border-orange-500/20" data-trainee="${q.trainee.id}" data-month="${q.month}"><i class="ph ph-chat-teardrop-text"></i> Changes</button>` : ''}
+                    <button class="queue-view-trainee px-3 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold border border-primary/20" data-trainee="${q.trainee.id}"><i class="ph ph-arrow-right"></i></button>
+                </div>
+            </div>`;
+        }).join('');
+
+        list.querySelectorAll('.queue-open-pdf').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const tid = btn.dataset.trainee, m = btn.dataset.month;
+                const item = queueItems.find(q => q.trainee.id === tid && q.month === m);
+                if (item?.verification) openSubmittedMfvfPdf(item.verification);
+            });
+        });
+        list.querySelectorAll('.queue-sign').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const tid = btn.dataset.trainee, m = btn.dataset.month;
+                const item = queueItems.find(q => q.trainee.id === tid && q.month === m);
+                if (item?.verification) { selectedTraineeId = tid; openSupervisorReviewModal(m, item.verification); }
+            });
+        });
+        list.querySelectorAll('.queue-changes').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const tid = btn.dataset.trainee, m = btn.dataset.month;
+                const item = queueItems.find(q => q.trainee.id === tid && q.month === m);
+                if (item?.verification) { selectedTraineeId = tid; await requestMfvfChanges(m, item.verification); renderMfvfQueue(); }
+            });
+        });
+        list.querySelectorAll('.queue-view-trainee').forEach(btn => {
+            btn.addEventListener('click', () => { switchView('supervisor-dashboard'); selectTrainee(btn.dataset.trainee); });
+        });
+    };
+    renderFiltered();
+};
+
+const renderMfvfQueueBadge = () => {
+    const badge = document.getElementById('mfvf-queue-badge');
+    if (!badge) return;
+    let count = 0;
+    myTrainees.forEach(t => { if (supervisorCache.verifications[t.id]?.status === 'submitted') count++; });
+    if (count > 0) { badge.textContent = count; badge.classList.remove('hidden'); }
+    else badge.classList.add('hidden');
+};
+
+// --- Trainee Comparison Table ---
+const renderTraineeCompare = () => {
+    const header = document.getElementById('compare-table-header');
+    const body = document.getElementById('compare-table-body');
+    if (!header || !body) return;
+    const currentMonth = dayjs().format('YYYY-MM');
+
+    header.innerHTML = `
+        <th class="px-4 py-3 cursor-pointer hover:text-primary" data-sort="name">Trainee</th>
+        <th class="px-4 py-3 cursor-pointer hover:text-primary text-right" data-sort="total">Total hrs</th>
+        <th class="px-4 py-3 cursor-pointer hover:text-primary text-right" data-sort="monthTotal">Month hrs</th>
+        <th class="px-4 py-3 cursor-pointer hover:text-primary text-right" data-sort="restricted">Restricted</th>
+        <th class="px-4 py-3 cursor-pointer hover:text-primary text-right" data-sort="unrestricted">Unrestricted</th>
+        <th class="px-4 py-3 cursor-pointer hover:text-primary text-right" data-sort="pct">Supervised %</th>
+        <th class="px-4 py-3 cursor-pointer hover:text-primary text-right" data-sort="obs">Observation</th>
+        <th class="px-4 py-3 cursor-pointer hover:text-primary" data-sort="mfvf">M-FVF</th>
+        <th class="px-4 py-3 cursor-pointer hover:text-primary" data-sort="lastLog">Last Log</th>
+    `;
+
+    let rows = myTrainees.map(t => {
+        const entries = supervisorCache.entries[t.id] || [];
+        const allTime = calculateSummaryData(entries);
+        const monthE = entries.filter(e => dayjs(e.date).format('YYYY-MM') === currentMonth);
+        const s = calculateSummaryData(monthE);
+        const v = supervisorCache.verifications[t.id];
+        const [statusLabel, textClass] = getMfvfStatusConfig(v?.status);
+        const lastEntry = [...entries].sort((a, b) => b.date.localeCompare(a.date))[0];
+        const pctColor = s.percentage >= SUPERVISION_MIN_PCT ? 'text-green-400' : (s.total > 0 ? 'text-red-400' : 'text-text-muted');
+        return {
+            name: t.name || 'Unknown', total: allTime.total, monthTotal: s.total, restricted: s.restricted,
+            unrestricted: s.unrestricted, pct: s.percentage, obs: s.observationMinutes,
+            mfvf: statusLabel, lastLog: lastEntry?.date || '', id: t.id, textClass, pctColor
+        };
+    });
+
+    let sortKey = 'name', sortAsc = true;
+    const renderRows = () => {
+        const sorted = [...rows].sort((a, b) => {
+            let va = a[sortKey], vb = b[sortKey];
+            if (typeof va === 'string') return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+            return sortAsc ? va - vb : vb - va;
+        });
+        body.innerHTML = sorted.map(r => `
+            <tr class="hover:bg-surface-hover transition-colors cursor-pointer" data-id="${r.id}">
+                <td class="px-4 py-3 text-white font-medium">${r.name}</td>
+                <td class="px-4 py-3 text-right text-text-muted">${r.total.toFixed(1)}</td>
+                <td class="px-4 py-3 text-right text-white font-medium">${r.monthTotal.toFixed(1)}</td>
+                <td class="px-4 py-3 text-right text-pink-400">${r.restricted.toFixed(1)}</td>
+                <td class="px-4 py-3 text-right text-purple-400">${r.unrestricted.toFixed(1)}</td>
+                <td class="px-4 py-3 text-right ${r.pctColor} font-medium">${r.pct.toFixed(1)}%</td>
+                <td class="px-4 py-3 text-right text-text-muted">${Math.round(r.obs)}m</td>
+                <td class="px-4 py-3"><span class="${r.textClass} text-xs font-semibold">${r.mfvf}</span></td>
+                <td class="px-4 py-3 text-text-muted text-xs">${r.lastLog ? dayjs(r.lastLog).format('MMM D') : '-'}</td>
+            </tr>
+        `).join('');
+        body.querySelectorAll('tr[data-id]').forEach(row => {
+            row.addEventListener('click', () => { switchView('supervisor-dashboard'); selectTrainee(row.dataset.id); });
+        });
+    };
+    header.querySelectorAll('th[data-sort]').forEach(th => {
+        th.addEventListener('click', () => {
+            const key = th.dataset.sort;
+            if (sortKey === key) sortAsc = !sortAsc; else { sortKey = key; sortAsc = true; }
+            renderRows();
+        });
+    });
+    renderRows();
+};
+
+const openSupervisorReviewModal = async (month, request) => {
+    if (!request || !selectedTraineeId) return;
+    if (request.status === 'signed') {
+        await CustomModal.alert('This M-FVF has already been signed. It cannot be re-signed without a correction request from the trainee.', 'Already Signed');
+        return;
+    }
+    const traineeId = request.traineeId || selectedTraineeId;
+    const pdfUrl = request.submittedPdfUrl || request.draftPdfUrl;
+    const supName = profileData.name || '';
+    const supCert = profileData.rbtNumber || profileData.bacbId || request.supervisorCert || '';
+
+    const overlay = document.createElement('div');
+    overlay.className = 'fixed inset-0 z-[200] flex flex-col';
+    overlay.style.cssText = 'background:rgba(5,8,22,0.97);backdrop-filter:blur(20px);';
+
+    overlay.innerHTML = `
+        <div class="flex items-center justify-between px-5 py-3 border-b border-white/8 flex-shrink-0" style="background:rgba(255,255,255,0.03);">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center"><i class="ph-fill ph-pencil-line text-green-400"></i></div>
+                <div>
+                    <h2 class="text-sm font-bold text-white">Review & Sign M-FVF</h2>
+                    <p class="text-[11px] text-text-muted">${request.traineeName || 'Trainee'} — ${request.monthLabel || dayjs(month).format('MMMM YYYY')}</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 text-xs">
+                    <label class="text-text-muted">Name:</label>
+                    <input id="sup-review-name" value="${supName}" class="px-2 py-1 rounded-lg text-xs bg-white/5 text-white border border-white/10 focus:border-primary outline-none w-32" placeholder="Your name"/>
+                </div>
+                <div class="flex items-center gap-2 text-xs">
+                    <label class="text-text-muted">BACB ID:</label>
+                    <input id="sup-review-cert" value="${supCert}" class="px-2 py-1 rounded-lg text-xs bg-white/5 text-white border border-white/10 focus:border-primary outline-none w-28" placeholder="Cert #"/>
+                </div>
+                <button id="sup-review-sign-btn" class="px-5 py-2 rounded-xl text-sm font-bold bg-green-500 hover:bg-green-600 text-white transition-all shadow-lg">
+                    <i class="ph ph-check-circle mr-1"></i>Sign & Return to Trainee
+                </button>
+                <button id="sup-review-close" class="w-8 h-8 rounded-lg flex items-center justify-center text-text-muted hover:text-white transition-all" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);"><i class="ph-bold ph-x text-sm"></i></button>
+            </div>
+        </div>
+        <div class="flex-1 overflow-auto flex justify-center p-6" id="sup-review-scroll">
+            <div id="sup-review-stage" style="position:relative;display:none;">
+                <canvas id="sup-review-canvas"></canvas>
+                <div id="sup-review-overlay" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;"></div>
+            </div>
+            <div id="sup-review-loading" class="flex items-center justify-center py-20 text-text-muted"><i class="ph ph-circle-notch animate-spin text-3xl mr-3"></i> Loading form...</div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+    document.body.style.overflow = 'hidden';
+
+    let supervisorSignatureDataUrl = null;
+    const signBtn = overlay.querySelector('#sup-review-sign-btn');
+    const closeBtn = overlay.querySelector('#sup-review-close');
+
+    closeBtn.addEventListener('click', () => { overlay.remove(); document.body.style.overflow = ''; });
+
+    const openSupSignaturePad = () => {
+        const sigModal = document.createElement('div');
+        sigModal.className = 'fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-sm';
+        sigModal.innerHTML = `
+            <div class="glass-panel rounded-2xl p-5 w-[440px] max-w-[92vw] border border-white/10 shadow-2xl">
+                <div class="flex items-center gap-2 mb-1"><i class="ph-fill ph-pen-nib text-emerald-400 text-lg"></i><h3 class="text-lg font-bold text-white">Supervisor Signature</h3></div>
+                <p class="text-xs text-text-muted mb-3">Sign in the box below.</p>
+                <div class="rounded-xl bg-white overflow-hidden border border-white/10"><canvas id="sup-sig-canvas" style="width:100%;height:180px;display:block;touch-action:none;"></canvas></div>
+                <div class="flex items-center justify-between mt-4 gap-2">
+                    <button id="sup-sig-clear" class="px-4 py-2 rounded-xl text-sm font-medium text-text-muted hover:text-white border border-white/10 transition-colors"><i class="ph ph-eraser mr-1"></i>Clear</button>
+                    <div class="flex gap-2">
+                        <button id="sup-sig-cancel" class="px-4 py-2 rounded-xl text-sm font-medium text-text-muted hover:text-white border border-white/10 transition-colors">Cancel</button>
+                        <button id="sup-sig-apply" class="px-5 py-2 rounded-xl text-sm font-semibold text-white transition-all hover:scale-105" style="background:linear-gradient(135deg,#10b981,#059669);"><i class="ph-fill ph-check mr-1"></i>Apply Signature</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(sigModal);
+        const cv = sigModal.querySelector('#sup-sig-canvas');
+        const ratio = window.devicePixelRatio || 1;
+        cv.width = cv.offsetWidth * ratio;
+        cv.height = cv.offsetHeight * ratio;
+        cv.getContext('2d').setTransform(ratio, 0, 0, ratio, 0, 0);
+        let padInst = null;
+        if (window.SignaturePad) padInst = new window.SignaturePad(cv, { penColor: '#0f172a', backgroundColor: 'rgba(255,255,255,0)' });
+        sigModal.querySelector('#sup-sig-clear').addEventListener('click', () => padInst?.clear());
+        sigModal.querySelector('#sup-sig-cancel').addEventListener('click', () => sigModal.remove());
+        sigModal.querySelector('#sup-sig-apply').addEventListener('click', () => {
+            if (!padInst || padInst.isEmpty()) { sigModal.remove(); return; }
+            const w = cv.width, h = cv.height;
+            const ctx = cv.getContext('2d');
+            const pixels = ctx.getImageData(0, 0, w, h).data;
+            let t = h, l = w, b = 0, r = 0;
+            for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (pixels[(y * w + x) * 4 + 3] > 10) { if (y < t) t = y; if (y > b) b = y; if (x < l) l = x; if (x > r) r = x; }
+            if (b > t && r > l) {
+                const pd = 6;
+                t = Math.max(0, t - pd); l = Math.max(0, l - pd);
+                b = Math.min(h - 1, b + pd); r = Math.min(w - 1, r + pd);
+                const tw = r - l + 1, th = b - t + 1;
+                const tmp = document.createElement('canvas'); tmp.width = tw; tmp.height = th;
+                tmp.getContext('2d').drawImage(cv, l, t, tw, th, 0, 0, tw, th);
+                supervisorSignatureDataUrl = tmp.toDataURL('image/png');
+            } else {
+                supervisorSignatureDataUrl = cv.toDataURL('image/png');
+            }
+            // Update on-form signature zone
+            const zone = overlay.querySelector('#sup-review-sig-zone');
+            if (zone) {
+                zone.innerHTML = `<img src="${supervisorSignatureDataUrl}" style="width:100%;height:100%;object-fit:contain;padding:1px;" alt="signature"/>`;
+                zone.style.borderColor = 'rgba(16,185,129,0.6)';
+                zone.style.borderStyle = 'solid';
+                zone.style.background = 'rgba(255,255,255,0.95)';
+                zone.style.animation = 'none';
+            }
+            sigModal.remove();
+        });
+    };
+
+    // Render the actual PDF form
+    const stage = overlay.querySelector('#sup-review-stage');
+    const canvas = overlay.querySelector('#sup-review-canvas');
+    const revOverlay = overlay.querySelector('#sup-review-overlay');
+    const loading = overlay.querySelector('#sup-review-loading');
+    const scroll = overlay.querySelector('#sup-review-scroll');
+
+    // State shared between PDF render and sign handler
+    let pdfBytes = null;
+    let templateBufCopy = null;
+    let supSigRect = null;
+    let traineeSigRect = null;
+    let pageH = 0;
+    let formReady = false;
+
+    try {
+        if (!window.pdfjsLib || !window.PDFLib) throw new Error('PDF libraries not loaded');
+
+        if (pdfUrl) {
+            const resp = await fetch(pdfUrl);
+            if (!resp.ok) throw new Error('Could not load submitted PDF');
+            pdfBytes = await resp.arrayBuffer();
+        } else {
+            throw new Error('No submitted PDF found for this M-FVF.');
+        }
+
+        const pdfjsDoc = await window.pdfjsLib.getDocument({ data: pdfBytes.slice(0) }).promise;
+        const page = await pdfjsDoc.getPage(1);
+        const baseViewport = page.getViewport({ scale: 1 });
+        const avail = (scroll?.clientWidth || 900) - 48;
+        let scale = Math.max(1.0, Math.min(avail / baseViewport.width, 2.0));
+
+        const viewport = page.getViewport({ scale });
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = Math.floor(viewport.width * dpr);
+        canvas.height = Math.floor(viewport.height * dpr);
+        canvas.style.width = viewport.width + 'px';
+        canvas.style.height = viewport.height + 'px';
+        stage.style.width = viewport.width + 'px';
+        stage.style.height = viewport.height + 'px';
+        const ctx2d = canvas.getContext('2d');
+        ctx2d.setTransform(dpr, 0, 0, dpr, 0, 0);
+        await page.render({ canvasContext: ctx2d, viewport }).promise;
+
+        // Load the TEMPLATE to discover field positions for supervisor signature + date zones
+        const templateResp = await fetch('mfvf-template.pdf');
+        const templateBuf = await templateResp.arrayBuffer();
+        templateBufCopy = templateBuf.slice(0);
+        const { PDFDocument, PDFSignature, PDFTextField } = window.PDFLib;
+        const templateDoc = await PDFDocument.load(templateBuf);
+        const templateForm = templateDoc.getForm();
+        const templateFields = templateForm.getFields();
+        pageH = baseViewport.height;
+
+        for (const f of templateFields) {
+            const name = f.getName();
+            const isSig = PDFSignature && f instanceof PDFSignature;
+            const isText = PDFTextField && f instanceof PDFTextField;
+            let widgets = [];
+            try { widgets = f.acroField.getWidgets(); } catch (e) {}
+            const w0 = widgets[0];
+            if (!w0) continue;
+            const r = w0.getRectangle();
+
+            if (isSig && name === 'TRAINEE_SIGNATURE') {
+                traineeSigRect = r;
+            } else if (isSig && name !== 'TRAINEE_SIGNATURE') {
+                supSigRect = r;
+                const left = r.x * scale, top = (pageH - (r.y + r.height)) * scale;
+                const width = r.width * scale, height = r.height * scale;
+                const zone = document.createElement('div');
+                zone.id = 'sup-review-sig-zone';
+                zone.style.cssText = `position:absolute;left:${left}px;top:${top}px;width:${width}px;height:${height}px;border:2.5px dashed rgba(16,185,129,0.7);background:rgba(16,185,129,0.12);cursor:pointer;border-radius:4px;display:flex;align-items:center;justify-content:center;pointer-events:auto;z-index:10;animation:pulse 2s infinite;`;
+                zone.innerHTML = '<span class="text-sm text-emerald-400 font-bold"><i class="ph-fill ph-pen-nib mr-1.5"></i>Click here to sign</span>';
+                zone.addEventListener('click', openSupSignaturePad);
+                revOverlay.appendChild(zone);
+            } else if (isText && name === 'SUPERVISOR_SIGNATURE_DATE') {
+                const left = r.x * scale, top = (pageH - (r.y + r.height)) * scale;
+                const width = r.width * scale, height = r.height * scale;
+                const dateInput = document.createElement('input');
+                dateInput.type = 'date';
+                dateInput.id = 'sup-review-date';
+                dateInput.value = dayjs().format('YYYY-MM-DD');
+                dateInput.style.cssText = `position:absolute;left:${left}px;top:${top}px;width:${width}px;height:${height}px;background:rgba(255,255,255,0.9);border:2px solid rgba(16,185,129,0.5);border-radius:4px;color:#000;font-size:${Math.max(9, Math.min(height * 0.65, 13))}px;text-align:center;outline:none;pointer-events:auto;z-index:10;padding:0 2px;cursor:pointer;font-weight:500;`;
+                dateInput.addEventListener('focus', () => { dateInput.style.borderColor = 'rgba(16,185,129,0.8)'; dateInput.style.background = 'rgba(255,255,255,1)'; });
+                dateInput.addEventListener('blur', () => { dateInput.style.borderColor = 'rgba(16,185,129,0.5)'; dateInput.style.background = 'rgba(255,255,255,0.9)'; });
+                revOverlay.appendChild(dateInput);
+            }
+        }
+
+        loading.classList.add('hidden');
+        stage.style.display = 'block';
+        formReady = true;
+    } catch (err) {
+        console.error('Review modal render failed:', err);
+        loading.innerHTML = `<div class="text-center text-red-400"><i class="ph ph-warning-circle text-3xl mb-2"></i><p class="text-sm">Failed to load form: ${err.message}</p></div>`;
+    }
+
+    // Sign & Return handler — attached outside try so it always exists
+    signBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('[M-FVF Sign] Button clicked. formReady:', formReady, 'hasSig:', !!supervisorSignatureDataUrl);
+        if (!formReady) {
+            await CustomModal.alert('The form has not finished loading. Please wait or close and try again.', 'Not Ready');
+            return;
+        }
+        if (!supervisorSignatureDataUrl) {
+            await CustomModal.alert('Please click the green signature box on the form to draw your signature first.', 'Signature Required');
+            return;
+        }
+        const finalSupName = overlay.querySelector('#sup-review-name')?.value?.trim() || profileData.name || '';
+        const finalSupCert = overlay.querySelector('#sup-review-cert')?.value?.trim() || '';
+        const dateEl = overlay.querySelector('#sup-review-date');
+        const supDateVal = dateEl?.value || dayjs().format('YYYY-MM-DD');
+        const supDateFormatted = dayjs(supDateVal).format('MM/DD/YYYY');
+
+        if (!finalSupName) {
+            await CustomModal.alert('Please enter your name in the top bar before signing.', 'Name Required');
+            return;
+        }
+
+        const confirmed = await CustomModal.confirm(
+            `Sign and return this M-FVF to ${request.traineeName || 'the trainee'}?\n\nSupervisor: ${finalSupName}\nDate: ${supDateFormatted}\nMonth: ${request.monthLabel || month}`,
+            'Confirm Sign & Return'
+        );
+        if (!confirmed) return;
+
+        signBtn.disabled = true;
+        signBtn.innerHTML = '<i class="ph-fill ph-spinner-gap animate-spin text-sm mr-1"></i>Signing...';
+
+        try {
+            if (!templateBufCopy) throw new Error('Template PDF not available — please close and reopen.');
+            if (!storage) throw new Error('Storage not initialized — please refresh the page.');
+
+            const { PDFDocument: PDFDoc } = window.PDFLib;
+            console.log('[M-FVF Sign] Loading template for final PDF...');
+            const finalDoc = await PDFDoc.load(templateBufCopy.slice(0));
+            const finalForm = finalDoc.getForm();
+            const finalPage = finalDoc.getPages()[0];
+
+            // Fill form fields from the verification record's submitted data
+            const fd = request.formData || {};
+            console.log('[M-FVF Sign] Form data:', JSON.stringify(fd));
+            const fmtHH = (v) => { const n = parseFloat(v) || 0; return String(Math.floor(n)).padStart(2, '0'); };
+            const fmtMM = (v) => { const n = parseFloat(v) || 0; return String(Math.round((n % 1) * 60)).padStart(2, '0'); };
+
+            const fieldMap = {
+                'TRAINEE_NAME': request.traineeName || '',
+                'TRAINEE_BACB_ID': request.bacbId || '',
+                'TRAINEE_CERTIFICATE_MONTH/YEAR': month ? dayjs(month + '-01').format('MM/YYYY') : '',
+                'TRAINEE_FIELDWORK_STATE': fd.state || '',
+                'TRAINEE_FIELDWORK_COUNTRY': fd.country || 'United States',
+                'RESPONSIBLE_SUPERVISOR_NAME': finalSupName,
+                'RESPONSIBLE_SUPERVISOR_BACB_ID': finalSupCert,
+                'Independent_Hours': fmtHH(fd.independentHours),
+                'Independent_Minutes': fmtMM(fd.independentHours),
+                'Supervised_Hours': fmtHH(fd.supervisedHours),
+                'Supervised_Minutes': fmtMM(fd.supervisedHours),
+                'Total_Fieldwork_Hours': fmtHH(fd.totalHours),
+                'Total_Fieldwork_Minutes': fmtMM(fd.totalHours),
+                'PERCENT_HOURS_SUPERVISED': fd.supervisionPercentage != null ? parseFloat(fd.supervisionPercentage).toFixed(2) + '%' : '',
+                'Observation_Hours': fmtHH((parseFloat(fd.observationMinutes) || 0) / 60),
+                'Independent_Minutes 3': String(Math.round((parseFloat(fd.observationMinutes) || 0) % 60)).padStart(2, '0'),
+                'TRAINEE_SIGNATURE_DATE': request.traineeSubmittedAt ? dayjs(request.traineeSubmittedAt).format('MM/DD/YYYY') : (request.savedAt ? dayjs(request.savedAt).format('MM/DD/YYYY') : ''),
+                'SUPERVISOR_SIGNATURE_DATE': supDateFormatted
+            };
+            let filledCount = 0;
+            for (const [name, val] of Object.entries(fieldMap)) {
+                if (!val) continue;
+                try { finalForm.getTextField(name).setText(val); filledCount++; } catch (e) { console.warn(`[M-FVF Sign] Could not fill field "${name}":`, e.message); }
+            }
+            console.log(`[M-FVF Sign] Filled ${filledCount} fields`);
+
+            // Embed trainee signature
+            if (traineeSigRect) {
+                let traineeImgUrl = request.traineeSignatureDataUrl;
+                if (!traineeImgUrl && pdfUrl && pdfBytes) {
+                    try {
+                        console.log('[M-FVF Sign] Extracting trainee signature from submitted PDF...');
+                        const sigScale = 3;
+                        const sigPage = await (await window.pdfjsLib.getDocument({ data: pdfBytes.slice(0) }).promise).getPage(1);
+                        const sigVp = sigPage.getViewport({ scale: sigScale });
+                        const fullCanvas = document.createElement('canvas');
+                        fullCanvas.width = sigVp.width;
+                        fullCanvas.height = sigVp.height;
+                        await sigPage.render({ canvasContext: fullCanvas.getContext('2d'), viewport: sigVp }).promise;
+                        const cropCanvas = document.createElement('canvas');
+                        cropCanvas.width = traineeSigRect.width * sigScale;
+                        cropCanvas.height = traineeSigRect.height * sigScale;
+                        cropCanvas.getContext('2d').drawImage(fullCanvas, traineeSigRect.x * sigScale, (pageH - (traineeSigRect.y + traineeSigRect.height)) * sigScale, cropCanvas.width, cropCanvas.height, 0, 0, cropCanvas.width, cropCanvas.height);
+                        traineeImgUrl = cropCanvas.toDataURL('image/png');
+                    } catch (sigErr) { console.warn('[M-FVF Sign] Could not extract trainee signature:', sigErr); }
+                }
+                if (traineeImgUrl) {
+                    try {
+                        const traineePng = await finalDoc.embedPng(traineeImgUrl);
+                        const tr = traineeSigRect;
+                        const maxW = tr.width, maxH = tr.height;
+                        const ar = traineePng.width / traineePng.height;
+                        let dw = maxW, dh = dw / ar;
+                        if (dh > maxH) { dh = maxH; dw = dh * ar; }
+                        finalPage.drawImage(traineePng, { x: tr.x + (tr.width - dw) / 2, y: tr.y + (tr.height - dh) / 2, width: dw, height: dh });
+                        console.log('[M-FVF Sign] Trainee signature embedded');
+                    } catch (e) { console.warn('[M-FVF Sign] Failed to embed trainee signature:', e); }
+                }
+            }
+
+            // Embed supervisor signature
+            if (supSigRect && supervisorSignatureDataUrl) {
+                const supPng = await finalDoc.embedPng(supervisorSignatureDataUrl);
+                const sr = supSigRect;
+                const maxW = sr.width, maxH = sr.height;
+                const ar = supPng.width / supPng.height;
+                let dw = maxW, dh = dw / ar;
+                if (dh > maxH) { dh = maxH; dw = dh * ar; }
+                finalPage.drawImage(supPng, { x: sr.x + (sr.width - dw) / 2, y: sr.y + (sr.height - dh) / 2, width: dw, height: dh });
+                console.log('[M-FVF Sign] Supervisor signature embedded');
+            }
+
+            try { finalForm.flatten(); } catch (e) { console.warn('[M-FVF Sign] Flatten warning:', e.message); }
+            const signedBytes = await finalDoc.save();
+            const signedBlob = new Blob([signedBytes], { type: 'application/pdf' });
+            console.log(`[M-FVF Sign] Final PDF generated: ${signedBytes.byteLength} bytes`);
+
+            // Upload signed PDF
+            const signedPath = `mfvf/${traineeId}/${month}/signed.pdf`;
+            console.log(`[M-FVF Sign] Uploading to ${signedPath}...`);
+            const signedRef = storageRef(storage, signedPath);
+            await uploadBytes(signedRef, signedBlob, { contentType: 'application/pdf' });
+            const signedUrl = await getDownloadURL(signedRef);
+            console.log('[M-FVF Sign] Upload complete:', signedUrl);
+
+            // Update Firestore
+            const signedAt = new Date().toISOString();
+            await setDoc(getMfvfVerificationRef(traineeId, month), {
+                status: 'signed',
+                signedAt,
+                signedPdfUrl: signedUrl,
+                signedPdfPath: signedPath,
+                supervisorId: userId,
+                supervisorSignatureName: finalSupName,
+                supervisorSignedDate: supDateFormatted,
+                signedBySupervisorId: userId,
+                signedBySupervisorName: finalSupName,
+                supervisorComments: '',
+                updatedAt: signedAt
+            }, { merge: true });
+            console.log('[M-FVF Sign] Firestore updated');
+
+            // Notify trainee via chat
+            try {
+                await notifyMfvfTrainee(request, `${finalSupName || 'Your supervisor'} signed and returned your ${request.monthLabel || dayjs(month).format('MMMM YYYY')} M-FVF.`, 'mfvf_signed');
+                console.log('[M-FVF Sign] Trainee notified');
+            } catch (notifyErr) { console.warn('[M-FVF Sign] Notification failed (non-critical):', notifyErr); }
+
+            // Close the review modal
+            overlay.remove();
+            document.body.style.overflow = '';
+
+            // Show success
+            await CustomModal.alert('Form was sent to trainee.', 'Signed & Returned');
+
+            // Refresh the supervisor view
+            if (supervisorCache.entries[traineeId]) delete supervisorCache.entries[traineeId];
+            if (supervisorCache.verifications[traineeId]) delete supervisorCache.verifications[traineeId];
+            if (typeof renderMfvfQueue === 'function') renderMfvfQueue();
+            if (typeof selectTrainee === 'function' && selectedTraineeId) selectTrainee(selectedTraineeId);
+        } catch (err) {
+            console.error('[M-FVF Sign] ERROR:', err);
+            signBtn.disabled = false;
+            signBtn.innerHTML = '<i class="ph ph-check-circle mr-1"></i>Sign & Return to Trainee';
+            await CustomModal.alert('Failed to sign and return the form.\n\nError: ' + err.message + '\n\nPlease check your connection and try again.', 'Sign Error');
+        }
+    });
+};
+
 
 const setupSupervisorListeners = () => {
     updateSupervisorDashboard();
 
-    const addTraineeBtn = document.getElementById('add-trainee-btn');
-    const signMonthBtn = document.getElementById('sign-month-btn');
-    const backToTraineesBtn = document.getElementById('back-to-trainees-btn');
+    document.getElementById('add-trainee-btn')?.addEventListener('click', async () => {
+        await CustomModal.alert("Trainees must add your email in their Settings > Profile to link with you.", "Link Trainee");
+        updateSupervisorDashboard();
+    });
+    document.getElementById('back-to-trainees-btn')?.addEventListener('click', showTraineeList);
+    document.getElementById('review-table-body')?.addEventListener('click', handleTableClick);
+    document.getElementById('feedback-entries-list')?.addEventListener('click', handleTableClick);
 
-    if (addTraineeBtn) {
-        addTraineeBtn.addEventListener('click', async () => {
-            await CustomModal.alert("Trainees must add your email in their Settings > Profile to link with you.", "Link Trainee");
-            updateSupervisorDashboard();
-        });
-    }
-
-    if (backToTraineesBtn) {
-        backToTraineesBtn.addEventListener('click', showTraineeList);
-    }
-
-    if (signMonthBtn) {
-        signMonthBtn.addEventListener('click', async () => {
-            const reviewMonthSelector = document.getElementById('review-month-selector');
-            if (!selectedTraineeId || !reviewMonthSelector || !reviewMonthSelector.value) return;
-
-            const month = reviewMonthSelector.value;
-            const supervisorId = userId;
-            const supervisorName = profileData.name;
-
-            const verificationRef = doc(db, `users/${selectedTraineeId}/verifications/${month}`);
-            try {
-                await setDoc(verificationRef, {
-                    status: 'signed',
-                    signedAt: new Date().toISOString(),
-                    supervisorId,
-                    supervisorName,
-                    month
-                }, { merge: true });
-                await CustomModal.alert("Month digitally signed!", "Digital Signature");
-                selectTrainee(selectedTraineeId);
-            } catch (error) {
-                console.error("Error signing month:", error);
-            }
-        });
-    }
-
-    const reviewTableBody = document.getElementById('review-table-body');
-    if (reviewTableBody) {
-        reviewTableBody.addEventListener('click', handleTableClick);
-    }
+    document.getElementById('review-tabs')?.addEventListener('click', (e) => {
+        const btn = e.target.closest('.review-tab-btn');
+        if (btn) switchReviewTab(btn.dataset.tab);
+    });
 };
 
 const notifyMfvfTrainee = async (request, text, systemType) => {
@@ -2497,42 +3552,31 @@ const notifyMfvfTrainee = async (request, text, systemType) => {
         await setDoc(chatRef, {
             traineeName: request.traineeName || 'Trainee',
             traineeEmail: request.traineeEmail || '',
-            supervisorName: profileData.name || request.supervisorName || 'Supervisor',
+            supervisorName: profileData.name || 'Supervisor',
             supervisorEmail: profileData.email || auth.currentUser?.email || '',
             lastMessageText: text,
             lastMessageAt: serverTimestamp(),
             lastSenderId: userId
         }, { merge: true });
         await addDoc(messagesRef, {
-            text,
-            senderId: userId,
-            senderName: profileData.name || 'Supervisor',
-            timestamp: serverTimestamp(),
-            systemType,
-            month: request.month
+            text, senderId: userId, senderName: profileData.name || 'Supervisor',
+            timestamp: serverTimestamp(), systemType, month: request.month
         });
-    } catch (error) {
-        console.error("Error notifying trainee about M-FVF:", error);
-    }
+    } catch (error) { console.error("Error sending notification to trainee:", error); }
 };
 
 const signMfvfRequest = async (month, request) => {
     if (!selectedTraineeId || !month || !request) return;
+    if (request.status === 'signed') { await CustomModal.alert('This M-FVF is already signed. Use the review modal instead.', 'Already Signed'); return; }
     const signatureName = await CustomModal.prompt("Type your full legal name to sign and return this M-FVF:", profileData.name || '', "Sign M-FVF");
     if (!signatureName || !signatureName.trim()) return;
-
     try {
         const signedAt = new Date().toISOString();
         await setDoc(getMfvfVerificationRef(selectedTraineeId, month), {
-            status: 'signed',
-            signedAt,
-            supervisorId: userId,
+            status: 'signed', signedAt, supervisorId: userId,
             supervisorName: profileData.name || request.supervisorName || 'Supervisor',
-            supervisorSignatureName: signatureName.trim(),
-            supervisorComments: '',
-            updatedAt: signedAt
+            supervisorSignatureName: signatureName.trim(), supervisorComments: '', updatedAt: signedAt
         }, { merge: true });
-
         await notifyMfvfTrainee(request, `${profileData.name || 'Your supervisor'} signed and returned your ${request.monthLabel || dayjs(month).format('MMMM YYYY')} M-FVF.`, 'mfvf_signed');
         await CustomModal.alert("M-FVF signed and returned to the trainee.", "Signed");
         selectTrainee(selectedTraineeId);
@@ -2546,17 +3590,12 @@ const requestMfvfChanges = async (month, request) => {
     if (!selectedTraineeId || !month || !request) return;
     const comments = await CustomModal.prompt("What should the trainee change before you sign?", request.supervisorComments || '', "Request Changes");
     if (comments === null) return;
-
     try {
         await setDoc(getMfvfVerificationRef(selectedTraineeId, month), {
-            status: 'changes_requested',
-            supervisorComments: comments.trim(),
-            reviewedAt: new Date().toISOString(),
-            supervisorId: userId,
-            supervisorName: profileData.name || request.supervisorName || 'Supervisor',
-            updatedAt: new Date().toISOString()
+            status: 'changes_requested', supervisorComments: comments.trim(),
+            reviewedAt: new Date().toISOString(), supervisorId: userId,
+            supervisorName: profileData.name || request.supervisorName || 'Supervisor', updatedAt: new Date().toISOString()
         }, { merge: true });
-
         await notifyMfvfTrainee(request, `${profileData.name || 'Your supervisor'} requested changes on your ${request.monthLabel || dayjs(month).format('MMMM YYYY')} M-FVF.`, 'mfvf_changes_requested');
         await CustomModal.alert("Change request sent to the trainee.", "Changes Requested");
         selectTrainee(selectedTraineeId);
@@ -2566,7 +3605,7 @@ const requestMfvfChanges = async (month, request) => {
     }
 };
 
-// --- Archived M-FVF List ---
+// --- M-FVF Center ---
 
 const loadArchivedMfvfList = async () => {
     if (!userId || userId === 'guest') return;
@@ -2580,9 +3619,9 @@ const loadArchivedMfvfList = async () => {
 
         if (querySnapshot.empty) {
             container.innerHTML = `
-                <div class="glass-panel rounded-xl p-8 text-center text-text-muted">
-                    <i class="ph ph-file-archive text-4xl mb-3 opacity-50"></i>
-                    <p>No archived M-FVF forms yet. Save one to get started!</p>
+                <div class="glass-panel rounded-xl p-10 text-center text-text-muted">
+                    <i class="ph ph-files text-5xl mb-3 opacity-40"></i>
+                    <p class="text-sm">No verification forms yet. Open the M-FVF editor to create one.</p>
                 </div>
             `;
             return;
@@ -2592,89 +3631,406 @@ const loadArchivedMfvfList = async () => {
         querySnapshot.forEach(doc => {
             verifications.push({ id: doc.id, ...doc.data() });
         });
+        verifications.sort((a, b) => (b.month || '').localeCompare(a.month || ''));
 
-        // Sort by month descending (newest first)
-        verifications.sort((a, b) => b.month.localeCompare(a.month));
+        // Counts
+        const counts = { all: verifications.length, draft: 0, submitted: 0, changes_requested: 0, signed: 0 };
+        verifications.forEach(v => { if (counts[v.status] !== undefined) counts[v.status]++; });
 
-        // Create status color mapping
-        const statusColors = {
-            'not_started': { icon: 'file-plus', textClass: 'text-slate-300', bgClass: 'bg-slate-500/10' },
-            'draft': { icon: 'pencil-simple', textClass: 'text-blue-300', bgClass: 'bg-blue-500/10' },
-            'submitted': { icon: 'paper-plane-tilt', textClass: 'text-amber-300', bgClass: 'bg-amber-500/10' },
-            'changes_requested': { icon: 'warning-circle', textClass: 'text-orange-300', bgClass: 'bg-orange-500/10' },
-            'signed': { icon: 'check-circle', textClass: 'text-green-300', bgClass: 'bg-green-500/10' },
-            'rejected': { icon: 'x-circle', textClass: 'text-red-300', bgClass: 'bg-red-500/10' }
+        // Status strip colors
+        const stripColor = { draft: '#3b82f6', submitted: '#f59e0b', changes_requested: '#f97316', signed: '#22c55e', not_started: '#64748b' };
+        const statusLabel = { draft: 'Draft', submitted: 'Sent to Supervisor', changes_requested: 'Needs Correction', signed: 'Signed & Returned', not_started: 'Not Started' };
+        const statusBadgeClass = {
+            draft: 'text-blue-300 bg-blue-500/15 border-blue-500/25',
+            submitted: 'text-amber-300 bg-amber-500/15 border-amber-500/25',
+            changes_requested: 'text-orange-300 bg-orange-500/15 border-orange-500/25',
+            signed: 'text-green-300 bg-green-500/15 border-green-500/25',
+            not_started: 'text-slate-300 bg-slate-500/15 border-slate-500/25'
         };
 
-        container.innerHTML = verifications.map(v => {
-            const [label, , , ] = getMfvfStatusConfig(v.status);
-            const colors = statusColors[v.status] || statusColors.not_started;
+        // Group by year
+        const byYear = {};
+        verifications.forEach(v => {
+            const yr = v.month ? v.month.substring(0, 4) : 'Unknown';
+            if (!byYear[yr]) byYear[yr] = [];
+            byYear[yr].push(v);
+        });
+        const years = Object.keys(byYear).sort().reverse();
+
+        // Card renderer
+        const renderCard = (v) => {
+            const st = v.status || 'not_started';
+            const isSigned = st === 'signed';
+            const isDraft = st === 'draft' || st === 'not_started';
+            const isSent = st === 'submitted';
+            const isCorrection = st === 'changes_requested';
+            const strip = stripColor[st] || stripColor.not_started;
+            const badge = statusBadgeClass[st] || statusBadgeClass.not_started;
+            const label = statusLabel[st] || 'Unknown';
+            const pdfUrl = v.signedPdfUrl || v.submittedPdfUrl || v.draftPdfUrl || '';
+            const monthDisplay = v.monthLabel || (v.month ? dayjs(v.month + '-01').format('MMMM YYYY') : v.month);
+            const totalHrs = v.formData?.totalHours;
+            const supPct = v.formData?.supervisionPercentage;
+            const dateStr = dayjs(v.traineeSubmittedAt || v.savedAt || v.updatedAt).format('MMM D, YYYY');
+
+            let actions = '';
+            if (isDraft) {
+                actions = `
+                    ${pdfUrl ? `<button class="archived-download-btn mfvf-act-btn" data-month="${v.month}" data-url="${pdfUrl}" title="View PDF"><i class="ph ph-eye text-sm mr-1"></i>Open</button>` : ''}
+                    <button class="archived-send-btn mfvf-act-btn mfvf-act-primary" data-month="${v.month}"><i class="ph ph-paper-plane-tilt text-sm mr-1"></i>Send</button>
+                    <button class="archived-delete-btn mfvf-act-icon text-red-400 hover:text-red-300 hover:bg-red-500/10" data-month="${v.month}" title="Delete Draft"><i class="ph ph-trash"></i></button>
+                `;
+            } else if (isSent) {
+                actions = `
+                    ${pdfUrl ? `<button class="archived-download-btn mfvf-act-btn" data-month="${v.month}" data-url="${pdfUrl}" title="View PDF"><i class="ph ph-eye text-sm mr-1"></i>View PDF</button>` : ''}
+                    <button class="archived-cancel-btn mfvf-act-btn mfvf-act-warn" data-month="${v.month}"><i class="ph ph-x-circle text-sm mr-1"></i>Cancel</button>
+                `;
+            } else if (isCorrection) {
+                actions = `
+                    ${pdfUrl ? `<button class="archived-download-btn mfvf-act-btn" data-month="${v.month}" data-url="${pdfUrl}" title="Open & Fix"><i class="ph ph-pencil-simple text-sm mr-1"></i>Open & Fix</button>` : ''}
+                    <button class="archived-send-btn mfvf-act-btn mfvf-act-primary" data-month="${v.month}"><i class="ph ph-paper-plane-tilt text-sm mr-1"></i>Resend</button>
+                `;
+            } else if (isSigned) {
+                actions = `
+                    <button class="archived-download-btn mfvf-act-btn mfvf-act-signed" data-month="${v.month}" data-url="${v.signedPdfUrl || pdfUrl}"><i class="ph ph-file-pdf text-sm mr-1"></i>Open Signed PDF</button>
+                    ${pdfUrl ? `<a href="${pdfUrl}" target="_blank" rel="noopener noreferrer" class="mfvf-act-icon text-text-muted hover:text-white" title="Download"><i class="ph ph-download-simple"></i></a>` : ''}
+                    <button class="archived-correction-btn mfvf-act-btn mfvf-act-outline" data-month="${v.month}" data-supervisor-id="${v.supervisorId || ''}"><i class="ph ph-pencil-simple text-sm mr-1"></i>Request Correction</button>
+                `;
+            }
+
+            let signedBanner = '';
+            if (isSigned) {
+                const sigName = v.supervisorSignatureName || v.signedBySupervisorName || v.supervisorName || 'Supervisor';
+                const sigDate = v.supervisorSignedDate || (v.signedAt ? dayjs(v.signedAt).format('MMM D, YYYY') : '');
+                signedBanner = `
+                    <div class="flex items-center gap-3 mt-2.5 px-3 py-2 rounded-lg bg-green-500/8 border border-green-500/15">
+                        <i class="ph-fill ph-seal-check text-green-400 text-base flex-shrink-0"></i>
+                        <div class="text-[11px] leading-snug">
+                            <span class="text-green-300 font-semibold">Signed by ${sigName}</span>
+                            ${sigDate ? `<span class="text-green-400/60 mx-1.5">&middot;</span><span class="text-green-400/70">Returned ${sigDate}</span>` : ''}
+                            <span class="text-green-400/60 mx-1.5">&middot;</span><span class="text-green-400/70">Both signatures included</span>
+                        </div>
+                    </div>`;
+            }
+
+            let correctionBanner = '';
+            if (isCorrection && (v.supervisorComments || v.correctionReason)) {
+                correctionBanner = `
+                    <div class="flex items-start gap-2.5 mt-2.5 px-3 py-2 rounded-lg bg-orange-500/8 border border-orange-500/15">
+                        <i class="ph-fill ph-chat-teardrop-text text-orange-400 text-sm flex-shrink-0 mt-0.5"></i>
+                        <p class="text-[11px] text-orange-200/80 leading-snug">${v.supervisorComments || v.correctionReason}</p>
+                    </div>`;
+            }
 
             return `
-                <div class="glass-panel rounded-xl p-5 border border-white/5 hover:border-primary/30 transition-all">
-                    <div class="flex items-start justify-between mb-4">
-                        <div class="flex items-start gap-4 flex-1">
-                            <div class="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${colors.bgClass}">
-                                <i class="ph ph-${colors.icon} text-lg ${colors.textClass}"></i>
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <div class="flex items-center gap-3 mb-2 flex-wrap">
-                                    <h3 class="text-lg font-bold text-white">${v.monthLabel || v.month}</h3>
-                                    <span class="px-2.5 py-1 rounded-lg text-xs font-semibold ${colors.textClass} ${colors.bgClass} border border-white/10">
-                                        ${label}
-                                    </span>
-                                </div>
-                                <div class="grid grid-cols-2 gap-3 text-sm text-text-muted">
-                                    <div>
-                                        <span class="text-text-muted">Supervisor:</span>
-                                        <p class="text-white font-medium">${v.supervisorName || '-'}</p>
-                                    </div>
-                                    <div>
-                                        <span class="text-text-muted">Total Hours:</span>
-                                        <p class="text-white font-medium">${v.formData?.totalHours?.toFixed(2) || '-'} hh</p>
-                                    </div>
-                                    <div>
-                                        <span class="text-text-muted">Supervised:</span>
-                                        <p class="text-white font-medium">${v.formData?.supervisionPercentage?.toFixed(2) || '-'}%</p>
-                                    </div>
-                                    <div>
-                                        <span class="text-text-muted">Submitted:</span>
-                                        <p class="text-white font-medium">${v.traineeSubmittedAt ? dayjs(v.traineeSubmittedAt).format('MMM D, YYYY') : '-'}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-2 flex-shrink-0">
-                            ${v.draftPdfUrl ? `
-                                <a href="${v.draftPdfUrl}" target="_blank" rel="noopener noreferrer" class="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-primary/20 transition-colors" title="Download PDF">
-                                    <i class="ph ph-download text-lg text-primary"></i>
-                                </a>
-                            ` : ''}
-                            ${v.status === 'signed' && v.signedPdfUrl ? `
-                                <a href="${v.signedPdfUrl}" target="_blank" rel="noopener noreferrer" class="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-emerald-500/20 transition-colors" title="View Signed PDF">
-                                    <i class="ph ph-file-pdf text-lg text-emerald-400"></i>
-                                </a>
-                            ` : ''}
-                        </div>
+                <div class="mfvf-card group" data-status="${st}">
+                    <div class="mfvf-card-strip" style="background:${strip};"></div>
+                    <div class="mfvf-card-thumb">
+                        <i class="ph${isSigned ? '-fill' : ''} ph-${isSigned ? 'seal-check' : 'file-pdf'} text-xl ${isSigned ? 'text-green-400' : 'text-slate-400'}"></i>
                     </div>
-                    ${v.supervisorComments ? `
-                        <div class="bg-white/5 rounded-lg p-3 text-sm">
-                            <p class="text-text-muted mb-1">Supervisor Comments:</p>
-                            <p class="text-white">${v.supervisorComments}</p>
+                    <div class="mfvf-card-body">
+                        <div class="flex items-center gap-2 mb-0.5">
+                            <span class="text-sm font-bold text-white leading-tight">${monthDisplay}</span>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-semibold border ${badge}">${label}</span>
                         </div>
-                    ` : ''}
+                        <div class="flex items-center gap-4 text-[11px] text-text-muted mt-1 flex-wrap">
+                            <span><span class="text-text-muted/60">Supervisor:</span> <span class="text-slate-300">${v.supervisorName || '-'}</span></span>
+                            <span><span class="text-text-muted/60">Hours:</span> <span class="text-slate-300">${totalHrs != null ? parseFloat(totalHrs).toFixed(1) : '-'}</span></span>
+                            <span><span class="text-text-muted/60">Supervised:</span> <span class="text-slate-300">${supPct != null ? parseFloat(supPct).toFixed(1) + '%' : '-'}</span></span>
+                            <span><span class="text-text-muted/60">${v.traineeSubmittedAt ? 'Sent' : 'Saved'}:</span> <span class="text-slate-300">${dateStr}</span></span>
+                        </div>
+                        ${signedBanner}${correctionBanner}
+                    </div>
+                    <div class="mfvf-card-actions">${actions}</div>
                 </div>
             `;
-        }).join('');
+        };
+
+        // Build full HTML
+        let html = '';
+
+        // Tabs
+        const tabs = [
+            { key: 'all', label: 'All', count: counts.all },
+            { key: 'draft', label: 'Drafts', count: counts.draft },
+            { key: 'submitted', label: 'Sent', count: counts.submitted },
+            { key: 'changes_requested', label: 'Needs Correction', count: counts.changes_requested },
+            { key: 'signed', label: 'Signed', count: counts.signed }
+        ];
+        html += `<div class="flex items-center gap-1.5 mb-4 flex-wrap" id="mfvf-center-tabs">`;
+        tabs.forEach(t => {
+            html += `<button class="mfvf-tab ${t.key === 'all' ? 'mfvf-tab-active' : ''}" data-filter="${t.key}">${t.label}${t.count > 0 ? ` <span class="mfvf-tab-count">${t.count}</span>` : ''}</button>`;
+        });
+        html += `</div>`;
+
+        // Summary pills
+        html += `<div class="flex items-center gap-2.5 mb-5 flex-wrap">
+            <span class="mfvf-pill" style="--pill-color:#22c55e;"><span class="mfvf-pill-dot"></span>${counts.signed} Signed</span>
+            <span class="mfvf-pill" style="--pill-color:#3b82f6;"><span class="mfvf-pill-dot"></span>${counts.draft} Draft</span>
+            <span class="mfvf-pill" style="--pill-color:#f59e0b;"><span class="mfvf-pill-dot"></span>${counts.submitted} Waiting</span>
+            <span class="mfvf-pill" style="--pill-color:#f97316;"><span class="mfvf-pill-dot"></span>${counts.changes_requested} Correction</span>
+        </div>`;
+
+        // Cards grouped by year
+        years.forEach(yr => {
+            html += `<div class="mfvf-year-group" data-year="${yr}">
+                <div class="flex items-center gap-2 mb-3 mt-2">
+                    <span class="text-xs font-bold text-text-muted/50 uppercase tracking-widest">${yr}</span>
+                    <div class="flex-1 h-px bg-white/5"></div>
+                </div>
+                <div class="space-y-2">${byYear[yr].map(renderCard).join('')}</div>
+            </div>`;
+        });
+
+        container.innerHTML = html;
+
+        // Tab filtering
+        container.querySelectorAll('.mfvf-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                container.querySelectorAll('.mfvf-tab').forEach(t => t.classList.remove('mfvf-tab-active'));
+                tab.classList.add('mfvf-tab-active');
+                const filter = tab.dataset.filter;
+                container.querySelectorAll('.mfvf-card').forEach(card => {
+                    if (filter === 'all') { card.style.display = ''; }
+                    else {
+                        const match = card.dataset.status === filter || (filter === 'draft' && card.dataset.status === 'not_started');
+                        card.style.display = match ? '' : 'none';
+                    }
+                });
+                container.querySelectorAll('.mfvf-year-group').forEach(grp => {
+                    const visible = grp.querySelectorAll('.mfvf-card:not([style*="display: none"])');
+                    grp.style.display = visible.length ? '' : 'none';
+                });
+            });
+        });
+
+        // Wire all action buttons
+        container.querySelectorAll('.archived-send-btn').forEach(btn => {
+            btn.addEventListener('click', () => openArchivedSendModal(btn.dataset.month, verifications));
+        });
+        container.querySelectorAll('.archived-delete-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const ok = await CustomModal.confirm('Delete this draft M-FVF? This cannot be undone.', 'Delete Draft');
+                if (!ok) return;
+                try {
+                    await deleteDoc(getMfvfVerificationRef(userId, btn.dataset.month));
+                    loadArchivedMfvfList();
+                } catch (e) { await CustomModal.alert('Failed to delete: ' + e.message, 'Error'); }
+            });
+        });
+        container.querySelectorAll('.archived-cancel-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const ok = await CustomModal.confirm('Cancel this submission and return to draft? The supervisor will no longer see it in their queue.', 'Cancel Request');
+                if (!ok) return;
+                try {
+                    await setDoc(getMfvfVerificationRef(userId, btn.dataset.month), {
+                        status: 'draft', traineeSubmittedAt: '', submittedPdfUrl: '', submittedPdfPath: '',
+                        supervisorComments: '', updatedAt: new Date().toISOString()
+                    }, { merge: true });
+                    loadArchivedMfvfList();
+                } catch (e) { await CustomModal.alert('Failed to cancel: ' + e.message, 'Error'); }
+            });
+        });
+        container.querySelectorAll('.archived-download-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const url = btn.dataset.url;
+                if (url) window.open(url, '_blank', 'noopener,noreferrer');
+                else CustomModal.alert('No PDF available.', 'Not Found');
+            });
+        });
+        container.querySelectorAll('.archived-correction-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const reason = await CustomModal.prompt('What needs to be corrected? The supervisor will be notified.', '', 'Request Correction');
+                if (!reason || !reason.trim()) return;
+                const m = btn.dataset.month;
+                const v = verifications.find(x => x.month === m);
+                if (!v) return;
+                try {
+                    await setDoc(getMfvfVerificationRef(userId, m), {
+                        status: 'changes_requested',
+                        correctionRequestedAt: new Date().toISOString(),
+                        correctionReason: reason.trim(),
+                        updatedAt: new Date().toISOString()
+                    }, { merge: true });
+                    const supId = v.supervisorId || btn.dataset.supervisorId;
+                    if (supId) {
+                        const chatRef = doc(db, `users/${userId}/chats/${supId}`);
+                        const messagesRef = collection(db, `users/${userId}/chats/${supId}/messages`);
+                        await setDoc(chatRef, { lastMessageText: `Correction requested for ${v.monthLabel || m} M-FVF`, lastMessageAt: serverTimestamp(), lastSenderId: userId }, { merge: true });
+                        await addDoc(messagesRef, { text: `Correction requested for ${v.monthLabel || m} M-FVF: ${reason.trim()}`, senderId: userId, senderName: profileData.name || 'Trainee', timestamp: serverTimestamp(), systemType: 'mfvf_correction_request', month: m });
+                    }
+                    await CustomModal.alert('Correction request sent to your supervisor.', 'Sent');
+                    loadArchivedMfvfList();
+                } catch (e) { await CustomModal.alert('Failed to send: ' + e.message, 'Error'); }
+            });
+        });
     } catch (err) {
-        console.error('Error loading archived M-FVFs:', err);
+        console.error('Error loading M-FVF Center:', err);
         container.innerHTML = `
             <div class="glass-panel rounded-xl p-8 text-center text-red-400">
                 <i class="ph ph-warning-circle text-4xl mb-3"></i>
-                <p>Error loading archived forms</p>
+                <p>Error loading forms</p>
             </div>
         `;
     }
+};
+
+
+const openArchivedSendModal = (month, verifications) => {
+    const v = verifications.find(x => x.month === month);
+    if (!v) return;
+    const supervisors = profileData.supervisors || [];
+    const isLight = document.body.classList.contains('light-mode');
+    const [statusLabel] = getMfvfStatusConfig(v.status);
+    const isResend = v.status === 'submitted' || v.status === 'changes_requested';
+
+    const overlay = document.createElement('div');
+    overlay.className = 'fixed inset-0 z-[200] flex items-center justify-center bg-slate-950/70 backdrop-blur-md modal-fade-in p-4';
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+
+    const cardBg = isLight ? 'bg-white' : 'bg-slate-900';
+    const borderCol = isLight ? 'border-slate-200' : 'border-white/10';
+    const textTitle = isLight ? 'text-slate-900' : 'text-white';
+    const textBody = isLight ? 'text-slate-600' : 'text-slate-300';
+
+    overlay.innerHTML = `
+        <div class="p-6 rounded-2xl max-w-md w-full border ${borderCol} ${cardBg} transform modal-scale-up" style="box-shadow: 0 25px 50px -12px rgba(0,0,0,0.45);">
+            <div class="flex items-center gap-3 mb-5">
+                <div class="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center text-primary"><i class="ph ph-paper-plane-tilt text-xl"></i></div>
+                <div>
+                    <h3 class="text-lg font-bold ${textTitle}">${isResend ? 'Resend' : 'Send'} M-FVF</h3>
+                    <p class="text-xs ${textBody}">${v.monthLabel || dayjs(month).format('MMMM YYYY')} — ${statusLabel}</p>
+                </div>
+            </div>
+            ${isResend ? `<div class="rounded-lg p-3 mb-4 bg-amber-500/10 border border-amber-500/20 text-xs text-amber-200 flex items-start gap-2"><i class="ph ph-info mt-0.5"></i><span>This form was already sent to <strong>${v.supervisorName || 'a supervisor'}</strong>. You can resend to the same or choose a different supervisor.</span></div>` : ''}
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold ${textBody} mb-1.5">Supervisor</label>
+                    ${supervisors.length > 0 ? `
+                        <select id="archived-send-supervisor-select" class="w-full px-3 py-2.5 rounded-xl text-sm ${isLight ? 'bg-slate-100 text-slate-900 border-slate-200' : 'bg-white/5 text-white border-white/10'} border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all">
+                            <option value="">Select a supervisor...</option>
+                            ${supervisors.map(s => `<option value="${s.name}" ${v.supervisorName === s.name ? 'selected' : ''}>${s.name}${s.email ? ` (${s.email})` : ''}</option>`).join('')}
+                        </select>
+                    ` : `
+                        <div class="rounded-xl p-4 text-center ${isLight ? 'bg-slate-100 text-slate-500' : 'bg-white/5 text-text-muted'} text-sm">
+                            <i class="ph ph-user-circle-minus text-xl mb-1 block"></i>
+                            No supervisors available. Add a supervisor in Settings > Profile.
+                        </div>
+                    `}
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold ${textBody} mb-1.5">Message (optional)</label>
+                    <textarea id="archived-send-note" rows="2" placeholder="Add a note for your supervisor..." class="w-full px-3 py-2.5 rounded-xl text-sm ${isLight ? 'bg-slate-100 text-slate-900 border-slate-200' : 'bg-white/5 text-white border-white/10'} border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none">${v.traineeNote || ''}</textarea>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 mt-6">
+                <button id="archived-send-cancel" class="px-4 py-2.5 rounded-xl text-sm font-semibold ${isLight ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-white/5 hover:bg-white/10 text-white'} border ${borderCol} transition-all">Cancel</button>
+                <button id="archived-send-confirm" class="px-5 py-2.5 rounded-xl text-sm font-bold bg-primary hover:bg-primary/90 text-white transition-all shadow-lg disabled:opacity-40 disabled:cursor-not-allowed" ${supervisors.length === 0 ? 'disabled' : ''}>
+                    <i class="ph ph-paper-plane-tilt mr-1.5"></i>Send
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    const select = document.getElementById('archived-send-supervisor-select');
+    const sendBtn = document.getElementById('archived-send-confirm');
+    const cancelBtn = document.getElementById('archived-send-cancel');
+
+    if (select && sendBtn) {
+        const updateDisabled = () => { sendBtn.disabled = !select.value; };
+        updateDisabled();
+        select.addEventListener('change', updateDisabled);
+    }
+
+    cancelBtn?.addEventListener('click', () => overlay.remove());
+
+    sendBtn?.addEventListener('click', async () => {
+        if (!select?.value) return;
+        const supervisor = supervisors.find(s => s.name === select.value);
+        if (!supervisor) return;
+        const traineeNote = document.getElementById('archived-send-note')?.value?.trim() || '';
+
+        const isDifferentSup = isResend && v.supervisorName && v.supervisorName !== supervisor.name;
+        if (isDifferentSup) {
+            const ok = await CustomModal.confirm(
+                `This form was previously sent to ${v.supervisorName}. Send to ${supervisor.name} instead?`,
+                'Change Supervisor'
+            );
+            if (!ok) return;
+        }
+
+        const originalHtml = sendBtn.innerHTML;
+        sendBtn.disabled = true;
+        sendBtn.innerHTML = '<i class="ph-fill ph-spinner-gap animate-spin text-sm"></i> Sending...';
+
+        try {
+            let supervisorUid = '';
+            if (supervisor.email) {
+                try {
+                    const q = query(collection(db, 'users'), where('email', '==', supervisor.email.trim()), where('role', '==', 'supervisor'));
+                    const snap = await getDocs(q);
+                    if (!snap.empty) supervisorUid = snap.docs[0].id;
+                } catch (e) { console.warn('Could not resolve supervisor UID:', e); }
+            }
+
+            const submittedAt = new Date().toISOString();
+            const updateData = {
+                status: 'submitted',
+                supervisorName: supervisor.name,
+                supervisorEmail: supervisor.email || '',
+                supervisorCert: supervisor.cert || '',
+                supervisorUid,
+                traineeId: userId,
+                traineeName: profileData.name || 'Trainee',
+                traineeEmail: profileData.email || auth.currentUser?.email || '',
+                traineeNote,
+                traineeSubmittedAt: submittedAt,
+                submittedPdfUrl: v.draftPdfUrl || v.submittedPdfUrl || '',
+                submittedPdfPath: v.draftPdfPath || v.submittedPdfPath || '',
+                submittedPdfName: v.draftPdfName || v.submittedPdfName || '',
+                submittedPdfUpdatedAt: submittedAt,
+                supervisorComments: '',
+                signedPdfPath: '',
+                signedPdfUrl: '',
+                updatedAt: submittedAt
+            };
+
+            await setDoc(getMfvfVerificationRef(userId, month), updateData, { merge: true });
+
+            if (supervisorUid) {
+                const chatRef = doc(db, `users/${userId}/chats/${supervisorUid}`);
+                const messagesRef = collection(db, `users/${userId}/chats/${supervisorUid}/messages`);
+                const msgText = `${profileData.name || 'Trainee'} sent the ${v.monthLabel || dayjs(month).format('MMMM YYYY')} M-FVF for review and signature.`;
+                await setDoc(chatRef, {
+                    traineeName: profileData.name || 'Trainee',
+                    traineeEmail: profileData.email || auth.currentUser?.email || '',
+                    supervisorName: supervisor.name,
+                    supervisorEmail: supervisor.email || '',
+                    lastMessageText: msgText,
+                    lastMessageAt: serverTimestamp(),
+                    lastSenderId: userId
+                }, { merge: true });
+                await addDoc(messagesRef, {
+                    text: msgText,
+                    senderId: userId,
+                    senderName: profileData.name || 'Trainee',
+                    timestamp: serverTimestamp(),
+                    systemType: 'mfvf_submitted',
+                    month
+                });
+            }
+
+            overlay.remove();
+            await CustomModal.alert(`M-FVF sent to ${supervisor.name}.`, 'Sent');
+            loadArchivedMfvfList();
+        } catch (error) {
+            console.error('Error sending archived M-FVF:', error);
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = originalHtml;
+            await CustomModal.alert('Failed to send: ' + error.message, 'Send Error');
+        }
+    });
 };
 
 // --- Chat / Messages System ---
@@ -3243,7 +4599,7 @@ const CustomModal = {
         return new Promise((resolve) => {
             const isLight = document.body.classList.contains('light-mode');
             const modal = document.createElement('div');
-            modal.className = 'fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/65 backdrop-blur-md modal-fade-in p-4';
+            modal.className = 'fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/65 backdrop-blur-md modal-fade-in p-4';
             
             const cardBg = isLight ? 'bg-white' : 'rgba(15, 23, 42, 0.75)';
             const borderCol = isLight ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255, 255, 255, 0.1)';
@@ -3287,7 +4643,7 @@ const CustomModal = {
         return new Promise((resolve) => {
             const isLight = document.body.classList.contains('light-mode');
             const modal = document.createElement('div');
-            modal.className = 'fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/65 backdrop-blur-md modal-fade-in p-4';
+            modal.className = 'fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/65 backdrop-blur-md modal-fade-in p-4';
             
             const cardBg = isLight ? 'bg-white' : 'rgba(15, 23, 42, 0.75)';
             const borderCol = isLight ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255, 255, 255, 0.1)';
@@ -3341,7 +4697,7 @@ const CustomModal = {
         return new Promise((resolve) => {
             const isLight = document.body.classList.contains('light-mode');
             const modal = document.createElement('div');
-            modal.className = 'fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/65 backdrop-blur-md modal-fade-in p-4';
+            modal.className = 'fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/65 backdrop-blur-md modal-fade-in p-4';
             
             const cardBg = isLight ? 'bg-white' : 'rgba(15, 23, 42, 0.75)';
             const borderCol = isLight ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255, 255, 255, 0.1)';
@@ -3398,7 +4754,7 @@ const CustomModal = {
         return new Promise((resolve) => {
             const isLight = document.body.classList.contains('light-mode');
             const modal = document.createElement('div');
-            modal.className = 'fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/65 backdrop-blur-md modal-fade-in p-4';
+            modal.className = 'fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/65 backdrop-blur-md modal-fade-in p-4';
             
             const cardBg = isLight ? 'bg-white' : 'rgba(15, 23, 42, 0.75)';
             const borderCol = isLight ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255, 255, 255, 0.1)';
@@ -3516,6 +4872,17 @@ function init() {
             const target = e.target.closest('.view-btn');
             if (target) switchView(target.dataset.view);
         }));
+    }
+
+    const sidebarTraineesToggle = document.getElementById('sidebar-trainees-toggle');
+    if (sidebarTraineesToggle) {
+        sidebarTraineesToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const list = document.getElementById('sidebar-trainees-list');
+            const chevron = document.getElementById('sidebar-trainees-chevron');
+            if (list) list.classList.toggle('hidden');
+            if (chevron) chevron.classList.toggle('rotate-180');
+        });
     }
 
     if (monthSelector) {
@@ -4449,12 +5816,41 @@ function init() {
         signatureTargetField = null;
     }
 
+    function trimSignatureCanvas(sourceCanvas) {
+        const w = sourceCanvas.width, h = sourceCanvas.height;
+        const ctx = sourceCanvas.getContext('2d');
+        const pixels = ctx.getImageData(0, 0, w, h).data;
+        let top = h, left = w, bottom = 0, right = 0;
+        for (let y = 0; y < h; y++) {
+            for (let x = 0; x < w; x++) {
+                if (pixels[(y * w + x) * 4 + 3] > 10) {
+                    if (y < top) top = y;
+                    if (y > bottom) bottom = y;
+                    if (x < left) left = x;
+                    if (x > right) right = x;
+                }
+            }
+        }
+        if (bottom <= top || right <= left) return sourceCanvas.toDataURL('image/png');
+        const pad = 10;
+        top = Math.max(0, top - pad);
+        left = Math.max(0, left - pad);
+        bottom = Math.min(h - 1, bottom + pad);
+        right = Math.min(w - 1, right + pad);
+        const tw = right - left + 1, th = bottom - top + 1;
+        const tmp = document.createElement('canvas');
+        tmp.width = tw; tmp.height = th;
+        tmp.getContext('2d').drawImage(sourceCanvas, left, top, tw, th, 0, 0, tw, th);
+        return tmp.toDataURL('image/png');
+    }
+
     function applySignature() {
         if (!signaturePadInstance || signaturePadInstance.isEmpty()) {
             closeSignaturePad();
             return;
         }
-        const dataUrl = signaturePadInstance.toDataURL('image/png');
+        const cv = document.getElementById('signature-pad-canvas');
+        const dataUrl = trimSignatureCanvas(cv);
         const fieldName = signatureTargetField;
         mfvfEditorState.signatures[fieldName] = dataUrl;
 
@@ -4471,27 +5867,8 @@ function init() {
         closeSignaturePad();
     }
 
-    // Save: fill template fields + draw signature → upload to cloud + auto-download
-    async function saveMfvfEditor() {
-        const selectedMonth = mfvfEditorState.month || pdfMonthSelector?.value || monthSelector?.value;
-        if (!selectedMonth) {
-            await CustomModal.alert('Please select a month first.', 'No Month Selected');
-            return;
-        }
-        if (!userId || userId === 'guest') {
-            await CustomModal.alert('Please sign in to save your M-FVF to the cloud.', 'Sign In Required');
-            return;
-        }
-        if (!storage) {
-            await CustomModal.alert('Firebase Storage is not ready yet. Please refresh and try again.', 'Storage Not Ready');
-            return;
-        }
-        if (!mfvfEditorState.templateBytes) {
-            await CustomModal.alert('The form is still loading. Please wait a moment and try again.', 'Please Wait');
-            return;
-        }
-
-        try {
+    // Build the filled + flattened PDF from the template and overlay inputs
+    async function buildMfvfPdfBlob() {
             const { PDFDocument } = window.PDFLib;
             const doc = await PDFDocument.load(mfvfEditorState.templateBytes.slice(0));
             const form = doc.getForm();
@@ -4527,7 +5904,55 @@ function init() {
             try { form.flatten(); } catch (e) { console.warn('Flatten failed (non-critical):', e); }
 
             const bytes = await doc.save();
-            const blob = new Blob([bytes], { type: 'application/pdf' });
+            return new Blob([bytes], { type: 'application/pdf' });
+    }
+
+    // Download the filled PDF to the user's computer
+    async function downloadMfvfEditor() {
+        if (!mfvfEditorState.templateBytes) {
+            await CustomModal.alert('The form is still loading. Please wait a moment and try again.', 'Please Wait');
+            return;
+        }
+        try {
+            const blob = await buildMfvfPdfBlob();
+            const month = mfvfEditorState.month || pdfMonthSelector?.value || monthSelector?.value || '';
+            const name = (profileData?.name || 'Trainee').replace(/\s+/g, '_');
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `MFVF_${name}_${month}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+        } catch (err) {
+            console.error('M-FVF download failed:', err);
+            await CustomModal.alert('Could not generate the PDF: ' + err.message, 'Download Failed');
+        }
+    }
+
+    // Save: fill template fields + draw signature → upload to cloud
+    async function saveMfvfEditor() {
+        const selectedMonth = mfvfEditorState.month || pdfMonthSelector?.value || monthSelector?.value;
+        if (!selectedMonth) {
+            await CustomModal.alert('Please select a month first.', 'No Month Selected');
+            return;
+        }
+        if (!userId || userId === 'guest') {
+            await CustomModal.alert('Please sign in to save your M-FVF to the cloud.', 'Sign In Required');
+            return;
+        }
+        if (!storage) {
+            await CustomModal.alert('Firebase Storage is not ready yet. Please refresh and try again.', 'Storage Not Ready');
+            return;
+        }
+        if (!mfvfEditorState.templateBytes) {
+            await CustomModal.alert('The form is still loading. Please wait a moment and try again.', 'Please Wait');
+            return;
+        }
+
+        try {
+            const overlay = document.getElementById('pdf-overlay-layer');
+            const blob = await buildMfvfPdfBlob();
 
             // Upload to cloud
             const filename = `MFVF_${(profileData.name || 'Trainee').replace(/\s+/g, '_')}_${selectedMonth}.pdf`;
@@ -4536,51 +5961,62 @@ function init() {
             await uploadBytes(fileRef, blob, { contentType: 'application/pdf' });
             const downloadUrl = await getDownloadURL(fileRef);
 
-            // Save verification record (status stays 'draft' → ready to Send to Supervisor)
+            // Read live values from overlay inputs (what user actually edited)
+            const fieldVal = (name) => {
+                const inp = overlay?.querySelector(`input[data-field-name="${name}"]`);
+                return inp ? inp.value : '';
+            };
+            const indepH = parseFloat(fieldVal('Independent_Hours')) || 0;
+            const indepM = parseFloat(fieldVal('Independent_Minutes')) || 0;
+            const supH = parseFloat(fieldVal('Supervised_Hours')) || 0;
+            const supM = parseFloat(fieldVal('Supervised_Minutes')) || 0;
+            const totalH = parseFloat(fieldVal('Total_Fieldwork_Hours')) || 0;
+            const totalM = parseFloat(fieldVal('Total_Fieldwork_Minutes')) || 0;
+            const totalDecimal = totalH + totalM / 60;
+            const supervisedDecimal = supH + supM / 60;
+            const pctRaw = fieldVal('PERCENT_HOURS_SUPERVISED').replace('%', '');
+            const pctValue = parseFloat(pctRaw) || 0;
+            const obsH = parseFloat(fieldVal('Observation_Hours')) || 0;
+            const obsM = parseFloat(fieldVal('Independent_Minutes 3')) || 0;
+
             const ctx = getMfvfContext(selectedMonth);
-            const { summary, monthLabel, supervisorProfile, topSupervisorName, stateEntry, countryEntry, monthEntries } = ctx;
-            const hasTraineeSignature = !!mfvfEditorState.signatures['TRAINEE_SIGNATURE'];
+            const { monthLabel, monthEntries } = ctx;
+            const liveSupervisorName = fieldVal('RESPONSIBLE_SUPERVISOR_NAME');
+            const traineeSignatureDataUrl = mfvfEditorState.signatures['TRAINEE_SIGNATURE'] || null;
+            const hasTraineeSignature = !!traineeSignatureDataUrl;
+            const now = new Date().toISOString();
+
             await setDoc(getMfvfVerificationRef(userId, selectedMonth), {
                 status: 'draft',
                 month: selectedMonth,
                 monthLabel,
                 traineeId: userId,
-                traineeName: profileData.name || '',
+                traineeName: fieldVal('TRAINEE_NAME') || profileData.name || '',
                 traineeEmail: profileData.email || auth.currentUser?.email || '',
-                bacbId: profileData.rbtNumber || '',
-                supervisorName: supervisorProfile?.name || topSupervisorName || '',
-                supervisorEmail: supervisorProfile?.email || '',
-                supervisorCert: supervisorProfile?.cert || '',
+                bacbId: fieldVal('TRAINEE_BACB_ID') || profileData.rbtNumber || '',
+                supervisorName: liveSupervisorName,
+                supervisorCert: fieldVal('RESPONSIBLE_SUPERVISOR_BACB_ID') || '',
+                supervisorEmail: '',
                 draftPdfPath: storagePath,
                 draftPdfUrl: downloadUrl,
                 draftPdfName: filename,
                 traineeSigned: hasTraineeSignature,
+                traineeSignatureDataUrl: traineeSignatureDataUrl || '',
                 formData: {
-                    state: stateEntry?.state || '',
-                    country: countryEntry?.country || 'United States',
-                    independentHours: summary.unsupervised,
-                    supervisedHours: summary.supervised,
-                    totalHours: summary.total,
-                    restrictedHours: summary.restricted,
-                    unrestrictedHours: summary.unrestricted,
-                    observationMinutes: summary.observationMinutes,
-                    supervisionPercentage: summary.percentage,
-                    individualSupervision: summary.individualSupervision,
-                    groupSupervision: summary.groupSupervision
+                    state: fieldVal('TRAINEE_FIELDWORK_STATE'),
+                    country: fieldVal('TRAINEE_FIELDWORK_COUNTRY') || 'United States',
+                    independentHours: indepH + indepM / 60,
+                    supervisedHours: supervisedDecimal,
+                    totalHours: totalDecimal,
+                    observationMinutes: obsH * 60 + obsM,
+                    supervisionPercentage: pctValue
                 },
                 entryCount: monthEntries.length,
-                updatedAt: new Date().toISOString()
+                savedAt: now,
+                updatedAt: now
             }, { merge: true });
 
-            // Auto-download the filled official form
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
-
-            showPdfSendToast('Saved to cloud & downloaded ✓');
+            showPdfSendToast('Saved to M-FVF Center ✓');
         } catch (err) {
             console.error('M-FVF editor save failed:', err);
             await CustomModal.alert(
@@ -4685,6 +6121,8 @@ function init() {
     if (exportAllTimeCsvBtn) exportAllTimeCsvBtn.addEventListener('click', () => {
         exportToCsv(allEntries, calculateSummaryData(allEntries), `Fieldwork_AllTime.csv`);
     });
+
+    document.getElementById('pdf-local-download-btn')?.addEventListener('click', downloadMfvfEditor);
 
     const pdfDownloadBtnEl = document.getElementById('pdf-download-btn');
     if (pdfDownloadBtnEl) {
@@ -5211,18 +6649,19 @@ const updateNotificationsUI = () => {
     if (profileData.role === 'trainee' || profileData.role === 'admin') {
         if (allEntries && allEntries.length > 0) {
             allEntries.forEach(entry => {
-                if (entry.supervisorNote && entry.supervisorNote.trim() !== '') {
+                if (hasFeedback(entry)) {
                     const readCommentText = localStorage.getItem(`comment_read_${userId}_${entry.id}`);
-                    if (readCommentText !== entry.supervisorNote) {
+                    const feedbackFingerprint = JSON.stringify({ note: entry.supervisorNote || '', areas: entry.feedbackIssueAreas || [] });
+                    if (readCommentText !== feedbackFingerprint) {
                         const supervisorName = entry.supervisorName || 'Supervisor';
                         activeNotifications.push({
                             id: `comment_${entry.id}`,
                             type: 'comment',
                             title: 'New Feedback',
-                            body: `${supervisorName} left notes on entry for ${entry.date}: "${entry.supervisorNote}"`,
+                            body: `${supervisorName} flagged ${entry.date}${entry.feedbackIssueAreas?.length ? ' (' + entry.feedbackIssueAreas.slice(0,2).map(getFeedbackIssueLabel).join(', ') + ')' : ''}: "${entry.supervisorNote || ''}"`,
                             timestamp: entry.updatedAt ? new Date(entry.updatedAt).getTime() : Date.now(),
                             entryId: entry.id,
-                            noteText: entry.supervisorNote
+                            noteText: JSON.stringify({ note: entry.supervisorNote || '', areas: entry.feedbackIssueAreas || [] })
                         });
                     }
                 }
@@ -5357,27 +6796,238 @@ const handleNotificationClick = async (notifId) => {
     }
 };
 
-const showFeedbackForEntry = async (entryId) => {
-    const entry = allEntries.find(e => e.id === entryId);
-    if (!entry || !entry.supervisorNote) return;
 
-    const isFixed = entry.feedbackFixed === true;
-    const feedback = entry.supervisorNote;
+const openSupervisorFeedbackModal = (existing = {}) => {
+    return new Promise((resolve) => {
+        const isLight = document.body.classList.contains('light-mode');
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/65 backdrop-blur-md modal-fade-in p-4';
 
-    if (profileData.role === 'supervisor') {
-        CustomModal.alert(feedback, "Supervisor Feedback", "ph-envelope-simple-open");
-    } else {
-        await CustomModal.feedback(feedback, isFixed, async (isChecked) => {
-            const entryRef = doc(db, `users/${userId}/entries/${entryId}`);
+        const cardBg = isLight ? 'bg-white' : 'rgba(15, 23, 42, 0.85)';
+        const borderCol = isLight ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255, 255, 255, 0.1)';
+        const shadow = isLight ? 'box-shadow: 0 25px 50px -12px rgba(99,102,241,0.1)' : 'box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5)';
+        const textCol = isLight ? 'text-slate-800' : 'text-white';
+        const mutedCol = isLight ? 'text-slate-500' : 'text-slate-400';
+        const inputBg = isLight ? 'bg-slate-50 border-slate-200 text-slate-800' : 'bg-white/5 border-white/10 text-white';
+
+        const selectedAreas = new Set(existing.issueAreas || []);
+
+        const areasHtml = FEEDBACK_ISSUE_AREAS.map(a => {
+            const sel = selectedAreas.has(a.id);
+            return `<button type="button" class="fb-area-btn px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition-all ${sel ? 'bg-primary/20 border-primary/40 text-primary' : 'bg-white/5 border-white/10 text-text-muted hover:text-white hover:border-white/20'}" data-area="${a.id}">${a.label}</button>`;
+        }).join('');
+
+        modal.innerHTML = `
+            <div class="p-6 rounded-2xl max-w-md w-full border transform modal-scale-up"
+                 style="background: ${cardBg}; border-color: ${borderCol}; ${shadow}; backdrop-filter: blur(25px);">
+                <div class="flex items-center gap-3 mb-5">
+                    <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary text-lg"><i class="ph-fill ph-note-pencil"></i></div>
+                    <h3 class="text-lg font-bold ${textCol}">Supervisor Feedback</h3>
+                </div>
+                <div class="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+                    <div>
+                        <label class="block text-[11px] font-semibold ${mutedCol} uppercase tracking-wider mb-2">Flagged Issue Area(s) <span class="text-pink-400">*</span></label>
+                        <div class="flex flex-wrap gap-1.5" id="fb-area-grid">${areasHtml}</div>
+                        <div id="fb-other-wrap" class="${selectedAreas.has('other') ? '' : 'hidden'} mt-2">
+                            <input type="text" id="fb-other-text" class="w-full px-3 py-2 rounded-lg ${inputBg} text-sm placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-primary/50" placeholder="Describe the issue..." value="${(existing.otherText || '').replace(/"/g, '&quot;')}">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold ${mutedCol} uppercase tracking-wider mb-2">Feedback Note <span class="text-pink-400">*</span></label>
+                        <textarea id="fb-note" rows="3" class="w-full px-3 py-2 rounded-lg ${inputBg} text-sm placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-primary/50 resize-none" placeholder="What is wrong and what should the trainee fix...">${existing.note || ''}</textarea>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold ${mutedCol} uppercase tracking-wider mb-2">Requested Action <span class="text-text-muted/40">(optional)</span></label>
+                        <input type="text" id="fb-action" class="w-full px-3 py-2 rounded-lg ${inputBg} text-sm placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-primary/50" placeholder="e.g. Correct the hours, change supervisor..." value="${(existing.requestedAction || '').replace(/"/g, '&quot;')}">
+                    </div>
+                </div>
+                <p id="fb-error" class="text-xs text-red-400 mt-2 hidden"></p>
+                <div class="flex gap-3 mt-5">
+                    <button class="fb-cancel-btn flex-1 py-2.5 px-4 rounded-xl border border-white/10 ${mutedCol} text-sm font-semibold hover:bg-white/5 transition-all">Cancel</button>
+                    <button class="fb-submit-btn flex-1 py-2.5 px-4 rounded-xl bg-primary hover:bg-primary-hover text-white text-sm font-semibold transition-all shadow-lg">Submit Feedback</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        const areaGrid = modal.querySelector('#fb-area-grid');
+        const otherWrap = modal.querySelector('#fb-other-wrap');
+
+        areaGrid.querySelectorAll('.fb-area-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const areaId = btn.dataset.area;
+                if (selectedAreas.has(areaId)) {
+                    selectedAreas.delete(areaId);
+                    btn.className = btn.className.replace('bg-primary/20 border-primary/40 text-primary', 'bg-white/5 border-white/10 text-text-muted hover:text-white hover:border-white/20');
+                } else {
+                    selectedAreas.add(areaId);
+                    btn.className = btn.className.replace('bg-white/5 border-white/10 text-text-muted hover:text-white hover:border-white/20', 'bg-primary/20 border-primary/40 text-primary');
+                }
+                if (areaId === 'other') otherWrap.classList.toggle('hidden', !selectedAreas.has('other'));
+            });
+        });
+
+        const closeModal = (result) => {
+            modal.classList.replace('modal-fade-in', 'modal-fade-out');
+            modal.querySelector('.transform').classList.replace('modal-scale-up', 'modal-scale-down');
+            setTimeout(() => { modal.remove(); resolve(result); }, 200);
+        };
+
+        modal.querySelector('.fb-cancel-btn').addEventListener('click', () => closeModal(null));
+        modal.querySelector('.fb-submit-btn').addEventListener('click', () => {
+            const errEl = modal.querySelector('#fb-error');
+            const note = modal.querySelector('#fb-note').value.trim();
+            const action = modal.querySelector('#fb-action').value.trim();
+            const otherText = modal.querySelector('#fb-other-text')?.value.trim() || '';
+
+            if (selectedAreas.size === 0) { errEl.textContent = 'Select at least one issue area.'; errEl.classList.remove('hidden'); return; }
+            if (!note) { errEl.textContent = 'Feedback note is required.'; errEl.classList.remove('hidden'); return; }
+            if (selectedAreas.has('other') && !otherText) { errEl.textContent = 'Please describe the "Other" issue.'; errEl.classList.remove('hidden'); return; }
+
+            closeModal({ issueAreas: [...selectedAreas], note, requestedAction: action, otherText });
+        });
+    });
+};
+
+const openFeedbackDetailModal = (entry, isTrainee = false) => {
+    const isLight = document.body.classList.contains('light-mode');
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/65 backdrop-blur-md modal-fade-in p-4';
+
+    const cardBg = isLight ? 'bg-white' : 'rgba(15, 23, 42, 0.85)';
+    const borderCol = isLight ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.1)';
+    const shadow = isLight ? 'box-shadow:0 25px 50px -12px rgba(99,102,241,0.1)' : 'box-shadow:0 25px 50px -12px rgba(0,0,0,0.5)';
+    const textCol = isLight ? 'text-slate-800' : 'text-white';
+    const mutedCol = isLight ? 'text-slate-500' : 'text-slate-400';
+    const inputBg = isLight ? 'bg-slate-50 border-slate-200 text-slate-800' : 'bg-white/5 border-white/10 text-white';
+    const fbStatus = getFeedbackStatus(entry);
+    const fbConf = getFeedbackStatusConfig(fbStatus);
+    const areas = entry.feedbackIssueAreas || [];
+    const isResolved = fbStatus === 'resolved';
+    const isDeleted = fbStatus === 'entry_deleted' || fbStatus === 'deleted';
+
+    // Mark as read if trainee viewing for first time
+    if (isTrainee && fbStatus === 'pending' && entry.id) {
+        const entryRef = doc(db, `users/${userId}/entries/${entry.id}`);
+        updateDoc(entryRef, { feedbackStatus: 'read', feedbackReadAt: new Date().toISOString() }).catch(() => {});
+        localStorage.setItem(`comment_read_${userId}_${entry.id}`, JSON.stringify({ note: entry.supervisorNote || '', areas: entry.feedbackIssueAreas || [] }));
+    }
+
+    let traineeSection = '';
+    if (isTrainee && !isDeleted) {
+        traineeSection = `
+            <div class="mt-4 pt-4 border-t border-white/8">
+                <label class="block text-[11px] font-semibold ${mutedCol} uppercase tracking-wider mb-2">Your Response</label>
+                <textarea id="fb-trainee-response" rows="2" class="w-full px-3 py-2 rounded-lg ${inputBg} text-sm placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-primary/50 resize-none" placeholder="Explain what you fixed or changed...">${entry.traineeResponse || ''}</textarea>
+                <div class="flex items-center gap-4 mt-3">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="fb-mark-resolved" class="rounded border-white/10 text-green-500 focus:ring-0 focus:ring-offset-0 bg-surface/50 h-4 w-4" ${isResolved ? 'checked' : ''}>
+                        <span class="text-xs font-semibold ${mutedCol}">Mark as Resolved / Fixed</span>
+                    </label>
+                    <button class="fb-save-response-btn px-3 py-1.5 rounded-lg bg-primary hover:bg-primary-hover text-white text-xs font-semibold transition-all">Save Response</button>
+                </div>
+            </div>`;
+    }
+
+    modal.innerHTML = `
+        <div class="p-6 rounded-2xl max-w-md w-full border transform modal-scale-up"
+             style="background:${cardBg};border-color:${borderCol};${shadow};backdrop-filter:blur(25px);">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 rounded-full ${fbConf.bg} flex items-center justify-center ${fbConf.text} text-lg"><i class="ph-fill ph-${fbConf.icon}"></i></div>
+                <div>
+                    <h3 class="text-base font-bold ${textCol}">Supervisor Feedback</h3>
+                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${fbConf.bg} ${fbConf.text}"><i class="ph-fill ph-${fbConf.icon}"></i> ${fbConf.label}</span>
+                </div>
+            </div>
+            <div class="max-h-[55vh] overflow-y-auto pr-1 space-y-3">
+                ${isDeleted ? '<div class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-500/10 border border-slate-500/15"><i class="ph-fill ph-trash text-slate-400 text-xs"></i><span class="text-[11px] text-slate-400 font-medium">This entry was deleted by trainee.</span></div>' : ''}
+                <div class="flex items-center gap-3 text-xs ${mutedCol}">
+                    <span>${dayjs(entry.date).format('MMM D, YYYY')}</span>
+                    <span>${entry.startTime} - ${entry.endTime}</span>
+                    <span>${calculateHours(entry.startTime, entry.endTime).toFixed(2)} hrs</span>
+                    ${entry.clientName ? `<span>${entry.clientName}</span>` : ''}
+                </div>
+                ${areas.length > 0 ? `<div><span class="text-[10px] ${mutedCol} uppercase tracking-wider font-semibold block mb-1">Issue</span><div class="flex flex-wrap gap-1">${renderFeedbackIssueBadges(areas)}</div></div>` : ''}
+                ${entry.supervisorNote ? `<div><span class="text-[10px] ${mutedCol} uppercase tracking-wider font-semibold block mb-1">Supervisor Feedback</span><p class="text-sm ${textCol} whitespace-pre-line leading-relaxed">${entry.supervisorNote}</p></div>` : ''}
+                ${entry.feedbackRequestedAction ? `<div><span class="text-[10px] ${mutedCol} uppercase tracking-wider font-semibold block mb-1">Requested Action</span><p class="text-xs text-amber-300">${entry.feedbackRequestedAction}</p></div>` : ''}
+                ${entry.traineeResponse ? `<div class="pl-3 border-l-2 border-teal-500/30"><span class="text-[10px] text-teal-400/80 uppercase tracking-wider font-semibold block mb-1">Trainee Response</span><p class="text-xs text-teal-200/80 whitespace-pre-line">${entry.traineeResponse}</p></div>` : ''}
+                <div class="flex flex-wrap gap-x-4 gap-y-1 text-[11px] ${mutedCol} pt-2 border-t border-white/5">
+                    ${entry.feedbackSentAt ? `<span><i class="ph ph-paper-plane-tilt"></i> Sent ${dayjs(entry.feedbackSentAt).format('MMM D, h:mm A')}</span>` : ''}
+                    ${entry.feedbackReadAt ? `<span><i class="ph ph-eye"></i> Read ${dayjs(entry.feedbackReadAt).format('MMM D, h:mm A')}</span>` : ''}
+                    ${entry.feedbackResolvedAt ? `<span><i class="ph-fill ph-check-circle"></i> Resolved ${dayjs(entry.feedbackResolvedAt).format('MMM D, h:mm A')}</span>` : ''}
+                </div>
+                <div>
+                    <button class="fb-modal-toggle-details text-[10px] ${mutedCol} opacity-50 hover:opacity-80 transition-opacity flex items-center gap-1 cursor-pointer"><i class="ph ph-caret-right text-[8px] fb-modal-caret"></i> View entry details</button>
+                    <div id="fb-modal-details" class="hidden mt-1.5 pl-3 border-l border-white/5 text-[11px] ${mutedCol} opacity-60 space-y-0.5">
+                        ${entry.activityType ? `<p><span class="opacity-60">Type:</span> ${entry.activityType}${entry.unrestrictedActivityType ? ' / ' + entry.unrestrictedActivityType : ''}</p>` : ''}
+                        ${entry.supervisionType ? `<p><span class="opacity-60">Supervision:</span> ${entry.supervisionType}</p>` : ''}
+                        ${entry.supervisorName ? `<p><span class="opacity-60">Supervisor:</span> ${entry.supervisorName}</p>` : ''}
+                        ${entry.notes ? `<p><span class="opacity-60">Note:</span> ${entry.notes}</p>` : ''}
+                    </div>
+                </div>
+            </div>
+            ${traineeSection}
+            <button class="fb-dismiss-btn w-full mt-4 py-2.5 px-4 rounded-xl border border-white/10 ${mutedCol} text-sm font-semibold hover:bg-white/5 transition-all">Dismiss</button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    modal.querySelector('.fb-modal-toggle-details')?.addEventListener('click', () => {
+        const details = modal.querySelector('#fb-modal-details');
+        if (!details) return;
+        const hidden = details.classList.toggle('hidden');
+        const caret = modal.querySelector('.fb-modal-caret');
+        if (caret) caret.style.transform = hidden ? '' : 'rotate(90deg)';
+        const btn = modal.querySelector('.fb-modal-toggle-details');
+        if (btn) btn.lastChild.textContent = hidden ? ' View entry details' : ' Hide entry details';
+    });
+
+    const closeModal = () => {
+        modal.classList.replace('modal-fade-in', 'modal-fade-out');
+        modal.querySelector('.transform').classList.replace('modal-scale-up', 'modal-scale-down');
+        setTimeout(() => modal.remove(), 200);
+    };
+
+    modal.querySelector('.fb-dismiss-btn').addEventListener('click', closeModal);
+
+    if (isTrainee && !isDeleted) {
+        modal.querySelector('.fb-save-response-btn')?.addEventListener('click', async () => {
+            const response = modal.querySelector('#fb-trainee-response').value.trim();
+            const markResolved = modal.querySelector('#fb-mark-resolved').checked;
+            const entryRef = doc(db, `users/${userId}/entries/${entry.id}`);
             try {
-                await updateDoc(entryRef, { feedbackFixed: isChecked });
-                const cell = document.querySelector(`.feedback-cell[data-id="${entryId}"]`);
-                if (cell) cell.dataset.fixed = isChecked ? 'true' : 'false';
+                const updateData = {
+                    traineeResponse: response,
+                    feedbackFixed: markResolved,
+                    feedbackStatus: markResolved ? 'resolved' : 'read',
+                    updatedAt: new Date().toISOString()
+                };
+                if (markResolved && !entry.feedbackResolvedAt) updateData.feedbackResolvedAt = new Date().toISOString();
+                await updateDoc(entryRef, updateData);
+                entry.traineeResponse = response;
+                entry.feedbackFixed = markResolved;
+                entry.feedbackStatus = updateData.feedbackStatus;
+                if (updateData.feedbackResolvedAt) entry.feedbackResolvedAt = updateData.feedbackResolvedAt;
+                const cell = document.querySelector(`.feedback-cell[data-id="${entry.id}"]`);
+                if (cell) cell.dataset.fixed = markResolved ? 'true' : 'false';
+                closeModal();
+                await CustomModal.alert(markResolved ? 'Marked as resolved.' : 'Response saved.', 'Feedback Updated');
             } catch (error) {
-                console.error("Error updating feedback fixed status:", error);
-                await CustomModal.alert("Failed to update status: " + error.message, "Error");
+                console.error("Error saving trainee response:", error);
+                await CustomModal.alert("Failed to save: " + error.message, "Error");
             }
         });
+    }
+};
+
+const showFeedbackForEntry = async (entryId) => {
+    const entry = allEntries.find(e => e.id === entryId);
+    if (!entry || !hasFeedback(entry)) return;
+
+    if (profileData.role === 'supervisor') {
+        openFeedbackDetailModal(entry, false);
+    } else {
+        openFeedbackDetailModal(entry, true);
     }
 };
 
